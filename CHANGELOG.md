@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [Unreleased]
+
+### Changed
+- Migrated default embedding model to `qwen3-embedding:8b` (SOTA for multilingual contexts).
+- Updated `sqlite-vec` database schema to expect `4096`-dimensional vectors (previously `768`).
+
 ## [1.0.0] - 2026-06-08
 
 ### Added
