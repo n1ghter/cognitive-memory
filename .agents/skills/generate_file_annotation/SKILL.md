@@ -17,7 +17,7 @@ When invoked to annotate a file, follow these exact steps:
    - Write a concise summary in Markdown focusing PURELY on the "Why" and architectural role.
    - **DO NOT** document standard interfaces, types, parameters, or return values. Assume those are (or should be) written as inline JSDoc/TSDoc within the source code itself.
    - Ignore standard syntax. Focus on custom logic, state management, API calls, and database interactions.
-   - Adhere to any project-specific rules defined in the local `.antigravity_rules.md`.
+   - Adhere to any project-specific rules defined in the local `AGENTS.md`.
 4. **Store the Annotation:**
    - **Crucial Rule:** ALWAYS use the `write_to_file` tool to save the annotation as a Markdown file in the project's `knowledge/annotations/` directory.
    - Name the file intelligently based on the source file, preserving its nested directory structure (e.g., if annotating `src/tools/export.ts`, save it as `knowledge/annotations/src/tools/export.md`).
@@ -27,6 +27,6 @@ When invoked to annotate a file, follow these exact steps:
 ```markdown
 # Annotation: [Filename]
 **Purpose:** Handles user authentication and token refresh logic.
-**Key Dependencies:** Interacts with the `users` table in SurrealDB and sets JWT cookies.
+**Key Dependencies:** Interacts with the `users` table in SQLite and sets JWT cookies.
 **Context:** This module is critical for the login flow and should not be modified without updating the frontend state management.
 ```

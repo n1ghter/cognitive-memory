@@ -62,13 +62,16 @@ export async function executeMemoryExport(args: ExportArgs = {}): Promise<{ succ
   /**
    * The export directory.
    */
-  const exportDir = args.vaultPath ? path.resolve(args.vaultPath) : path.join(process.env.USERPROFILE || 'C:\\Users\\User', '.gemini', 'antigravity', 'scratch', 'memories');
+  const exportDir = args.vaultPath ? path.resolve(args.vaultPath) : path.join(process.cwd(), 'memories_export');
 
   if (!fs.existsSync(exportDir)) fs.mkdirSync(exportDir, { recursive: true });
 
   const db = DatabaseManager.getInstance();
   const validTypes = ['semantic', 'episodic', 'procedural', 'relational', 'structural'];
 
+  /**
+   * Iterate over each memory type and export files if necessary.
+   */
   for (const type of validTypes) {
     const filePath = path.join(exportDir, `${type}.md`);
     if (!fs.existsSync(filePath)) continue;
@@ -79,6 +82,9 @@ export async function executeMemoryExport(args: ExportArgs = {}): Promise<{ succ
     const lastSync = ledgerEntry ? new Date(ledgerEntry.last_sync_time) : new Date(0);
 
     if (mtime > lastSync) {
+      /**
+       * Read the memory block file and process its content.
+       */
       const content = fs.readFileSync(filePath, 'utf-8');
       const memoryBlocks = content.split('## Memory [');
       for (let i = 1; i < memoryBlocks.length; i++) {
@@ -101,16 +107,25 @@ export async function executeMemoryExport(args: ExportArgs = {}): Promise<{ succ
     }
   }
 
+  /**
+   * Retrieve all memories from the database.
+   */
   const memories = db.prepare('SELECT id, text, metadata, importance, created_at, last_accessed_at, accessed_count FROM memory WHERE is_active = 1').all() as MemoryRecord[];
   const grouped = new Map<string, MemoryRecord[]>();
   for (const t of validTypes) grouped.set(t, []);
 
+  /**
+   * Group memories by their type and sort them by importance.
+   */
   for (const mem of memories) {
     let meta: any = {}; try { meta = typeof mem.metadata === 'string' ? JSON.parse(mem.metadata) : mem.metadata; } catch(e) {}
     const rawType = meta?.type || 'semantic';
     grouped.get(validTypes.includes(rawType.toLowerCase()) ? rawType.toLowerCase() : 'semantic')!.push(mem);
   }
 
+  /**
+   * Export each group of memories to a file.
+   */
   const exportedFiles: string[] = [];
   const syncTime = new Date().toISOString();
 

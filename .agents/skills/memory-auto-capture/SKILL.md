@@ -34,7 +34,7 @@ Call the `memory_search` MCP tool:
 ## 2. Event-Driven Real-Time Capture (When to Write)
 
 Do not wait for the end of the session to write memories. Capture them dynamically at **Cognitive Milestones / Decision Points**:
-- **Commit Moments**: The user confirms an architecture or tech stack choice (*"Let's stick with pnpm"* or *"SurrealDB is our target"*). Relate and store immediately.
+- **Commit Moments**: The user confirms an architecture or tech stack choice (*"Let's stick with pnpm"* or *"SQLite is our target"*). Relate and store immediately.
 - **Eureka Moments**: A complex bug is resolved or a script syntax error is successfully bypassed.
 - **Fact Discovery**: The user shares a stable personal preference, work schedule, or hardware/OS detail.
 
