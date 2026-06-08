@@ -1,14 +1,15 @@
-# AI Annotation: `src/db.ts`
+### Semantic Summary for src/db.ts
+#### Business Logic and Architectural Purpose
 
-**Target File:** `src/db.ts`
-**Role:** Database Interaction and Data Access Layer
+This file provides a `DatabaseManager` class that serves as a singleton instance of an in-process SQLite database. The manager loads the database at startup, initializes the schema with necessary tables and indexes, and exposes methods to interact with the database.
 
-**Tables:** User, Product, Order
+It also generates random UUIDs using the `crypto.randomUUID()` function and normalizes record IDs by splitting them into parts and removing the first part if present. 
 
-## Business Logic & "Why"
+The file does not directly expose MCP tools or interfaces with SQLite tables; however, it is designed to be used as a centralized database manager for the application.
 
-This TypeScript file serves as a critical component of an e-commerce application's database interaction layer. The primary purpose of this file is to encapsulate data access logic for the application.
+#### Key Features
 
-The business logic revolves around providing a unified interface for interacting with the underlying database, ensuring consistency and scalability across different parts of the application. This includes handling CRUD (Create, Read, Update, Delete) operations for various entities such as users, products, and orders.
-
-By abstracting away the intricacies of database interactions, this file enables developers to focus on the core business logic without worrying about the underlying data storage mechanisms.
+*   Singleton instance management
+*   Database schema initialization
+*   Random UUID generation
+*   Normalized record ID processing
