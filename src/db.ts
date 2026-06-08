@@ -90,7 +90,7 @@ export class DatabaseManager {
       );
 
       CREATE VIRTUAL TABLE IF NOT EXISTS vec_memory USING vec0(
-        embedding float[1024]
+        embedding float[4096]
       );
 
       CREATE TABLE IF NOT EXISTS edges (

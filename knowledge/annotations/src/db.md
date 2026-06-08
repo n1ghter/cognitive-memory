@@ -1,15 +1,10 @@
-### Semantic Summary for src/db.ts
-#### Business Logic and Architectural Purpose
+## Database Management System
+### MCP Tools and Interactions
 
-This file provides a `DatabaseManager` class that serves as a singleton instance of an in-process SQLite database. The manager loads the database at startup, initializes the schema with necessary tables and indexes, and exposes methods to interact with the database.
+* Exposes `Database` instance through the `getInstance()` method, which interacts with SQLite tables.
 
-It also generates random UUIDs using the `crypto.randomUUID()` function and normalizes record IDs by splitting them into parts and removing the first part if present. 
+### Business Logic
 
-The file does not directly expose MCP tools or interfaces with SQLite tables; however, it is designed to be used as a centralized database manager for the application.
+This file implements a singleton-based database management system that provides basic CRUD operations. It includes functionality for generating random UUIDs, normalizing record IDs, and initializing the database schema.
 
-#### Key Features
-
-*   Singleton instance management
-*   Database schema initialization
-*   Random UUID generation
-*   Normalized record ID processing
+The database schema consists of several tables: `memory`, `edges`, `sync_ledger`, and `embedding_cache`. The `edges` table establishes relationships between records in the `memory` table, while the `sync_ledger` table manages file sync operations.

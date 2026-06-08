@@ -1,5 +1,5 @@
 const OLLAMA_URL = process.env.OLLAMA_URL || 'http://127.0.0.1:11434';
-const EMBEDDING_MODEL = process.env.EMBEDDING_MODEL || 'bge-m3';
+const EMBEDDING_MODEL = process.env.EMBEDDING_MODEL || 'qwen3-embedding:8b';
 
 /**
  * A client class for interacting with the Ollama API.
