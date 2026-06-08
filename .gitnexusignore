@@ -1,0 +1,19 @@
+# Exclude chat dumps, debug artifacts, and one-off scripts from GitNexus index
+*_messages.txt
+*_summary.md
+*_toc.txt
+*_report.md
+*_transcript.md
+chat_history.md
+last_steps.md
+step_*.bin
+step_*.txt
+extract.py
+extract_chat.py
+clean_db.js
+dump_db.js
+test_bridge.js
+test_connect.js
+*.sqlite
+*.sqlite-shm
+*.sqlite-wal

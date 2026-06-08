@@ -1,0 +1,28 @@
+node_modules
+dist
+.env
+
+# SQLite local databases
+*.sqlite
+*.sqlite-shm
+*.sqlite-wal
+
+# GitNexus indexes
+.gitnexus
+
+# Chat dumps and debug artifacts
+*_messages.txt
+*_summary.md
+*_toc.txt
+*_report.md
+*_transcript.md
+chat_history.md
+last_steps.md
+step_*.bin
+step_*.txt
+
+# One-off scripts
+extract.py
+extract_chat.py
+clean_db.js
+dump_db.js
