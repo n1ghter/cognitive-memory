@@ -1,5 +1,9 @@
 # Cognitive Memory MCP Server
 
+[![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
+[![TypeScript](https://img.shields.io/badge/TypeScript-Ready-blue.svg)](https://www.typescriptlang.org/)
+[![Testing](https://img.shields.io/badge/Tested_with-Vitest-yellow.svg)](https://vitest.dev/)
+
 A high-performance, local-first Model Context Protocol (MCP) server that provides AI agents with persistent cognitive memory.
 
 Unlike cloud-based memory solutions, Cognitive Memory runs entirely on your local machine using SQLite and local LLM embeddings, ensuring zero latency and maximum privacy.
@@ -38,4 +42,4 @@ The project uses a clean modular architecture:
 
 ## License
 
-MIT
+[Apache 2.0](LICENSE)
