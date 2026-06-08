@@ -1,11 +1,12 @@
-# AI Annotation: `src/index.ts`
+```markdown
+# MCP Server Index File Annotation
 
-**Target File:** `src/index.ts`
-**Role:** API Gateway or Entry Point for Microservice Architecture
+This file bootstraps the high-performance bridge of the Model Context Protocol (MCP) server. It initializes the database manager and establishes a connection to the standard input/output transport.
 
-## Tables:
+**Purpose:** To serve as the entry point for the MCP server application, responsible for executing various memory-related tools and handling exceptions.
 
-## Business Logic & "Why"
-The primary function of this file is to serve as an entry point for a microservice architecture, handling incoming HTTP requests and directing them to the relevant internal services. It acts as a single interface for external clients to interact with the system, encapsulating business logic for authentication, authorization, and request routing.
+**Interactions:**
 
-It also serves to expose APIs that provide data and functionality to the users or external applications. The reason behind this design is to follow the principles of RESTful architecture and API gateways which helps in decoupling and scalability.
+*   Exposes `executeMemoryStore`, `executeMemorySearch`, `executeMemoryDelete`, `executeMemoryConsolidate`, `executeMemoryRelate`, and `executeMemoryExport` functions.
+*   Uses SQLite database management.
+```

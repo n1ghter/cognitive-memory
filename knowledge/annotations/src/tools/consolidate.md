@@ -1,24 +1,15 @@
-# AI Annotation: `src/tools/consolidate.ts`
+```markdown
+### Memory Consolidation Tool
 
-**Target File:** `src/tools/consolidate.ts`
-**Role:** Data Consolidation Tool for Log Files
+This tool executes a memory consolidation process on the database, pruning inactive memories,
+updating importance scores based on access times, and performing background deduplication to merge similar memories into a single entry.
 
-**Tables:** None
+**Interactions with:**
 
-## Business Logic & "Why"
-This TypeScript file is designed to consolidate log files from various sources into a single, standardized format. The tool is intended for use in monitoring and troubleshooting systems, allowing administrators to easily identify and diagnose issues.
+* `DatabaseManager` for database operations
+* `OllamaClient` for text generation and embedding calculations
 
-The business logic of this tool involves:
+### Purpose:
 
-* Parsing log file formats (e.g., JSON, CSV) and extracting relevant data
-* Normalizing the extracted data into a consistent structure
-* Reconciling conflicting or duplicate records
-
-The purpose of this consolidation is to provide a unified view of system activity, enabling more efficient and effective monitoring and troubleshooting.
-
-## Architectural Role
-This file plays a crucial role in the application's data pipeline by:
-
-* Providing a standardized interface for log file processing
-* Ensuring data consistency across multiple sources
-* Facilitating real-time or batch-based logging and analytics
+The purpose of this tool is to maintain the memory consolidation system by periodically updating the importance scores of active records based on their access times, pruning inactive records, and merging similar memories into a single entry.
+```

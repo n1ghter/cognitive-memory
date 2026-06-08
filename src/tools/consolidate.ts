@@ -1,9 +1,14 @@
+/**
+ * Import necessary modules.
+ */
 import { DatabaseManager, generateId } from '../db.js';
 import { OllamaClient } from '../ollama.js';
 import { executeMemoryStore } from './store.js';
 
 /**
  * Interface representing a memory record.
+ *
+ * @interface MemoryRecord
  */
 interface MemoryRecord {
   /**
@@ -45,6 +50,11 @@ interface MemoryRecord {
  * @returns An object containing information about the success of the operation and
  *          statistics on pruned, updated, and merged records.
  */
+/**
+ * @async
+ * @function executeMemoryConsolidate
+ * @returns {Promise<{ success: boolean; decayed_or_updated: number; pruned: number; status: string }>}
+ */
 export async function executeMemoryConsolidate(): Promise<{
   /**
    * Whether the operation was successful.
@@ -63,7 +73,10 @@ export async function executeMemoryConsolidate(): Promise<{
    */
   status: string;
 }> {
+  // Get an instance of the database manager
   const db = DatabaseManager.getInstance();
+
+  // Retrieve active records from the database
   const activeRecords = db.prepare(
     'SELECT m.id, m.rowid, m.text, m.importance, m.last_accessed_at, m.metadata, v.embedding FROM memory m JOIN vec_memory v ON m.rowid = v.rowid WHERE m.is_active = 1'
   ).all() as any[];
@@ -71,9 +84,10 @@ export async function executeMemoryConsolidate(): Promise<{
   let prunedCount = 0;
   let updatedCount = 0;
   const remainingMemories: MemoryRecord[] = [];
-  const lambda = 0.004;
-  const now = Date.now();
+  const lambda = 0.004; // Threshold for decayed importance
+  const now = Date.now(); // Current timestamp
 
+  // Perform memory consolidation in a database transaction
   db.transaction(() => {
     for (const mem of activeRecords) {
       const elapsedHours = (now - new Date(mem.last_accessed_at).getTime()) / 3600000;
@@ -99,7 +113,9 @@ export async function executeMemoryConsolidate(): Promise<{
     }
   });
 
+  // Run background deduplication on the remaining memories
   await runBackgroundDeduplication(remainingMemories).catch((err) => console.error(err));
+
   return { success: true, decayed_or_updated: updatedCount, pruned: prunedCount, status: 'Deduplication running in background' };
 }
 
@@ -111,10 +127,18 @@ export async function executeMemoryConsolidate(): Promise<{
  *
  * @param memories Array of memory records to be processed for deduplication.
  */
+/**
+ * @async
+ * @function runBackgroundDeduplication
+ * @param {MemoryRecord[]} memories - Array of memory records to be processed for deduplication.
+ * @returns {Promise<void>}
+ */
 async function runBackgroundDeduplication(
   memories: MemoryRecord[]
 ): Promise<void> {
+  // Get an instance of the database manager
   const db = DatabaseManager.getInstance();
+
   let mergedCount = 0;
   const processedIds = new Set<string>();
 
@@ -123,14 +147,16 @@ async function runBackgroundDeduplication(
     const memA = memories[i];
     if (processedIds.has(memA.id)) continue;
 
+    // Calculate similarity scores between the current memory and other similar records
     const floatArray = new Float32Array(memA.embedding);
     const similarMemories = db.prepare(
       'SELECT m.id, m.text, m.importance, m.metadata, (1.0 - vec_distance_cosine(v.embedding, ?)) AS similarity FROM memory m JOIN vec_memory v ON m.rowid = v.rowid WHERE m.is_active = 1 AND m.id != ? AND vec_distance_cosine(v.embedding, ?) <= 0.08 ORDER BY similarity DESC'
-    ).all(floatArray, memA.id, floatArray);
+    ).all(floatArray, memA.id, floatArray) as any[];
 
     for (const memB of similarMemories) {
       if (processedIds.has(memB.id)) continue;
       try {
+        // Merge the memories into a single entry
         const mergedText = await OllamaClient.generateText(
           `Memory 1: "${memA.text}"\nMemory 2: "${memB.text}"`,
           'You are a memory consolidation assistant. Merge the memories into one clear factual statement.'
@@ -140,12 +166,14 @@ async function runBackgroundDeduplication(
           bMeta = JSON.parse(memB.metadata);
         } catch (e) {}
 
+        // Execute store function to update related records
         const storeResult = await executeMemoryStore({
           text: mergedText,
           metadata: { ...memA.metadata, ...bMeta, consolidated_from: [memA.id, memB.id] },
           importance: Math.min(1.0, Math.max(memA.importance, memB.importance) + 0.1),
         });
 
+        // Update database records
         db.transaction(() => {
           db.prepare('UPDATE memory SET is_active = 0, importance = 0.0 WHERE id IN (?, ?)').run(memA.id, memB.id);
           db.prepare('INSERT INTO related (id, source_id, target_id, relation_type) VALUES (?, ?, ?, ?)').run(generateId(), storeResult.record.id, memA.id, 'consolidated_from');
@@ -154,7 +182,7 @@ async function runBackgroundDeduplication(
             storeResult.record.id,
             memB.id,
             'consolidated_from'
-          ));
+          );
         });
 
         processedIds.add(memA.id).add(memB.id);

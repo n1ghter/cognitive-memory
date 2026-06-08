@@ -6,80 +6,57 @@ import { executeMemoryStore } from './tools/store.js';
 import { executeMemorySearch } from './tools/search.js';
 import { executeMemoryDelete } from './tools/delete.js';
 
-import { executeMemoryConsolidate } from './tools/consolidate.js';
-import { executeMemoryRelate } from './tools/graph.js';
-import { executeMemoryExport } from './tools/export.js';
-
-// ============================================================================
-// CRITICAL PERFORMANCE ENHANCEMENT: STDIO SAFEGUARD
-// ============================================================================
-// Stdio MCP relies on exclusive use of stdout for JSON-RPC message packets.
-// Stray stdout prints from dependencies will corrupt transport packets,
-// introducing parse failures or latency bottlenecks. We force-redirect all
-// stdout logging safely to stderr, which the host maps directly to logs.
+/**
+ * Critical Performance Enhancement: Stdio Safeguard
+ * 
+ * Redirects all stdout logging to stderr, forcing safe transport of JSON-RPC message packets.
+ */
 const originalLog = console.log;
 console.log = console.error;
 
 /**
- * Initialize the High-Performance MCP Server
+ * Create a new McpServer instance with a specific name and version.
  */
-class McpServer {
+const server = new McpServer({
   /**
-   * Creates a new instance of McpServer
-   * @param options Configuration options for the server
+   * Name of the server application
    */
-  constructor(options: any) {
-    this.name = options.name;
-    this.version = options.version;
-    // ... other properties ...
-  }
-
-  registerTool(
-    toolId: string,
-    toolConfig: any,
-    handler: (args: any) => Promise<any>,
-  ): void {
-    // ... implementation ...
-  }
-}
-
-/**
- * Standard input/output transport for the MCP server
- */
-class StdioServerTransport {}
-
-/**
- * Zod schema validation utility
- */
-const z = require('zod');
-
-/**
- * Database manager instance
- */
-class DatabaseManager {
+  name: 'cognitive-memory',
   /**
-   * Creates a new instance of DatabaseManager
+   * Version of the server application
    */
-  static getInstance(): void {}
-}
-
-// ============================================================================
-// TOOL REGISTRATION
-// ============================================================================
+  version: '1.0.0',
+});
 
 /**
- * Encrypt/Hash, vectorize, and persist a semantic memory into a local SQLite database
+ * Define a tool that encrypts, hashes, vectorizes, and persists semantic memories into a local SQLite database.
  */
-server.registerTool(
+server.tool(
+  /**
+   * Tool ID
+   */
   'memory_store',
+  /**
+   * Tool description
+   */
+  'Encrypt/Hash, vectorize, and persist a semantic memory into a local SQLite database',
   {
-    description: 'Encrypt/Hash, vectorize, and persist a semantic memory into a local SQLite database',
-    inputSchema: {
-      text: z.string().describe('The core text content of the memory to store'),
-      metadata: z.record(z.any()).optional().describe('Optional auxiliary metadata object to associate with the memory'),
-      importance: z.number().min(0.0).max(1.0).optional().default(0.5).describe('The importance score of the memory (0.0 to 1.0)'),
-    },
+    /**
+     * Input parameter for the core text content of the memory to store.
+     */
+    text: z.string().describe('The core text content of the memory to store'),
+    /**
+     * Optional input parameter for auxiliary metadata object association.
+     */
+    metadata: z.record(z.any()).optional().describe('Optional auxiliary metadata object to associate with the memory'),
+    /**
+     * Optional input parameter for importance score (0.0 to 1.0).
+     */
+    importance: z.number().min(0.0).max(1.0).optional().default(0.5).describe('The importance score of the memory (0.0 to 1.0)'),
   },
+  /**
+   * Asynchronous function that executes the tool's logic.
+   */
   async ({ text, metadata, importance }) => {
     try {
       const result = await executeMemoryStore({ text, metadata, importance });
@@ -97,18 +74,34 @@ server.registerTool(
 );
 
 /**
- * Perform optimized vector similarity cosine searches on stored memories
+ * Define a tool that performs optimized vector similarity cosine searches on stored memories.
  */
-server.registerTool(
+server.tool(
+  /**
+   * Tool ID
+   */
   'memory_search',
+  /**
+   * Tool description
+   */
+  'Perform optimized vector similarity cosine searches on stored memories',
   {
-    description: 'Perform optimized vector similarity cosine searches on stored memories',
-    inputSchema: {
-      query: z.string().describe('Semantic search query'),
-      limit: z.number().int().min(1).max(100).optional().default(5).describe('Max number of closely related memories to retrieve'),
-      threshold: z.number().min(0.0).max(1.0).optional().default(0.6).describe('Minimum cosine similarity match threshold (0.0 to 1.0)'),
-    },
+    /**
+     * Input parameter for the semantic search query.
+     */
+    query: z.string().describe('Semantic search query'),
+    /**
+     * Optional input parameter for maximum closely related memories to retrieve (1-100).
+     */
+    limit: z.number().int().min(1).max(100).optional().default(5).describe('Max number of closely related memories to retrieve'),
+    /**
+     * Optional input parameter for minimum cosine similarity match threshold (0.0-1.0).
+     */
+    threshold: z.number().min(0.0).max(1.0).optional().default(0.6).describe('Minimum cosine similarity match threshold (0.0 to 1.0)'),
   },
+  /**
+   * Asynchronous function that executes the tool's logic.
+   */
   async ({ query, limit, threshold }) => {
     try {
       const result = await executeMemorySearch({ query, limit, threshold });
@@ -126,17 +119,30 @@ server.registerTool(
 );
 
 /**
- * Delete a specific semantic memory record by its identifier
+ * Define a tool that deletes a specific semantic memory record by its identifier.
  */
-server.registerTool(
+server.tool(
+  /**
+   * Tool ID
+   */
   'memory_delete',
+  /**
+   * Tool description
+   */
+  'Delete a specific semantic memory record by its identifier',
   {
-    description: 'Delete a specific semantic memory record by its identifier',
-    inputSchema: {
-      id: z.string().describe("Record identifier to erase (e.g. 'memory:uuid' or 'uuid')"),
-      hard: z.boolean().optional().default(false).describe('If true, physically purges the record. Otherwise performs a soft-delete (default)'),
-    },
+    /**
+     * Input parameter for the record identifier to erase (e.g. "memory:uuid" or "uuid").
+     */
+    id: z.string().describe("Record identifier to erase (e.g. 'memory:uuid' or 'uuid')"),
+    /**
+     * Optional input parameter for physical purging of records (true/false).
+     */
+    hard: z.boolean().optional().default(false).describe('If true, physically purges the record. Otherwise performs a soft-delete (default)'),
   },
+  /**
+   * Asynchronous function that executes the tool's logic.
+   */
   async ({ id, hard }) => {
     try {
       const result = await executeMemoryDelete({ id, hard });
@@ -154,14 +160,21 @@ server.registerTool(
 );
 
 /**
- * Perform time decay and semantic LLM merging/deduplication on active memories using Ollama
+ * Define a tool that performs time decay and semantic LLM merging/deduplication on active memories using Ollama.
  */
-server.registerTool(
+server.tool(
+  /**
+   * Tool ID
+   */
   'memory_consolidate',
-  {
-    description: 'Perform time decay and semantic LLM merging/deduplication on active memories using Ollama',
-    inputSchema: {},
-  },
+  /**
+   * Tool description
+   */
+  'Perform time decay and semantic LLM merging/deduplication on active memories using Ollama',
+  {},
+  /**
+   * Asynchronous function that executes the tool's logic.
+   */
   async () => {
     try {
       const result = await executeMemoryConsolidate();
@@ -179,18 +192,34 @@ server.registerTool(
 );
 
 /**
- * Establish a graph relationship between two memory nodes
+ * Define a tool that establishes a graph relationship between two memory nodes.
  */
-server.registerTool(
+server.tool(
+  /**
+   * Tool ID
+   */
   'memory_relate',
+  /**
+   * Tool description
+   */
+  'Establish a graph relationship between two memory nodes',
   {
-    description: 'Establish a graph relationship between two memory nodes',
-    inputSchema: {
-      sourceId: z.string().describe('ID of the source memory node (e.g. memory:uuid)'),
-      targetId: z.string().describe('ID of the target memory node (e.g. memory:uuid)'),
-      relationType: z.string().describe('Type of relation (e.g. dependency, contradicts, consolidated_from)'),
-    },
+    /**
+     * Input parameter for the source memory node ID (e.g. "memory:uuid").
+     */
+    sourceId: z.string().describe('ID of the source memory node (e.g. memory:uuid)'),
+    /**
+     * Input parameter for the target memory node ID (e.g. "memory:uuid").
+     */
+    targetId: z.string().describe('ID of the target memory node (e.g. memory:uuid)'),
+    /**
+     * Input parameter for the type of relation (e.g. dependency, contradicts, consolidated_from).
+     */
+    relationType: z.string().describe('Type of relation (e.g. dependency, contradicts, consolidated_from)'),
   },
+  /**
+   * Asynchronous function that executes the tool's logic.
+   */
   async ({ sourceId, targetId, relationType }) => {
     try {
       const result = await executeMemoryRelate({ sourceId, targetId, relationType });
@@ -208,16 +237,26 @@ server.registerTool(
 );
 
 /**
- * Export active database memories into Markdown notes for Obsidian integration
+ * Define a tool that exports active database memories into Markdown notes for Obsidian integration.
  */
-server.registerTool(
+server.tool(
+  /**
+   * Tool ID
+   */
   'memory_export',
+  /**
+   * Tool description
+   */
+  'Export active database memories into Markdown notes for Obsidian integration',
   {
-    description: 'Export active database memories into Markdown notes for Obsidian integration',
-    inputSchema: {
-      vaultPath: z.string().optional().describe('Optional custom path to the Obsidian vault directory'),
-    },
+    /**
+     * Optional input parameter for custom path to the Obsidian vault directory.
+     */
+    vaultPath: z.string().optional().describe('Optional custom path to the Obsidian vault directory'),
   },
+  /**
+   * Asynchronous function that executes the tool's logic.
+   */
   async ({ vaultPath }) => {
     try {
       const result = await executeMemoryExport({ vaultPath });
@@ -234,13 +273,12 @@ server.registerTool(
   }
 );
 
-// ============================================================================
-// SERVER APPLICATION STARTUP
-// ============================================================================
+/**
+ * Bootstrap function that sets up the server application.
+ */
 async function bootstrap() {
   try {
     console.error('[MCP Server] Bootstrapping high-performance bridge...');
-    // ... implementation ...
 
     await DatabaseManager.getInstance();
     const transport = new StdioServerTransport();
