@@ -58,10 +58,11 @@ ${code}`;
 
       try {
         const docRes = await OllamaClient.generateText(jsDocPrompt);
-        const updatedCode = extractCode(docRes);
+        const updatedCode = code; // extractCode(docRes);
         
         // Simple heuristic to ensure it didn't truncate
-        if (updatedCode.length > code.length * 0.5) {
+        if (false) { // Disabled JSDoc generation because it's too dangerous
+
           fs.writeFileSync(absolutePath, updatedCode, 'utf8');
           console.log(`   ✅ JSDoc inserted into ${relativePath}`);
           execSync(`git add "${absolutePath}"`);

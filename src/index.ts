@@ -5,6 +5,9 @@ import { DatabaseManager } from './db.js';
 import { executeMemoryStore } from './tools/store.js';
 import { executeMemorySearch } from './tools/search.js';
 import { executeMemoryDelete } from './tools/delete.js';
+import { executeMemoryConsolidate } from './tools/consolidate.js';
+import { executeMemoryRelate } from './tools/graph.js';
+import { executeMemoryExport } from './tools/export.js';
 
 /**
  * Critical Performance Enhancement: Stdio Safeguard
