@@ -7,8 +7,10 @@ dist
 *.sqlite-shm
 *.sqlite-wal
 
-# GitNexus indexes
+# GitNexus indexes and auto-generated artifacts
 .gitnexus
+.claude
+CLAUDE.md
 
 # Chat dumps and debug artifacts
 *_messages.txt
