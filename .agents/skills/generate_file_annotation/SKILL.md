@@ -20,7 +20,7 @@ When invoked to annotate a file, follow these exact steps:
    - Adhere to any project-specific rules defined in the local `.antigravity_rules.md`.
 4. **Store the Annotation:**
    - **Crucial Rule:** ALWAYS use the `write_to_file` tool to save the annotation as a Markdown file in the project's `knowledge/annotations/` directory.
-   - Name the file intelligently based on the source file (e.g., if annotating `src/tools/export.ts`, save it as `knowledge/annotations/src_tools_export.md`).
+   - Name the file intelligently based on the source file, preserving its nested directory structure (e.g., if annotating `src/tools/export.ts`, save it as `knowledge/annotations/src/tools/export.md`).
    - DO NOT use global MCP memory databases (like `memory_store`) for file annotations. Annotations must be version-controlled alongside the code in Git.
 
 ## Example Output Format
