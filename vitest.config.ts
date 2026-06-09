@@ -9,7 +9,7 @@ export default defineConfig({
       include: ['src/**/*.ts'],
       exclude: ['src/index.ts'], // Usually exclude bootstrap index
       // Tells Vitest to collect coverage for all files, even if they are not imported in tests
-      // @ts-ignore - suppress TS error if @vitest/coverage-v8 types are missing in the editor
+      // @ts-expect-error - suppress TS error if @vitest/coverage-v8 types are missing in the editor
       all: true,
     },
   },

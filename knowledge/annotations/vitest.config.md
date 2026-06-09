@@ -1,10 +1,12 @@
-### vitest.config.ts Annotation
-#### Purpose
-Configures Vitest for testing purposes, enabling global test coverage and setup.
+**vitest.config.ts Semantic Summary**
+=====================================
 
-#### Exposed Tools
-- MCP tools: None explicitly listed
-- SQLite interactions: None explicitly listed
+This file configures Vitest to support end-to-end testing for the application. It enables global variables, sets the environment to Node.js, and specifies a setup file to ensure tests are executed correctly.
 
-#### Architectural Purpose
-Allows for centralized configuration of testing environment and setup.
+**Exposed Tools:**
+
+* Vitest
+
+**Interactions:**
+
+* SQLite tables (not explicitly listed, but likely used by related tools)
