@@ -123,6 +123,4 @@ This project is licensed under the [Apache 2.0 License](LICENSE). This provides 
 
 If you find this project helpful and want to support its continued development, consider buying me a coffee! ☕
 
-<a href='https://ko-fi.com/cemised' target='_blank'>
-  <img height='36' style='border:0px;height:36px;' src='https://storage.ko-fi.com/cdn/kofi2.png?v=3' border='0' alt='Buy Me a Coffee at ko-fi.com' />
-</a>
+[![ko-fi](https://ko-fi.com/img/githubbutton_sm.svg)](https://ko-fi.com/V5Z6212C4G)
