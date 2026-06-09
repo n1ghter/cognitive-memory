@@ -1,6 +1,6 @@
 {
   "name": "cognitive-memory",
-  "version": "1.1.9",
+  "version": "1.1.10",
   "description": "High-performance stdio MCP server for cognitive memory using SQLite",
   "main": "dist/index.js",
   "type": "module",
