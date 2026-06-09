@@ -10,7 +10,7 @@ importers:
     dependencies:
       '@modelcontextprotocol/sdk':
         specifier: ^1.0.1
-        version: 1.29.0(zod@3.25.76)
+        version: 1.29.0(zod@4.4.3)
       better-sqlite3:
         specifier: ^12.10.0
         version: 12.10.0
@@ -18,8 +18,8 @@ importers:
         specifier: ^0.1.9
         version: 0.1.9
       zod:
-        specifier: ^3.23.8
-        version: 3.25.76
+        specifier: ^4.4.3
+        version: 4.4.3
     devDependencies:
       '@types/better-sqlite3':
         specifier: ^7.6.13
@@ -29,7 +29,7 @@ importers:
         version: 25.9.2
       gitnexus:
         specifier: ^1.6.5
-        version: 1.6.6(graphology-types@0.24.8)(zod@3.25.76)
+        version: 1.6.6(graphology-types@0.24.8)(zod@4.4.3)
       ts-node:
         specifier: ^10.9.2
         version: 10.9.2(@types/node@25.9.2)(typescript@5.9.3)
@@ -1872,8 +1872,8 @@ packages:
     peerDependencies:
       zod: ^3.25.28 || ^4
 
-  zod@3.25.76:
-    resolution: {integrity: sha512-gzUt/qt81nXsFGKIFcC3YnfEAx5NkunCfnDlvuBSSFS02bcXu4Lmea0AFIUwbLWxWPx3d9p8S5QoaujKcNQxcQ==}
+  zod@4.4.3:
+    resolution: {integrity: sha512-ytENFjIJFl2UwYglde2jchW2Hwm4GJFLDiSXWdTrJQBIN9Fcyp7n4DhxJEiWNAJMV1/BqWfW/kkg71UDcHJyTQ==}
 
 snapshots:
 
@@ -2057,7 +2057,7 @@ snapshots:
       - '@75lb/nature'
       - supports-color
 
-  '@modelcontextprotocol/sdk@1.29.0(zod@3.25.76)':
+  '@modelcontextprotocol/sdk@1.29.0(zod@4.4.3)':
     dependencies:
       '@hono/node-server': 1.19.14(hono@4.12.23)
       ajv: 8.20.0
@@ -2074,8 +2074,8 @@ snapshots:
       json-schema-typed: 8.0.2
       pkce-challenge: 5.0.1
       raw-body: 3.0.2
-      zod: 3.25.76
-      zod-to-json-schema: 3.25.2(zod@3.25.76)
+      zod: 4.4.3
+      zod-to-json-schema: 3.25.2(zod@4.4.3)
     transitivePeerDependencies:
       - supports-color
 
@@ -2638,11 +2638,11 @@ snapshots:
 
   github-from-package@0.0.0: {}
 
-  gitnexus@1.6.6(graphology-types@0.24.8)(zod@3.25.76):
+  gitnexus@1.6.6(graphology-types@0.24.8)(zod@4.4.3):
     dependencies:
       '@huggingface/transformers': 4.2.0
       '@ladybugdb/core': 0.17.1
-      '@modelcontextprotocol/sdk': 1.29.0(zod@3.25.76)
+      '@modelcontextprotocol/sdk': 1.29.0(zod@4.4.3)
       '@scarf/scarf': 1.4.0
       cli-progress: 3.12.0
       commander: 14.0.3
@@ -3623,8 +3623,8 @@ snapshots:
 
   yn@3.1.1: {}
 
-  zod-to-json-schema@3.25.2(zod@3.25.76):
+  zod-to-json-schema@3.25.2(zod@4.4.3):
     dependencies:
-      zod: 3.25.76
+      zod: 4.4.3
 
-  zod@3.25.76: {}
+  zod@4.4.3: {}
