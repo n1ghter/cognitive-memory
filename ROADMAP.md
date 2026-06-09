@@ -30,11 +30,6 @@ Currently, our agents must make multiple sequential MCP tool calls to traverse r
   - Adding a `domain` column to the `memories` table for efficient pre-filtering during `sqlite-vec` vector searches (`WHERE domain = 'xyz'`).
   - In Obsidian, this maps perfectly to root-level folders (`/Work`, `/Personal`), allowing seamless domain segregation without needing multiple databases like Qdrant would require.
 
-- **[ ] Knowledge Domains (Namespaces):** 
-  To support distinct contexts (e.g., `Work`, `Personal`, `Project_A`), memories will be partitioned using logical namespaces.
-  - Adding a `domain` column to the `memories` table for efficient pre-filtering during `sqlite-vec` vector searches (`WHERE domain = 'xyz'`).
-  - In Obsidian, this maps perfectly to root-level folders (`/Work`, `/Personal`), allowing seamless domain segregation without needing multiple databases like Qdrant would require.
-
 ## 📅 Phase 2: Autonomous Context Management
 *(Inspired by Letta / MemGPT)*
 
@@ -60,6 +55,14 @@ A critically important feature to prevent Obsidian from turning into a dump of h
 Currently, we rely heavily on vectorization and summarization (Semantic Memory), which can lose nuanced phrasing and verbatim context.
 
 - **[ ] Verbatim Episodic Memory (The "Transcript Room"):** Add a dedicated storage layer for exact word-for-word session logs. If the semantic vector search fails to capture the nuance of a past architectural debate, the agent can transition into the episodic layer and "replay" the exact conversation verbatim, utilizing the "Method of Loci" retrieval pattern to prevent hallucinations.
+
+## 📅 Phase 5: Action & Causality Logging
+*(Inspired by Maesh's Evolutionary Incubator)*
+
+While `cognitive-memory` currently excels at storing *Semantic Facts* (e.g., "The user prefers Python"), it lacks the ability to learn from dynamic workflows.
+
+- **[ ] Execution Causality Logs:** Allow agents to log *Action -> Outcome* pairs (e.g., "Executed command X -> Resulted in error Y"). Over time, the agent builds an intuition of what works and what doesn't within a specific project.
+- **[ ] Success/Failure Flagging:** Agents can flag a causality log as a success (`High_Utility`) or failure (`Fatal_Error`). This data can later be used to dynamically prioritize search results, allowing the agent to avoid past mistakes without needing explicit rules.
 
 ---
 
