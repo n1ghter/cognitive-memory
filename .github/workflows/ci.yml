@@ -2,40 +2,32 @@ name: CI
 
 on:
   push:
-    branches: [ master, main ]
+    branches: [ master ]
   pull_request:
-    branches: [ master, main ]
+    branches: [ master ]
 
 jobs:
   test:
-    runs-on: windows-latest
-    
-    strategy:
-      matrix:
-        node-version: [24.x]
+    runs-on: ubuntu-latest
 
     steps:
     - uses: actions/checkout@v4
     
-    - name: Setup pnpm
+    - name: Use Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '22'
+        
+    - name: Install pnpm
       uses: pnpm/action-setup@v4
       with:
         version: 9
-
-    - name: Use Node.js ${{ matrix.node-version }}
-      uses: actions/setup-node@v4
-      with:
-        node-version: ${{ matrix.node-version }}
-        cache: 'pnpm'
-
-    - name: Install Dependencies
-      run: pnpm install --frozen-lockfile
-
-    - name: Rebuild Native Dependencies
+        
+    - name: Install dependencies
+      run: pnpm install
+      
+    - name: Rebuild native dependencies
       run: pnpm rebuild
       
-    - name: Build
-      run: pnpm run build
-      
-    - name: Run Tests
+    - name: Run tests
       run: pnpm test
