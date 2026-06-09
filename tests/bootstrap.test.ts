@@ -42,7 +42,7 @@ describe('Hooks Bootstrap', () => {
     process.argv = ['node', 'bootstrap.js']; // event is undefined -> 'SessionStart'
     
     // Import dynamically so that the module evaluates with the mocked argv
-    await import('../src/hooks/bootstrap.ts');
+    await import('../src/hooks/bootstrap.js');
     
     expect(mockExecuteMemoryExport).toHaveBeenCalledTimes(1);
     expect(mockExecuteMemoryConsolidate).not.toHaveBeenCalled();
@@ -53,7 +53,7 @@ describe('Hooks Bootstrap', () => {
   it('should run PreCompact hooks if event is PreCompact', async () => {
     process.argv = ['node', 'bootstrap.js', 'PreCompact'];
     
-    await import('../src/hooks/bootstrap.ts');
+    await import('../src/hooks/bootstrap.js');
     
     expect(mockExecuteMemoryExport).not.toHaveBeenCalled();
     expect(mockExecuteMemoryConsolidate).toHaveBeenCalledTimes(1);
@@ -64,7 +64,7 @@ describe('Hooks Bootstrap', () => {
   it('should run both hooks if event is Stop', async () => {
     process.argv = ['node', 'bootstrap.js', 'Stop'];
     
-    await import('../src/hooks/bootstrap.ts');
+    await import('../src/hooks/bootstrap.js');
     
     expect(mockExecuteMemoryExport).toHaveBeenCalledTimes(1);
     expect(mockExecuteMemoryConsolidate).toHaveBeenCalledTimes(1);
@@ -76,7 +76,7 @@ describe('Hooks Bootstrap', () => {
     process.argv = ['node', 'bootstrap.js', 'Stop'];
     mockExecuteMemoryExport.mockRejectedValueOnce(new Error('Export failed'));
     
-    await import('../src/hooks/bootstrap.ts');
+    await import('../src/hooks/bootstrap.js');
     
     expect(consoleErrorSpy).toHaveBeenCalledWith('[Hooks] Error running hooks:', expect.any(Error));
     expect(mockDatabaseManagerClose).toHaveBeenCalledTimes(1);
