@@ -1,7 +1,11 @@
-### Vitest Configuration File
-#### Purpose
-This file configures the test environment for a Node.js application using Vitest, specifying global setup files and test coverage settings.
+```markdown
+# Vitest Configuration File
 
-#### Interactions
-- Exposes MCP tools: None
-- Interacts with SQLite tables: No explicit interaction is listed; however, if the application uses SQLite under the hood, it may have an indirect impact on this configuration.
+This configuration file defines the test settings for a Vitest project, specifically setting up global variables and environment. The configuration includes setup files, coverage analysis, and global variable management.
+
+MCP tools used: None explicitly listed
+
+Interacts with SQLite tables: No
+
+The purpose of this configuration is to enable test coverage analysis for the `src` directory, excluding the bootstrap index file, and sets up a global variable to be available in all tests. This allows for efficient testing of the project's functionality.
+```
