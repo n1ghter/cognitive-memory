@@ -1,25 +1,16 @@
-**Semantic Summary**
-=====================
+### Semantic Summary for `src/index.ts`
 
-The `src/index.ts` file sets up a high-performance bridge for a cognitive memory application using the MCP (Memory Capture Protocol) standard. It creates a new instance of the `McpServer` with a specific name and version, and defines several tools to interact with the underlying database.
+#### Why (Business Logic and Architectural Purpose)
 
-**Business Logic**
------------------
+This file is the main entry point for a high-performance bridge that integrates with the Model Context Protocol (MCP). It sets up a `McPServer` instance, defines various tools for memory management, and establishes connections to an Obsidian vault directory.
 
-* Redirects stdout logging to stderr to ensure safe transport of JSON-RPC message packets.
-* Establishes a local SQLite database for storing semantic memories, using the `executeMemoryStore`, `executeMemorySearch`, `executeMemoryDelete`, `executeMemoryConsolidate`, `executeMemoryRelate`, and `executeMemoryExport` tools.
+The tools defined in this file are:
 
-**Tools**
----------
+*   `memory_store`: Encrypts, hashes, vectorizes, and persists semantic memories into a local SQLite database.
+*   `memory_search`: Performs optimized vector similarity cosine searches on stored memories.
+*   `memory_delete`: Deletes a specific semantic memory record by its identifier.
+*   `memory_consolidate`: Performs time decay and semantic LLM merging/deduplication on active memories using Ollama.
+*   `memory_relate`: Establishes a graph relationship between two memory nodes.
+*   `memory_export`: Exports active database memories into Markdown notes for Obsidian integration.
 
-* `memory_store`: encrypts, hashes, vectorizes, and persists a semantic memory into the local SQLite database.
-* `memory_search`: performs optimized vector similarity cosine searches on stored memories.
-* `memory_delete`: deletes a specific semantic memory record by its identifier.
-* `memory_consolidate`: performs time decay and semantic LLM merging/deduplication on active memories using Ollama.
-* `memory_relate`: establishes a graph relationship between two memory nodes.
-* `memory_export`: exports active database memories into Markdown notes for Obsidian integration.
-
-**Architectural Purpose**
--------------------------
-
-The MCP bridge is designed to provide a high-performance interface for interacting with the cognitive memory application's underlying database, while ensuring secure and efficient data transfer. The tools defined in this file enable various operations on semantic memories, such as storage, search, deletion, consolidation, relation establishment, and export.
+These tools are designed to provide efficient and secure management of semantic memories, enabling the bridge to serve as a robust and scalable platform for knowledge management applications.
