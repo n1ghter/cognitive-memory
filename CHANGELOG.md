@@ -3,6 +3,8 @@
 All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
+
+## [1.1.20] - 2026-06-09
 ### Added
 - Integrated **Biome** as the universal formatter and linter for the project, replacing ESLint/Prettier.
 - Added new NPM scripts: `format`, `lint`, and `check` for blazing-fast code quality enforcement.
