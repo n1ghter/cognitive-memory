@@ -32,8 +32,14 @@ export async function executeMemoryDelete(args: DeleteArgs): Promise<any> {
 
   if (hard) {
     // Hard delete - physical purge
-    const stmt = db.prepare('DELETE FROM memory WHERE id = ?');
-    const info = stmt.run(id);
+    const transaction = db.transaction(() => {
+      // Delete any edges referencing this memory
+      db.prepare('DELETE FROM edges WHERE source_id = ? OR target_id = ?').run(id, id);
+      const stmt = db.prepare('DELETE FROM memory WHERE id = ?');
+      return stmt.run(id);
+    });
+    
+    const info = transaction();
     if (info.changes > 0) {
       found = true;
     }
