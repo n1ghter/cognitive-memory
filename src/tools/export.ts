@@ -82,7 +82,7 @@ export async function executeMemoryExport(args: ExportArgs = {}): Promise<{
       let dbUpdatedMs = 0;
       if (mem.updated_at) {
         dbUpdatedMs = new Date(mem.updated_at.replace(' ', 'T') + 'Z').getTime();
-      }  // If the file on disk is newer or same as the database, skip overwrite
+      } // If the file on disk is newer or same as the database, skip overwrite
       if (stat.mtimeMs >= dbUpdatedMs - 2000) {
         continue;
       }
@@ -97,6 +97,7 @@ export async function executeMemoryExport(args: ExportArgs = {}): Promise<{
 
     // Frontmatter
     let md = `---
+id: ${shortId}
 type: agent_memory
 category: ${category}
 importance: ${mem.importance.toFixed(3)}
@@ -148,14 +149,26 @@ ${metaStr}
 `;
 
     fs.writeFileSync(filePath, md, 'utf-8');
-    
+
     // Update the mtime of the file to match the syncTime so future imports don't re-import it
     const syncTimeMs = new Date(syncTime).getTime();
     fs.utimesSync(filePath, new Date(syncTimeMs), new Date(syncTimeMs));
-    
+
     exportedFiles.push(filePath);
     exportedCount++;
   }
+
+  // Write .sync_state.json for deletion tracking
+  const exportedIds = memories.map((m) => m.id);
+  const syncStatePath = path.join(exportDir, '.sync_state.json');
+  fs.writeFileSync(
+    syncStatePath,
+    JSON.stringify({
+      exported_ids: exportedIds,
+      sync_time: syncTime,
+    }),
+    'utf-8'
+  );
 
   return {
     success: true,

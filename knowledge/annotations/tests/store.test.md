@@ -1,14 +1,12 @@
-```markdown
-**Test Integration for Memory Store and Search**
-=====================================================
+### Purpose and Business Logic
+#### Memory Store & Search Integration Tests
 
-This file tests the integration of memory store and search functionality, ensuring that data is correctly stored and retrieved. It uses SQLite tables to store metadata and vectors.
+This file contains integration tests for the `executeMemoryStore` and `executeMemorySearch` functions, which interact with SQLite databases and utilize MCP tools like Ollama. The tests verify the correctness of storing and searching memory records, handling invalid inputs, parsing metadata, and logging errors during access stat updates.
 
-**Tests Covered:**
+#### Tested Functions:
+- `executeMemoryStore`
+- `executeMemorySearch`
 
-- Valid and invalid input cases for `executeMemoryStore` and `executeMemorySearch`
-- Handling of invalid JSON metadata
-- Logging of errors during access stat updates
-
-This test suite verifies the correct behavior of memory store and search functionality in various scenarios.
-```
+#### Interacted Systems:
+- SQLite database
+- MCP Ollama tool

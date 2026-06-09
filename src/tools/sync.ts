@@ -1,5 +1,5 @@
-import { executeMemoryImport } from './import.js';
 import { executeMemoryExport } from './export.js';
+import { executeMemoryImport } from './import.js';
 
 interface SyncArgs {
   vaultPath?: string;

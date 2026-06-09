@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 const mockExecuteMemoryConsolidate = vi.fn();
 const mockExecuteMemoryExport = vi.fn();
@@ -40,10 +40,10 @@ describe('Hooks Bootstrap', () => {
 
   it('should run SessionStart hooks if no argv is provided (default)', async () => {
     process.argv = ['node', 'bootstrap.js']; // event is undefined -> 'SessionStart'
-    
+
     // Import dynamically so that the module evaluates with the mocked argv
     await import('../src/hooks/bootstrap.js');
-    
+
     expect(mockExecuteMemoryExport).toHaveBeenCalledTimes(1);
     expect(mockExecuteMemoryConsolidate).not.toHaveBeenCalled();
     expect(mockDatabaseManagerClose).toHaveBeenCalledTimes(1);
@@ -52,9 +52,9 @@ describe('Hooks Bootstrap', () => {
 
   it('should run PreCompact hooks if event is PreCompact', async () => {
     process.argv = ['node', 'bootstrap.js', 'PreCompact'];
-    
+
     await import('../src/hooks/bootstrap.js');
-    
+
     expect(mockExecuteMemoryExport).not.toHaveBeenCalled();
     expect(mockExecuteMemoryConsolidate).toHaveBeenCalledTimes(1);
     expect(mockDatabaseManagerClose).toHaveBeenCalledTimes(1);
@@ -63,9 +63,9 @@ describe('Hooks Bootstrap', () => {
 
   it('should run both hooks if event is Stop', async () => {
     process.argv = ['node', 'bootstrap.js', 'Stop'];
-    
+
     await import('../src/hooks/bootstrap.js');
-    
+
     expect(mockExecuteMemoryExport).toHaveBeenCalledTimes(1);
     expect(mockExecuteMemoryConsolidate).toHaveBeenCalledTimes(1);
     expect(mockDatabaseManagerClose).toHaveBeenCalledTimes(1);
@@ -75,9 +75,9 @@ describe('Hooks Bootstrap', () => {
   it('should handle errors gracefully and still close the DB and exit', async () => {
     process.argv = ['node', 'bootstrap.js', 'Stop'];
     mockExecuteMemoryExport.mockRejectedValueOnce(new Error('Export failed'));
-    
+
     await import('../src/hooks/bootstrap.js');
-    
+
     expect(consoleErrorSpy).toHaveBeenCalledWith('[Hooks] Error running hooks:', expect.any(Error));
     expect(mockDatabaseManagerClose).toHaveBeenCalledTimes(1);
     expect(exitSpy).toHaveBeenCalledWith(0);

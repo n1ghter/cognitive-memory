@@ -3,8 +3,8 @@ import os from 'node:os';
 import path from 'node:path';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { DatabaseManager } from '../src/db.js';
-import { executeMemorySync } from '../src/tools/sync.js';
 import { executeMemoryStore } from '../src/tools/store.js';
+import { executeMemorySync } from '../src/tools/sync.js';
 
 vi.mock('../src/ollama.js', () => ({
   OllamaClient: {
@@ -31,7 +31,7 @@ describe('Memory Sync', () => {
   it('should sync bidirectionally', async () => {
     // 1. Store a memory in DB
     await executeMemoryStore({ text: 'From SQLite' });
-    
+
     // 2. Create a memory in Obsidian
     const md = `---
 category: semantic
@@ -58,7 +58,7 @@ importance: 0.5
     expect(rows.length).toBe(2);
 
     // Verify disk has both
-    const files = fs.readdirSync(tmpDir).filter(f => f.endsWith('.md'));
+    const files = fs.readdirSync(tmpDir).filter((f) => f.endsWith('.md'));
     expect(files.length).toBe(2);
   });
 });

@@ -44,13 +44,21 @@ describe('Memory Store & Search (Integration)', () => {
   });
 
   it('should throw an error if query is empty or invalid', async () => {
-    await expect(executeMemorySearch({ query: '' })).rejects.toThrow('Invalid input: "query" must be a non-empty string');
-    await expect(executeMemorySearch({ query: null as any })).rejects.toThrow('Invalid input: "query" must be a non-empty string');
+    await expect(executeMemorySearch({ query: '' })).rejects.toThrow(
+      'Invalid input: "query" must be a non-empty string'
+    );
+    await expect(executeMemorySearch({ query: null as any })).rejects.toThrow(
+      'Invalid input: "query" must be a non-empty string'
+    );
   });
 
   it('should throw an error if store text is empty or invalid', async () => {
-    await expect(executeMemoryStore({ text: '' })).rejects.toThrow('Invalid input: "text" must be a non-empty string');
-    await expect(executeMemoryStore({ text: null as any })).rejects.toThrow('Invalid input: "text" must be a non-empty string');
+    await expect(executeMemoryStore({ text: '' })).rejects.toThrow(
+      'Invalid input: "text" must be a non-empty string'
+    );
+    await expect(executeMemoryStore({ text: null as any })).rejects.toThrow(
+      'Invalid input: "text" must be a non-empty string'
+    );
   });
 
   it('should fallback to string metadata if JSON parse fails', async () => {
@@ -86,7 +94,10 @@ describe('Memory Store & Search (Integration)', () => {
 
     await executeMemorySearch({ query: 'Stats error test' });
 
-    expect(consoleSpy).toHaveBeenCalledWith('[Search] Failed to update access stats:', expect.any(Error));
+    expect(consoleSpy).toHaveBeenCalledWith(
+      '[Search] Failed to update access stats:',
+      expect.any(Error)
+    );
 
     spy.mockRestore();
     consoleSpy.mockRestore();

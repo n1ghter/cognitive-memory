@@ -1,7 +1,12 @@
-```markdown
-### Demo Export Tool
+**Annotation**
+===============
 
-The demo export tool is responsible for generating a memory graph based on user interactions with the AI memory agent in TypeScript. It stores user preferences and project information in a database, creates graph relations between related memories, and exports the resulting graph as a data structure for analysis or visualization.
+This file exports a demo application that simulates user interactions with an AI memory agent. It uses the MCP tools to store and relate memories, and then exports the related data using the `executeMemoryExport` tool.
 
-This tool interacts with the `DatabaseManager` class to delete existing data from the `edges`, `vec_memory`, and `memory` tables before populating them with sample data. It also uses the `executeMemoryStore` and `executeMemoryRelate` tools to store memory records and create graph relations, respectively.
-```
+Exposes SQLite tables: `edges`, `vec_memory`, and `memory`.
+
+Architectural purpose:
+- Demonstrates storing and relating memories in a graph-based framework
+- Showcases export functionality for memory-related data
+
+Note: This demo application is designed to illustrate a specific use case, rather than being a production-ready system.

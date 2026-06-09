@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { OllamaClient } from '../src/ollama';
 
 describe('OllamaClient', () => {
@@ -34,7 +34,9 @@ describe('OllamaClient', () => {
         text: async () => 'Internal Server Error',
       } as Response);
 
-      await expect(OllamaClient.getEmbedding('test text')).rejects.toThrow('Ollama API error (500): Internal Server Error');
+      await expect(OllamaClient.getEmbedding('test text')).rejects.toThrow(
+        'Ollama API error (500): Internal Server Error'
+      );
     });
 
     it('should throw an error if the API returns an empty embedding array', async () => {
@@ -48,7 +50,9 @@ describe('OllamaClient', () => {
         json: async () => mockResponse,
       } as Response);
 
-      await expect(OllamaClient.getEmbedding('test text')).rejects.toThrow('Ollama API returned an empty embedding array');
+      await expect(OllamaClient.getEmbedding('test text')).rejects.toThrow(
+        'Ollama API returned an empty embedding array'
+      );
     });
 
     it('should throw an error if fetch fails (e.g. network error)', async () => {
@@ -80,7 +84,9 @@ describe('OllamaClient', () => {
         text: async () => 'Bad Request',
       } as Response);
 
-      await expect(OllamaClient.generateText('hello')).rejects.toThrow('Ollama API error (400): Bad Request');
+      await expect(OllamaClient.generateText('hello')).rejects.toThrow(
+        'Ollama API error (400): Bad Request'
+      );
     });
 
     it('should throw an error if fetch fails (e.g. network error)', async () => {

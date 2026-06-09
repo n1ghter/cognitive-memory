@@ -1,12 +1,11 @@
-## Semantic Summary
-### Export Tests
+### Semantic Summary
+#### Export Tool Test Suite
 
-This test suite validates the functionality of the memory export tool. It ensures that memories are correctly exported to markdown files and that relevant metadata, such as graph relations and categories, is included in the exports.
+This file contains a test suite for the memory export functionality. It tests that memories are correctly exported to markdown files and that the resulting directory structure is as expected.
 
-**Tools Exposed or Interacting with:**
+It also verifies the inclusion of graph relations and categories in frontmatter.
 
-* SQLite (via `DatabaseManager`)
+#### Exposed Tools
 
-**Architectural Purpose:**
-
-This test suite verifies the business logic of the memory export tool, ensuring that it correctly handles creation of export directories, inclusion of graph relations, and formatting of metadata.
+* SQLite tools: `executeMemoryExport`, `executeMemoryStore`
+* MCP tool: `DatabaseManager`

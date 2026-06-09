@@ -1,11 +1,7 @@
-```markdown
-### Clearing Mechanism Test Suite
+**Test Clear All**
+===============
 
-This test suite validates the `executeMemoryClearAll` function's behavior under various scenarios, ensuring proper memory data deletion and error handling.
+*Exposes MCP tools: SQLite*
+Clears data from the database when confirmed.
 
-#### Tested MCP Tools:
-
-*   SQLite database operations (SELECT COUNT\*, prepare, execute)
-```
-
-Let me know if you'd like any changes.
+This test suite verifies the functionality of `executeMemoryClearAll` tool, ensuring it successfully clears all data when confirmation is provided and fails if not. The test also covers error handling, including rollback transactions during the data wipe process.

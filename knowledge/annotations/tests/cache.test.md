@@ -1,10 +1,19 @@
 ```markdown
-This file tests the functionality of the `EmbeddingCache` class, specifically its ability to compute valid SHA-256 hashes and handle caching and database interactions. The tests cover various scenarios, including:
+**Semantic Summary**
+
+This test file validates the behavior of `EmbeddingCache` in various scenarios, including:
 
 * Computing valid SHA-256 hashes for different input texts
-* Handling empty text inputs with an error message
-* Caching embeddings in both L1 and L2 cache layers
-* Handling read and write errors in the L2 SQLite cache layer
+* Handling errors when computing embeddings (e.g., empty text, SQLite read/write failures)
+* Caching embeddings in L1 and L2 storage layers
 
-The tests interact with the Ollama database layer and mock its responses to ensure isolation of the caching logic.
+Specifically, it tests that:
+* Valid hashes are computed correctly regardless of case and whitespace trimming
+* An error is thrown when attempting to compute an embedding for empty text
+* Embeddings are cached in both L1 and L2 layers and retrieved accordingly
+* The cache handles errors during read and write operations to SQLite
+
+**Exposed Tools/Interactions**
+
+* MCP tools: `DatabaseManager` (close, getInstance), SQLite (prepare)
 ```

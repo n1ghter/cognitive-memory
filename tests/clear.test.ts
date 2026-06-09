@@ -56,8 +56,10 @@ describe('Memory Clear All', () => {
       return originalPrepare(sql);
     });
 
-    await expect(executeMemoryClearAll({ confirm: true })).rejects.toThrow('Simulated DB deletion error');
-    
+    await expect(executeMemoryClearAll({ confirm: true })).rejects.toThrow(
+      'Simulated DB deletion error'
+    );
+
     // Should have started transaction
     expect(execSpy).toHaveBeenCalledWith('BEGIN TRANSACTION');
     // Should have rolled back

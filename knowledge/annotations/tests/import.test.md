@@ -1,20 +1,9 @@
-```markdown
-# Memory Import Test Suite
+### Semantic Summary
 
-This test suite exercises the functionality of the memory import tool, which imports markdown files into a SQLite database.
+This file contains tests for the `executeMemoryImport` function, which imports markdown files into a SQLite database. The purpose of this function is to:
 
-## Exposed MCP Tools/SQLite Tables
+*   Create new memory entries from non-existent directories.
+*   Update existing memory entries when newer files are found.
+*   Skip importing if older files exist.
 
-- `DatabaseManager`
-- `executeMemoryImport` (exposes MCP tools for importing markdown files)
-- `executeMemoryStore` (exposes MCP tools for storing individual memories)
-- `sqlite` tables: `memory`, `edges`
-
-The test suite covers various scenarios, including:
-
-* Importing new markdown files into SQLite
-* Updating existing memory entries based on file modifications
-* Skipping import if file is not newer than the stored version
-* Handling malformed markdown files with best-effort parsing
-
-These tests ensure that the memory import tool functions as expected and handles different edge cases.
+The tests also cover scenarios with malformed markdown files, ensuring the function can handle them gracefully.

@@ -1,9 +1,17 @@
 ```markdown
-This file provides test cases for the OllamaClient class, ensuring that it interacts with the Ollama API correctly. Specifically, it tests the `getEmbedding` and `generateText` methods.
+**Ollama Client Test Suite**
 
-**MCP Tools/SQLite Interactions:**
+This test suite verifies the functionality of the Ollama client, ensuring that it correctly fetches embeddings and generated text from the API. It simulates various API responses, including successful requests, errors, and network failures.
 
-* Uses `fetch` to interact with the Ollama API.
-```
+* Tests that the `getEmbedding` method successfully fetches and returns an embedding array.
+* Tests that the `getEmbedding` method throws an error if the API returns an empty embedding array or an API error.
+* Tests that the `generateText` method successfully fetches and returns generated text.
+* Tests that the `generateText` method throws an error if the API returns an error status or a network failure.
 
-Note: I focused on the "Why" (Business Logic, Architectural Purpose) of the file, highlighting its purpose as testing the OllamaClient class's interactions with the Ollama API.
+**MCP Tools Used:**
+
+* `fetch`
+
+**SQLite Tables Interacted With:** None
+
+Note: This test suite focuses on verifying the business logic of the Ollama client, ensuring it correctly interacts with the API. It does not cover standard interfaces or parameter types.

@@ -1,11 +1,10 @@
-### Semantic Summary for `tests/sync.test.ts`
+```markdown
+# Sync Tools Test Suite
 
-#### Purpose and Business Logic
+This test suite verifies the bidirectional syncing functionality of the memory sync tools. It ensures that data is correctly imported and exported between Obsidian vaults and a SQLite database.
 
-This test suite verifies the bidirectional synchronization of memories between Obsidian vaults using SQLite databases. The test creates a temporary directory, stores a memory in the DB, creates a corresponding memory in an Obsidian vault, and then synchronizes both to verify their mutual presence.
+MCP tools used:
+- sqlite
 
-#### Exposed Tools and Interactions
-
-* `executeMemorySync` (MCP tool)
-* `DatabaseManager.close`
-* `fs.rmSync` (SQLite table interaction)
+Architectural purpose: Verifies the correctness of the memory sync logic to ensure seamless data exchange between Obsidian and a SQLite database.
+```

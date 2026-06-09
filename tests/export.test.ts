@@ -36,7 +36,8 @@ describe('Memory Export', () => {
     expect(expRes.success).toBe(true);
     expect(expRes.total_exported).toBeGreaterThanOrEqual(2);
 
-    const files = fs.readdirSync(tmpDir);
+    const allFiles = fs.readdirSync(tmpDir);
+    const files = allFiles.filter((f) => f.endsWith('.md'));
     expect(files.length).toBeGreaterThanOrEqual(2);
     expect(files[0].endsWith('.md')).toBe(true);
 
@@ -57,7 +58,7 @@ describe('Memory Export', () => {
     // We insert directly to db since store/relate tools might be complex to mock
     // Actually, we can use the db manager.
     const db = DatabaseManager.getInstance();
-    
+
     // Create two dummy memories via store
     const res1 = await executeMemoryStore({ text: 'Source Node' });
     const res2 = await executeMemoryStore({ text: 'Target Node' });
@@ -75,9 +76,13 @@ describe('Memory Export', () => {
     const expRes = await executeMemoryExport({ vaultPath: tmpDir });
     expect(expRes.success).toBe(true);
 
-    const files = fs.readdirSync(tmpDir).filter(f => f.endsWith('.md'));
-    const sourceFile = files.find(f => f.includes((sourceId as string).split(':')[1] || sourceId));
-    const targetFile = files.find(f => f.includes((targetId as string).split(':')[1] || targetId));
+    const files = fs.readdirSync(tmpDir).filter((f) => f.endsWith('.md'));
+    const sourceFile = files.find((f) =>
+      f.includes((sourceId as string).split(':')[1] || sourceId)
+    );
+    const targetFile = files.find((f) =>
+      f.includes((targetId as string).split(':')[1] || targetId)
+    );
 
     const sourceContent = fs.readFileSync(path.join(tmpDir, sourceFile!), 'utf-8');
     const targetContent = fs.readFileSync(path.join(tmpDir, targetFile!), 'utf-8');
@@ -92,7 +97,7 @@ describe('Memory Export', () => {
     const expRes = await executeMemoryExport({ vaultPath: tmpDir });
     expect(expRes.success).toBe(true);
 
-    const files = fs.readdirSync(tmpDir).filter(f => f.endsWith('.md'));
+    const files = fs.readdirSync(tmpDir).filter((f) => f.endsWith('.md'));
     const content = fs.readFileSync(path.join(tmpDir, files[files.length - 1]), 'utf-8');
     expect(content).toContain('category: project');
   });

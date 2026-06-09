@@ -1,13 +1,6 @@
-**Sync Tool**
-===============
-
-The `sync.ts` file is responsible for synchronizing data between Obsidian and SQLite databases. It leverages the `executeMemoryImport` and `executeMemoryExport` tools to pull changes from Obsidian into SQLite, followed by pushing changes from SQLite out to Obsidian.
-
-*   Exposes MCP (Markdown Clone Protocol) tools: `executeMemoryImport`, `executeMemoryExport`
-*   Interacts with SQLite tables through these MCP tools
-*   Provides a business logic layer for synchronizing data between the two databases
-
-**Semantic Summary**
---------------------
-
-This file implements the main synchronization logic, ensuring that changes are propagated between Obsidian and SQLite.
+```markdown
+### Sync Tool
+This file implements a tool that synchronizes data between Obsidian and SQLite.
+It uses MCP tools `executeMemoryImport` and `executeMemoryExport` to pull changes from Obsidian into SQLite and push changes out to Obsidian.
+The purpose of this tool is to ensure data consistency between the two platforms.
+```

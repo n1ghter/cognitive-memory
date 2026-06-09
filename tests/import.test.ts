@@ -38,7 +38,9 @@ describe('Memory Import', () => {
     // Insert the target node so the FOREIGN KEY constraint is satisfied
     const db = DatabaseManager.getInstance();
     const targetId = 'memory:54321';
-    db.prepare('INSERT INTO memory (id, text, metadata, importance, is_active) VALUES (?, ?, ?, ?, ?)').run(targetId, 'Target', '{}', 0.5, 1);
+    db.prepare(
+      'INSERT INTO memory (id, text, metadata, importance, is_active) VALUES (?, ?, ?, ?, ?)'
+    ).run(targetId, 'Target', '{}', 0.5, 1);
 
     const md = `---
 type: agent_memory
@@ -62,7 +64,7 @@ importance: 0.8
 
     fs.writeFileSync(path.join(tmpDir, 'Memory_12345.md'), md);
     const res = await executeMemoryImport({ vaultPath: tmpDir });
-    
+
     expect(res.errors).toEqual([]);
     expect(res.success).toBe(true);
     expect(res.total_imported).toBe(1);
@@ -73,7 +75,9 @@ importance: 0.8
     expect(mem.importance).toBe(0.8);
     expect(JSON.parse(mem.metadata).manual).toBe(true);
 
-    const edges = db.prepare('SELECT * FROM edges WHERE source_id = ? OR target_id = ?').all('memory:12345', 'memory:12345') as any[];
+    const edges = db
+      .prepare('SELECT * FROM edges WHERE source_id = ? OR target_id = ?')
+      .all('memory:12345', 'memory:12345') as any[];
     expect(edges.length).toBe(1);
     expect(edges[0].relation_type).toBe('references');
     expect(edges[0].source_id).toBe('memory:54321');
@@ -87,7 +91,9 @@ importance: 0.8
 
     const db = DatabaseManager.getInstance();
     // Move updated_at to the past so the file appears newer
-    db.prepare('UPDATE memory SET updated_at = datetime(\'now\', \'-1 day\') WHERE id = ?').run(shortId);
+    db.prepare("UPDATE memory SET updated_at = datetime('now', '-1 day') WHERE id = ?").run(
+      shortId
+    );
 
     // 2. Create an updated markdown file
     const md = `---
@@ -110,7 +116,7 @@ importance: 0.9
 
     const filePath = path.join(tmpDir, `Memory_${shortId}.md`);
     fs.writeFileSync(filePath, md);
-    
+
     // Ensure mtime is strictly greater
     const now = new Date();
     fs.utimesSync(filePath, now, now);
@@ -120,7 +126,7 @@ importance: 0.9
     expect(res.total_imported).toBe(1);
 
     const mem = db.prepare('SELECT * FROM memory WHERE id = ?').get(shortId) as any;
-    
+
     expect(mem.text).toBe('Updated text from markdown.');
     expect(mem.importance).toBe(0.9);
   });
@@ -141,7 +147,7 @@ importance: 0.5
 
 ## Graph Relations
 `;
-    
+
     const filePath = path.join(tmpDir, `Memory_${shortId}.md`);
     fs.writeFileSync(filePath, md);
 
@@ -158,14 +164,17 @@ importance: 0.5
   });
 
   it('should gracefully handle malformed markdown files', async () => {
-    fs.writeFileSync(path.join(tmpDir, 'Memory_broken.md'), 'just some random text without proper formatting');
+    fs.writeFileSync(
+      path.join(tmpDir, 'Memory_broken.md'),
+      'just some random text without proper formatting'
+    );
     const res = await executeMemoryImport({ vaultPath: tmpDir });
-    
+
     expect(res.errors).toEqual([]);
-    
+
     // Should still import it best-effort, parsing as empty text or fallback
     expect(res.total_imported).toBe(1);
-    
+
     const db = DatabaseManager.getInstance();
     const mem = db.prepare('SELECT * FROM memory WHERE id = ?').get('memory:broken') as any;
     expect(mem).toBeDefined();

@@ -45,7 +45,7 @@ describe('Memory Consolidate', () => {
       .all('%Consolidated memory%') as any[];
     // At least one memory was consolidated
     expect(rows.length).toBeGreaterThanOrEqual(1);
-    expect(rows.some(r => r.is_active === 1)).toBe(true);
+    expect(rows.some((r) => r.is_active === 1)).toBe(true);
   });
 
   it('should prune old memories whose importance decays below 0.25', async () => {
@@ -72,7 +72,7 @@ describe('Memory Consolidate', () => {
   it('should handle errors gracefully during generation', async () => {
     const { OllamaClient } = await import('../src/ollama.js');
     vi.mocked(OllamaClient.generateText).mockRejectedValueOnce(new Error('LLM error'));
-    
+
     // We need memories that will trigger deduplication
     await executeMemoryStore({ text: 'Error memory A' });
     await executeMemoryStore({ text: 'Error memory B' });

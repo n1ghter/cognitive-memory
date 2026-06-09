@@ -33,7 +33,9 @@ describe('EmbeddingCache', () => {
   });
 
   it('should throw an error if text is empty', async () => {
-    await expect(EmbeddingCache.getEmbedding('   ')).rejects.toThrow('Cannot compute embedding for empty text');
+    await expect(EmbeddingCache.getEmbedding('   ')).rejects.toThrow(
+      'Cannot compute embedding for empty text'
+    );
   });
 
   it('should cache embedding in L1 and L2', async () => {
@@ -78,7 +80,7 @@ describe('EmbeddingCache', () => {
 
   it('should handle L2 cache write errors gracefully', async () => {
     const db = DatabaseManager.getInstance();
-    
+
     // First prepare in getEmbedding is for SELECT, second is for INSERT
     const originalPrepare = db.prepare.bind(db);
     const spy = vi.spyOn(db, 'prepare').mockImplementation((sql: string) => {
