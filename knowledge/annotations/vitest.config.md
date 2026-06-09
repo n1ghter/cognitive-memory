@@ -1,12 +1,12 @@
-## Vitest Configuration File Annotation
-#### Purpose
-The vitest.config.ts file configures the testing environment for a Node.js application, enabling global variables and setting up files for test execution.
+### Semantic Summary
 
-#### Exposed MCP Tools
-- None explicitly exposed
+This configuration file sets up the testing environment for a Node.js application, specifying global variables and setup files. The test coverage is configured to capture code changes in the source directory (`src`), excluding the initial bootstrap file (`index.ts`). The test framework is enabled using Vitest.
 
-#### Interactions with SQLite Tables
-- None detected
+### Exposed MCP Tools/Interactions
 
-#### Architectural Purpose
-This configuration file serves as a critical component in setting up the testing framework for a Node.js application.
+* Vitest configuration
+* SQLite interaction (not explicitly listed, but related to testing environment)
+
+### Architectural Purpose
+
+This configuration serves as a business logic-driven setup for end-to-end testing and code coverage analysis in the application.

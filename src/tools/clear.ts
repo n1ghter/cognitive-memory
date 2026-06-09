@@ -23,6 +23,9 @@ export async function executeMemoryClearAll(args: MemoryClearAllArgs) {
     // Clear core memory records
     db.prepare('DELETE FROM memory').run();
 
+    // Clear embedding cache
+    db.prepare('DELETE FROM embedding_cache').run();
+
     db.exec('COMMIT');
 
     return {

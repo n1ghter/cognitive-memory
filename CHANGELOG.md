@@ -4,6 +4,16 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+### Added
+- Comprehensive test suite for all MCP tools (`cache`, `db`, `clear`, `consolidate`, `delete`, `export`, `graph`, `search`, `store`).
+- `test:coverage` command using `@vitest/coverage-v8` to track line-level coverage.
+
+### Fixed
+- **CRITICAL**: Fixed major bug in `consolidate.ts` where the deduplication transaction function was defined but never invoked, meaning records were never pruned or decayed.
+- **CRITICAL**: Fixed foreign key violation in `delete.ts` where deleting a memory crashed if it had associated edges (sqlite-vec cascade failure). Edges are now properly cleaned up first.
+- **CRITICAL**: Fixed state leak in `clear.ts` where `embedding_cache` was not wiped, leading to inconsistent state between tests.
+- Fixed hardcoded table name bug in `consolidate.ts` (attempted to query `related` instead of `edges`).
+
 ## [1.1.18] - 2026-06-09
 
 ## [1.1.17] - 2026-06-09

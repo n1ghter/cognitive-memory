@@ -30,6 +30,7 @@
     "dev": "ts-node-esm src/index.ts",
     "gitnexus": "gitnexus analyze --skip-skills --skip-agents-md",
     "test": "vitest run",
+    "test:coverage": "vitest run --coverage",
     "test:watch": "vitest",
     "version": "node scripts/update-changelog.js && git add CHANGELOG.md"
   },
@@ -42,6 +43,7 @@
   "devDependencies": {
     "@types/better-sqlite3": "^7.6.13",
     "@types/node": "^25.9.2",
+    "@vitest/coverage-v8": "^4.1.8",
     "gitnexus": "^1.6.5",
     "ts-node": "^10.9.2",
     "typescript": "^6.0.3",

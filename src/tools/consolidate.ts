@@ -81,6 +81,8 @@ export async function executeMemoryConsolidate(): Promise<{
     'SELECT m.id, m.rowid, m.text, m.importance, m.last_accessed_at, m.metadata, v.embedding FROM memory m JOIN vec_memory v ON m.rowid = v.rowid WHERE m.is_active = 1'
   ).all() as any[];
 
+  console.log('activeRecords length:', activeRecords.length);
+
   let prunedCount = 0;
   let updatedCount = 0;
   const remainingMemories: MemoryRecord[] = [];
@@ -111,7 +113,7 @@ export async function executeMemoryConsolidate(): Promise<{
         });
       }
     }
-  });
+  })();
 
   // Run background deduplication on the remaining memories
   await runBackgroundDeduplication(remainingMemories).catch((err) => console.error(err));
@@ -176,8 +178,8 @@ async function runBackgroundDeduplication(
         // Update database records
         db.transaction(() => {
           db.prepare('UPDATE memory SET is_active = 0, importance = 0.0 WHERE id IN (?, ?)').run(memA.id, memB.id);
-          db.prepare('INSERT INTO related (id, source_id, target_id, relation_type) VALUES (?, ?, ?, ?)').run(generateId(), storeResult.record.id, memA.id, 'consolidated_from');
-          db.prepare('INSERT INTO related (id, source_id, target_id, relation_type) VALUES (?, ?, ?, ?)').run(
+          db.prepare('INSERT INTO edges (id, source_id, target_id, relation_type) VALUES (?, ?, ?, ?)').run(generateId(), storeResult.record.id, memA.id, 'consolidated_from');
+          db.prepare('INSERT INTO edges (id, source_id, target_id, relation_type) VALUES (?, ?, ?, ?)').run(
             generateId(),
             storeResult.record.id,
             memB.id,
@@ -188,7 +190,7 @@ async function runBackgroundDeduplication(
         processedIds.add(memA.id).add(memB.id);
         mergedCount++;
         break;
-      } catch (err) {}
+      } catch (err) { console.error('Consolidate err:', err); }
     }
   }
 }

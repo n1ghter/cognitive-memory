@@ -1,15 +1,15 @@
 ```markdown
-### Memory Consolidation Tool
+### Consolidation Process
 
-This tool executes a memory consolidation process on the database, pruning inactive memories,
-updating importance scores based on access times, and performing background deduplication to merge similar memories into a single entry.
+This function executes a memory consolidation process on the database. The goal is to prune inactive memories, update importance scores based on access times, and perform background deduplication to merge similar memories into a single entry.
 
-**Interactions with:**
+**Goals:**
 
-* `DatabaseManager` for database operations
-* `OllamaClient` for text generation and embedding calculations
+*   Prune inactive memories from the database.
+*   Update importance scores of active memories based on their access times.
+*   Perform background deduplication to merge similar memories into a single entry.
 
-### Purpose:
+**Tools/Interfaces Used:**
 
-The purpose of this tool is to maintain the memory consolidation system by periodically updating the importance scores of active records based on their access times, pruning inactive records, and merging similar memories into a single entry.
+*   SQLite (via `DatabaseManager` and `executeMemoryStore`)
 ```
