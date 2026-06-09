@@ -4,6 +4,8 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [1.1.22] - 2026-06-09
+
 ### Added
 - Implemented robust bidirectional synchronization between SQLite database and local Markdown vault (`memory_sync` tool).
 - Memory files created or updated in Obsidian (or other Markdown editors) sync directly to the AI's core SQLite schema.
