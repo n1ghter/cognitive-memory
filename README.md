@@ -5,6 +5,10 @@
 [![Testing](https://img.shields.io/badge/Tested_with-Vitest-yellow.svg)](https://vitest.dev/)
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](CONTRIBUTING.md)
 
+<p align="center">
+  <img src="assets/hero.png" alt="Cognitive Memory Architecture" width="800">
+</p>
+
 A high-performance, local-first **Model Context Protocol (MCP)** server that provides AI agents with persistent cognitive memory.
 
 Unlike cloud-based memory solutions, Cognitive Memory runs entirely on your local machine using SQLite and local LLM embeddings. This ensures **zero latency, zero API costs, and absolute data privacy** — making it ideal for enterprise and personal environments.
