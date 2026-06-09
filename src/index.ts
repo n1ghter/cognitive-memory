@@ -8,6 +8,7 @@ import { executeMemoryDelete } from './tools/delete.js';
 import { executeMemoryConsolidate } from './tools/consolidate.js';
 import { executeMemoryRelate } from './tools/graph.js';
 import { executeMemoryExport } from './tools/export.js';
+import { executeMemoryClearAll } from './tools/clear.js';
 
 /**
  * Critical Performance Enhancement: Stdio Safeguard
@@ -154,6 +155,31 @@ server.tool(
       };
     } catch (error: any) {
       console.error('[MCP Error] memory_delete failed:', error);
+      return {
+        isError: true,
+        content: [{ type: 'text', text: error.message || String(error) }],
+      };
+    }
+  }
+);
+
+/**
+ * Define a tool that completely wipes all memories from the database. (Nuclear Option)
+ */
+server.tool(
+  'memory_clear_all',
+  'NUCLEAR OPTION: Completely wipe all memories, vectors, and graph edges from the database. Cannot be undone.',
+  {
+    confirm: z.boolean().describe('Must be set to true to confirm the complete deletion of all data'),
+  },
+  async ({ confirm }) => {
+    try {
+      const result = await executeMemoryClearAll({ confirm });
+      return {
+        content: [{ type: 'text', text: JSON.stringify(result, null, 2) }],
+      };
+    } catch (error: any) {
+      console.error('[MCP Error] memory_clear_all failed:', error);
       return {
         isError: true,
         content: [{ type: 'text', text: error.message || String(error) }],

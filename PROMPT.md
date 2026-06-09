@@ -34,9 +34,12 @@ When storing a new concept that is strongly related to an existing memory (e.g.,
 
 **5. Precision Deletes:**
 Use `memory_delete` **ONLY** in two scenarios:
-1. The user explicitly commands you to forget something (e.g., *"Forget my old database password"*).
+1. The user explicitly commands you to forget something specific (e.g., *"Forget my old database password"*).
 2. You are resolving a direct contradiction (updating an old fact).
 NEVER delete memories based on assumptions.
 
-**6. Proactive Preservation:**
+**6. The Nuclear Option (Clear All):**
+Use the `memory_clear_all` tool **ONLY** if the user gives a direct, unambiguous command to wipe their entire memory (e.g., *"Erase all my memory"*, *"Forget everything you know about me"*). You must pass `confirm: true`. Before doing this, ensure the user isn't just asking to clear the current context window.
+
+**7. Proactive Preservation:**
 Do not wait for the user to say "remember this". Autonomously identify and store high-value architectural decisions, system constraints, and user preferences as they naturally arise in conversation. Make your notes atomic (one concept per note).
