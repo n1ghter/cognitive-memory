@@ -13,17 +13,22 @@ Currently, our agents must make multiple sequential MCP tool calls to traverse r
 
 - **[ ] Multi-hop Reasoning via Recursive CTEs:** Implement recursive SQL queries inside `memory_search`. Instead of returning just the immediate semantic matches, the tool will optionally return a pre-computed "sub-graph" (e.g., node A, plus all nodes connected to A up to depth 3). This will drastically reduce agent token usage and API roundtrips.
 - **[ ] Temporal Knowledge Graphs (Time-Awareness):** 
-  Однозначно необходимо для долгоживущих проектов. Если месяц назад мы использовали "SurrealDB", а сегодня перешли на "SQLite", простой `memory_delete` навсегда уничтожит понимание того, *почему* в старых коммитах был SurrealDB. Темпоральность решает эту проблему:
-  - В таблицу `memories` добавляются колонки `valid_from` и `valid_until`.
-  - При изменении факта мы не делаем `DELETE`, а ставим старому факту `valid_until = Date.now()` и создаем новую строку.
-  - Наша суперсила: в **Obsidian** это будет визуализировано через YAML Frontmatter:
+  Absolutely essential for long-lived projects. If we used "SurrealDB" a month ago, but switched to "SQLite" today, a simple `memory_delete` would permanently destroy the understanding of *why* SurrealDB was in older commits. Temporality solves this problem:
+  - Columns `valid_from` and `valid_until` are added to the `memories` table.
+  - When modifying a fact, we don't `DELETE` it; we set the old fact's `valid_until = Date.now()` and create a new row.
+  - Our superpower: in **Obsidian** this will be visualized via YAML Frontmatter:
     ```yaml
     ---
     status: archived
     valid_until: 2026-06-08
     ---
     ```
-    Человек прямо в Obsidian увидит "архивные" мысли агента. Это идеально ложится в парадигму Human-Agent Symmetry!
+    A human will directly see the agent's "archived" thoughts in Obsidian. This perfectly aligns with the Human-Agent Symmetry paradigm!
+
+- **[ ] Knowledge Domains (Namespaces):** 
+  To support distinct contexts (e.g., `Work`, `Personal`, `Project_A`), memories will be partitioned using logical namespaces.
+  - Adding a `domain` column to the `memories` table for efficient pre-filtering during `sqlite-vec` vector searches (`WHERE domain = 'xyz'`).
+  - In Obsidian, this maps perfectly to root-level folders (`/Work`, `/Personal`), allowing seamless domain segregation without needing multiple databases like Qdrant would require.
 
 - **[ ] Knowledge Domains (Namespaces):** 
   To support distinct contexts (e.g., `Work`, `Personal`, `Project_A`), memories will be partitioned using logical namespaces.
@@ -41,12 +46,12 @@ Currently, Cognitive Memory is "passive" (RAG). The agent must explicitly call t
 ## 📅 Phase 3: Background Processing & Consolidation
 *(Inspired by LangMem & Hindsight)*
 
-Критически важная фича, чтобы Obsidian не превратился в мусорку из сотен мелких обрывочных фактов (вида "Пользователь добавил функцию X").
+A critically important feature to prevent Obsidian from turning into a dump of hundreds of small, fragmented facts (like "User added function X").
 
-- **[ ] Background Daemon (`npx cognitive-memory daemon`):** Наше огромное преимущество в том, что Ollama работает локально и бесплатно (в отличие от LangMem, который сжег бы сотни долларов на API OpenAI при фоновой работе). 
-  - Скрипт будет запускаться в фоне при низкой загрузке CPU.
-  - Он будет брать, например, 50 мелких фактов за день, отправлять их в локальную `llama3.2` с промптом *"Сделай красивую сводную статью для Obsidian"*.
-  - В итоге он заменит 50 мелких файлов-заметок одним красивым документом, например, `Architecture_Updates_June.md`.
+- **[ ] Background Daemon (`npx cognitive-memory daemon`):** Our huge advantage is that Ollama runs locally and for free (unlike LangMem, which would burn hundreds of dollars on the OpenAI API for background work). 
+  - The script will run in the background during low CPU usage.
+  - It will take, for example, 50 small facts per day, send them to the local `llama3.2` with the prompt *"Create a beautiful summary article for Obsidian"*.
+  - Ultimately, it will replace 50 small note files with one beautiful document, for example, `Architecture_Updates_June.md`.
 - **[ ] Auto-Pruning:** Identify and slowly decay "orphan" memories that haven't been accessed or connected to any new concepts over long periods.
 
 ## 📅 Phase 4: Non-Lossy Episodic Transcripts

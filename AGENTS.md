@@ -78,7 +78,7 @@ Whenever an AI Agent completes a task that warrants a changelog update, it MUST 
 - **Anti-BDUF (Avoid Big Design Up Front):** Favor evolutionary architecture and iterative refinement. Do not try to design the entire universe before writing code.
 - **SOLID Principles:** Strictly adhere to SOLID in object-oriented and modular systems.
 - **Avoid Premature Optimization:** Focus first on correctness and clean architecture. Do not optimize prematurely. Only optimize when there is an empirically measured bottleneck or when it makes direct, practical sense.
-- **Occam's Razor (Бритва Оккама):** Prefer the simplest design that completely satisfies the requirements. Do not introduce unnecessary abstractions, layers, or wrappers without direct architectural necessity.
+- **Occam's Razor:** Prefer the simplest design that completely satisfies the requirements. Do not introduce unnecessary abstractions, layers, or wrappers without direct architectural necessity.
 
 ## Git Commit Standards
 
