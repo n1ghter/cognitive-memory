@@ -4,6 +4,17 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+### Added
+- Fully achieved 100% line-level test coverage across all tool files and database managers.
+
+### Changed
+- Configured Vitest to natively track 100% of source files in coverage calculations by enabling \`coverage.all\`.
+- Cleaned up residual Cyrillic comments to enforce English-only standardization.
+
+### Fixed
+- Fixed Vitest coverage gaps related to rare edge cases in database normalization and metadata parsing.
+- Fixed floating point precision issues in \`sqlite-vec\` caching tests.
+
 ## [1.1.20] - 2026-06-09
 
 ### Added

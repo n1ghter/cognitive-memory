@@ -1,9 +1,11 @@
-**Semantic Summary**
-======================
+```markdown
+### Clearing Mechanism Test Suite
 
-This test suite validates the functionality of the `executeMemoryClearAll` tool, which clears all data from the database and related caches. The test ensures that:
+This test suite validates the `executeMemoryClearAll` function's behavior under various scenarios, ensuring proper memory data deletion and error handling.
 
-* Data is successfully cleared when confirming deletion.
-* A rejection occurs if confirmation is not provided.
+#### Tested MCP Tools:
 
-Note: This test interacts with the `DatabaseManager` to update SQLite tables (`memory`, `vec_memory`, `edges`, and `embedding_cache`) and uses the `executeMemoryClearAll` tool, which exposes the MCP tools.
+*   SQLite database operations (SELECT COUNT\*, prepare, execute)
+```
+
+Let me know if you'd like any changes.

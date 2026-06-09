@@ -27,4 +27,9 @@ describe('DatabaseManager & Utils', () => {
     const row = stmt.get();
     expect(row).toBeDefined();
   });
+
+  it('should fallback to string representation for other types', () => {
+    expect(normalizeRecordId(123)).toBe('123');
+    expect(normalizeRecordId(null)).toBe('null');
+  });
 });

@@ -1,9 +1,12 @@
-```markdown
-# Memory Export Test Suite
+## Semantic Summary
+### Export Tests
 
-This test suite verifies the functionality of the memory export tool, ensuring that it successfully exports memories to markdown files.
+This test suite validates the functionality of the memory export tool. It ensures that memories are correctly exported to markdown files and that relevant metadata, such as graph relations and categories, is included in the exports.
 
-The test uses a temporary directory for storing exported files and interacts with the `DatabaseManager` and `executeMemoryExport`/`executeMemoryStore` tools.
-```
+**Tools Exposed or Interacting with:**
 
-Note: I've kept the explanation concise while focusing on the "Why" (Business Logic, Architectural Purpose). The annotation explicitly mentions the purpose of the file and its interactions with other components.
+* SQLite (via `DatabaseManager`)
+
+**Architectural Purpose:**
+
+This test suite verifies the business logic of the memory export tool, ensuring that it correctly handles creation of export directories, inclusion of graph relations, and formatting of metadata.

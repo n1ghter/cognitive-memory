@@ -1,9 +1,9 @@
-```markdown
-# Consolidate Tool Test Suite
+### Semantic Summary
 
-This test suite ensures the proper functioning of the `executeMemoryConsolidate` tool, which consolidates duplicate memories in the system.
+#### Consolidation of Memories in Background
 
-The consolidation process is triggered when at least three active memories exist with overlapping text. This process updates the database to remove duplicates and marks them as consolidated.
+This test suite verifies the functionality of memory consolidation, ensuring that memories with low importance are pruned and deduplication occurs when there are enough active memories.
 
-The tool interacts with the SQLite table "memory" and uses the OllamaClient mock.
-```
+The `executeMemoryConsolidate` function interacts with SQLite tables: `memory`, `vec_memory`.
+
+It also mocks the OllamaClient to simulate LLM errors during generation.

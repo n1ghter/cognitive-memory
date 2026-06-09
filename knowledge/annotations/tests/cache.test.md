@@ -1,8 +1,10 @@
-### Semantic Summary
-#### EmbeddingCache Test Suite
+```markdown
+This file tests the functionality of the `EmbeddingCache` class, specifically its ability to compute valid SHA-256 hashes and handle caching and database interactions. The tests cover various scenarios, including:
 
-This test suite verifies the correctness of the `EmbeddingCache` class, specifically its ability to compute and compare SHA-256 hashes. It exercises the cache's handling of different input cases, including case insensitivity and trimming. The tests ensure that the computed hash is consistent across these variations and meets the expected length.
+* Computing valid SHA-256 hashes for different input texts
+* Handling empty text inputs with an error message
+* Caching embeddings in both L1 and L2 cache layers
+* Handling read and write errors in the L2 SQLite cache layer
 
-#### Exposes: MCP tools (None specified)
-
-#### Interacts with: SQLite tables (None specified)
+The tests interact with the Ollama database layer and mock its responses to ensure isolation of the caching logic.
+```

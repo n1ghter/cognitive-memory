@@ -43,4 +43,27 @@ describe('Memory Clear All', () => {
       'You must pass confirm: true to wipe all memories.'
     );
   });
+
+  it('should rollback transaction if an error occurs during wipe', async () => {
+    // We mock db.prepare to throw when 'DELETE FROM memory' is called
+    const db = DatabaseManager.getInstance();
+    const originalPrepare = db.prepare.bind(db);
+    const execSpy = vi.spyOn(db, 'exec');
+    const prepareSpy = vi.spyOn(db, 'prepare').mockImplementation((sql: string) => {
+      if (sql.includes('DELETE FROM memory')) {
+        throw new Error('Simulated DB deletion error');
+      }
+      return originalPrepare(sql);
+    });
+
+    await expect(executeMemoryClearAll({ confirm: true })).rejects.toThrow('Simulated DB deletion error');
+    
+    // Should have started transaction
+    expect(execSpy).toHaveBeenCalledWith('BEGIN TRANSACTION');
+    // Should have rolled back
+    expect(execSpy).toHaveBeenCalledWith('ROLLBACK');
+
+    prepareSpy.mockRestore();
+    execSpy.mockRestore();
+  });
 });

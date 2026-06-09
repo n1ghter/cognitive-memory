@@ -1,11 +1,14 @@
-**Integration Test for Memory Store and Search**
+```markdown
+**Test Integration for Memory Store and Search**
 =====================================================
 
-This test suite verifies the integration of memory store and search functionality using SQLite vectors. It ensures that text data is successfully stored, searched, and retrieved.
+This file tests the integration of memory store and search functionality, ensuring that data is correctly stored and retrieved. It uses SQLite tables to store metadata and vectors.
 
-*   **Interactions with:**
-    *   `DatabaseManager` (database management)
-    *   `executeMemoryStore` (memory store tool)
-    *   `executeMemorySearch` (memory search tool)
-*   **Purpose:** Validate the correctness of memory-based data storage and retrieval.
-*   **Scenario:** Storing a text record with metadata and searching for similar records using an SQLite vector.
+**Tests Covered:**
+
+- Valid and invalid input cases for `executeMemoryStore` and `executeMemorySearch`
+- Handling of invalid JSON metadata
+- Logging of errors during access stat updates
+
+This test suite verifies the correct behavior of memory store and search functionality in various scenarios.
+```
