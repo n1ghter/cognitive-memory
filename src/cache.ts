@@ -19,9 +19,7 @@ export class EmbeddingCache {
    * @returns A hexadecimal representation of the hash value.
    */
   public static computeHash(text: string): string {
-    return createHash('sha256')
-      .update(text.trim().toLowerCase())
-      .digest('hex');
+    return createHash('sha256').update(text.trim().toLowerCase()).digest('hex');
   }
 
   /**
@@ -36,10 +34,10 @@ export class EmbeddingCache {
       throw new Error('Cannot compute embedding for empty text');
     }
 
-    const hash = this.computeHash(cleanText);
+    const hash = EmbeddingCache.computeHash(cleanText);
 
     // L1: Check high-speed in-memory cache
-    const l1Match = this.l1Cache.get(hash);
+    const l1Match = EmbeddingCache.l1Cache.get(hash);
     if (l1Match) {
       return l1Match;
     }
@@ -50,11 +48,15 @@ export class EmbeddingCache {
       const stmt = db.prepare('SELECT embedding FROM embedding_cache WHERE text_hash = ?');
       const row = stmt.get(hash) as { embedding: Buffer } | undefined;
 
-      if (row && row.embedding) {
+      if (row?.embedding) {
         // Hydrate L1 cache
-        const floatArray = new Float32Array(row.embedding.buffer, row.embedding.byteOffset, row.embedding.byteLength / Float32Array.BYTES_PER_ELEMENT);
+        const floatArray = new Float32Array(
+          row.embedding.buffer,
+          row.embedding.byteOffset,
+          row.embedding.byteLength / Float32Array.BYTES_PER_ELEMENT
+        );
         const embeddingArray = Array.from(floatArray);
-        this.l1Cache.set(hash, embeddingArray);
+        EmbeddingCache.l1Cache.set(hash, embeddingArray);
         return embeddingArray;
       }
     } catch (err) {
@@ -66,11 +68,13 @@ export class EmbeddingCache {
     const embedding = await OllamaClient.getEmbedding(cleanText);
 
     // Hydrate L1 Memory Cache
-    this.l1Cache.set(hash, embedding);
+    EmbeddingCache.l1Cache.set(hash, embedding);
 
     // Hydrate L2 SQLite Cache Table
     try {
-      const stmt = db.prepare('INSERT OR IGNORE INTO embedding_cache (text_hash, embedding, created_at) VALUES (?, ?, CURRENT_TIMESTAMP)');
+      const stmt = db.prepare(
+        'INSERT OR IGNORE INTO embedding_cache (text_hash, embedding, created_at) VALUES (?, ?, CURRENT_TIMESTAMP)'
+      );
       const floatArray = new Float32Array(embedding);
       const buffer = Buffer.from(floatArray.buffer);
       stmt.run(hash, buffer);

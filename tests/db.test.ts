@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, afterEach } from 'vitest';
+import { afterEach, describe, expect, it } from 'vitest';
 import { DatabaseManager, generateId, normalizeRecordId } from '../src/db.js';
 
 describe('DatabaseManager & Utils', () => {
@@ -21,7 +21,7 @@ describe('DatabaseManager & Utils', () => {
   it('should initialize the in-memory database successfully', () => {
     const db = DatabaseManager.getInstance();
     expect(db).toBeDefined();
-    
+
     // Check if tables exist
     const stmt = db.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name='memory'");
     const row = stmt.get();

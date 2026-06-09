@@ -1,0 +1,20 @@
+- generic [active] [ref=e1]:
+  - main [ref=e2]:
+    - generic [ref=e3]:
+      - generic [ref=e4]:
+        - img "Значок ko-fi.com" [ref=e5]
+        - heading "ko-fi.com" [level=1] [ref=e6]
+      - heading "Выполнение проверки безопасности" [level=2] [ref=e7]
+      - paragraph [ref=e8]: Этот веб-сайт использует сервис безопасности для защиты от вредоносных ботов. Эта страница отображается, пока веб-сайт проверяет, что вы не бот.
+  - contentinfo [ref=e12]:
+    - generic [ref=e14]:
+      - generic [ref=e16]:
+        - text: "Ray ID:"
+        - code [ref=e17]: a08c5fddc8d1340e
+      - generic [ref=e18]:
+        - generic [ref=e19]:
+          - text: Производительность и безопасность с
+          - link "Cloudflare" [ref=e20] [cursor=pointer]:
+            - /url: https://www.cloudflare.com?utm_source=challenge&utm_campaign=m
+        - link "Конфиденциальность" [ref=e22] [cursor=pointer]:
+          - /url: https://www.cloudflare.com/privacypolicy/

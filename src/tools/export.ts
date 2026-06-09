@@ -1,6 +1,6 @@
-import { DatabaseManager } from '../db.js';
-import path from 'node:path';
 import fs from 'node:fs';
+import path from 'node:path';
+import { DatabaseManager } from '../db.js';
 
 interface ExportArgs {
   vaultPath?: string;
@@ -26,30 +26,44 @@ interface EdgeRecord {
  * Exports memories from the database into Obsidian-compatible Markdown files.
  * Each memory becomes a separate .md file with [[Wikilinks]] to form a true Graph View.
  */
-export async function executeMemoryExport(args: ExportArgs = {}): Promise<{ success: true, vault_path: string, exported_files: string[], total_exported: number, sync_time: string }> {
-  const exportDir = args.vaultPath ? path.resolve(args.vaultPath) : path.join(process.cwd(), 'memories_export');
+export async function executeMemoryExport(args: ExportArgs = {}): Promise<{
+  success: true;
+  vault_path: string;
+  exported_files: string[];
+  total_exported: number;
+  sync_time: string;
+}> {
+  const exportDir = args.vaultPath
+    ? path.resolve(args.vaultPath)
+    : path.join(process.cwd(), 'memories_export');
 
   if (!fs.existsSync(exportDir)) {
     fs.mkdirSync(exportDir, { recursive: true });
   }
 
   const db = DatabaseManager.getInstance();
-  
+
   // 1. Fetch all memories
-  const memories = db.prepare('SELECT id, text, metadata, importance, created_at, last_accessed_at, accessed_count FROM memory WHERE is_active = 1').all() as MemoryRecord[];
-  
+  const memories = db
+    .prepare(
+      'SELECT id, text, metadata, importance, created_at, last_accessed_at, accessed_count FROM memory WHERE is_active = 1'
+    )
+    .all() as MemoryRecord[];
+
   // 2. Fetch all edges
-  const edges = db.prepare('SELECT source_id, target_id, relation_type FROM edges').all() as EdgeRecord[];
+  const edges = db
+    .prepare('SELECT source_id, target_id, relation_type FROM edges')
+    .all() as EdgeRecord[];
 
   // Build edge lookup maps
   const outgoingEdges = new Map<string, EdgeRecord[]>();
   const incomingEdges = new Map<string, EdgeRecord[]>();
-  
+
   for (const edge of edges) {
     if (!outgoingEdges.has(edge.source_id)) outgoingEdges.set(edge.source_id, []);
     if (!incomingEdges.has(edge.target_id)) incomingEdges.set(edge.target_id, []);
-    outgoingEdges.get(edge.source_id)!.push(edge);
-    incomingEdges.get(edge.target_id)!.push(edge);
+    outgoingEdges.get(edge.source_id)?.push(edge);
+    incomingEdges.get(edge.target_id)?.push(edge);
   }
 
   const exportedFiles: string[] = [];
@@ -57,11 +71,11 @@ export async function executeMemoryExport(args: ExportArgs = {}): Promise<{ succ
 
   // 3. Generate a Markdown file for each memory
   for (const mem of memories) {
-    let meta: any = {}; 
-    try { 
-      meta = typeof mem.metadata === 'string' ? JSON.parse(mem.metadata) : mem.metadata; 
-    } catch(e) {}
-    
+    let meta: any = {};
+    try {
+      meta = typeof mem.metadata === 'string' ? JSON.parse(mem.metadata) : mem.metadata;
+    } catch (_e) {}
+
     const category = meta?.type || 'semantic';
     const shortId = String(mem.id).split(':')[1] || String(mem.id);
     const fileName = `Memory_${shortId}.md`;
@@ -103,11 +117,11 @@ updated_at: ${syncTime}
     }
 
     // Add hidden metadata block
-    let metaStr = '{}'; 
-    try { 
-      metaStr = JSON.stringify(meta, null, 2); 
-    } catch(e) {}
-    
+    let metaStr = '{}';
+    try {
+      metaStr = JSON.stringify(meta, null, 2);
+    } catch (_e) {}
+
     md += `
 <details>
 <summary>Raw Metadata</summary>
@@ -123,11 +137,11 @@ ${metaStr}
     exportedFiles.push(filePath);
   }
 
-  return { 
-    success: true, 
-    vault_path: exportDir, 
-    exported_files: exportedFiles, 
-    total_exported: memories.length, 
-    sync_time: syncTime 
+  return {
+    success: true,
+    vault_path: exportDir,
+    exported_files: exportedFiles,
+    total_exported: memories.length,
+    sync_time: syncTime,
   };
 }

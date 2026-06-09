@@ -28,3 +28,4 @@ extract.py
 extract_chat.py
 clean_db.js
 dump_db.js
+scripts/show_recent_memories.cjs

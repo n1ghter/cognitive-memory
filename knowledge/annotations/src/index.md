@@ -1,21 +1,20 @@
-**Semantic Summary**
-======================
+### Semantic Summary
+#### MCP Server Application
 
-The `src/index.ts` file sets up a high-performance bridge for the Model Context Protocol (MCP). It creates an instance of the `McpServer` class with a specific name and version.
+The MCP server application provides a set of tools for managing semantic memories. The application uses the `McpServer` class to create an instance and defines several tools that interact with a local SQLite database.
 
-The server exposes several tools for managing semantic memories, including:
+- **memory_store**: Encrypts, hashes, vectorizes, and persists semantic memories into the database.
+- **memory_search**: Performs optimized vector similarity cosine searches on stored memories.
+- **memory_delete**: Deletes a specific semantic memory record by its identifier.
+- **memory_clear_all**: Completely wipes all memories from the database (nuclear option).
+- **memory_consolidate**: Performs time decay and semantic LLM merging/deduplication on active memories using Ollama.
+- **memory_relate**: Establishes a graph relationship between two memory nodes.
+- **memory_export**: Exports active database memories into Markdown notes for Obsidian integration.
 
-*   **Memory Store**: Encrypts, hashes, vectorizes, and persists memories into a local SQLite database.
-*   **Memory Search**: Performs optimized vector similarity cosine searches on stored memories.
-*   **Memory Delete**: Deletes a specific memory record by its identifier.
-*   **Memory Clear All**: Completely wipes all memories from the database (nuclear option).
-*   **Memory Consolidate**: Performs time decay and semantic LLM merging/deduplication on active memories using Ollama.
-*   **Memory Relate**: Establishes a graph relationship between two memory nodes.
-*   **Memory Export**: Exports active database memories into Markdown notes for Obsidian integration.
+The tools are defined as part of the `McpServer` instance and utilize asynchronous functions to execute their logic. The application uses an `StdioServerTransport` for standard input/output and has global exception shielding mechanisms to catch uncaught exceptions and unhandled promise rejections.
 
-The server is initialized using the `bootstrap` function, which sets up the database manager and connects to the MCP protocol.
+#### MCP Tools
+- MCP Tools: `memory_store`, `memory_search`, `memory_delete`, `memory_clear_all`, `memory_consolidate`, `memory_relate`, `memory_export`
 
-**Notes**
---------
-
-This code provides a critical performance enhancement by redirecting stdout logging to stderr, ensuring safe transport of JSON-RPC message packets. The tools defined in this file are designed to work together seamlessly, providing a robust framework for managing semantic memories.
+#### Database Interaction
+The application interacts with the SQLite database through the `DatabaseManager` class and its tools.

@@ -1,7 +1,7 @@
 {
   "name": "@cemised/cognitive-memory",
-  "version": "1.1.19",
-  "description": "High-performance stdio MCP server for cognitive-memory using SQLite",
+  "version": "1.1.20",
+  "description": "An autonomous graph-vector memory engine powered by SQLite and Ollama.",
   "main": "dist/index.js",
   "bin": {
     "cognitive-memory": "./dist/index.js"
@@ -30,8 +30,12 @@
     "dev": "ts-node-esm src/index.ts",
     "gitnexus": "gitnexus analyze --skip-skills --skip-agents-md",
     "test": "vitest run",
+    "test:coverage": "vitest run --coverage",
     "test:watch": "vitest",
-    "version": "node scripts/update-changelog.js && git add CHANGELOG.md"
+    "version": "node scripts/update-changelog.js && git add CHANGELOG.md",
+    "format": "biome format --write .",
+    "lint": "biome lint --write .",
+    "check": "biome check --write ."
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.0.1",
@@ -40,8 +44,10 @@
     "zod": "^4.4.3"
   },
   "devDependencies": {
+    "@biomejs/biome": "2.4.16",
     "@types/better-sqlite3": "^7.6.13",
     "@types/node": "^25.9.2",
+    "@vitest/coverage-v8": "^4.1.8",
     "gitnexus": "^1.6.5",
     "ts-node": "^10.9.2",
     "typescript": "^6.0.3",

@@ -1,6 +1,6 @@
+import { DatabaseManager } from '../db.js';
 import { executeMemoryConsolidate } from '../tools/consolidate.js';
 import { executeMemoryExport } from '../tools/export.js';
-import { DatabaseManager } from '../db.js';
 
 /**
  * Runs the hooks for memory export and consolidation.
@@ -14,7 +14,7 @@ async function runHooks() {
       console.error('[Hooks] Running memory export sync...');
       await executeMemoryExport();
     }
-    
+
     if (event === 'PreCompact' || event === 'Stop') {
       console.error('[Hooks] Running memory consolidation...');
       await executeMemoryConsolidate();

@@ -1,5 +1,5 @@
-import { DatabaseManager, generateId } from '../db.js';
 import { EmbeddingCache } from '../cache.js';
+import { DatabaseManager, generateId } from '../db.js';
 
 /**
  * Arguments for the memory store function.
@@ -48,8 +48,8 @@ export async function executeMemoryStore(args: StoreArgs) {
       VALUES (?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 0)
     `);
     const info = stmt.run(id, text, JSON.stringify(metadata), importance, 1);
-    
-    // lastInsertRowid is often a BigInt in better-sqlite3. Pass it as BigInt 
+
+    // lastInsertRowid is often a BigInt in better-sqlite3. Pass it as BigInt
     // for sqlite-vec compatibility to avoid "Only integers are allows for primary key values"
     const rowid = BigInt(info.lastInsertRowid);
 
@@ -57,11 +57,11 @@ export async function executeMemoryStore(args: StoreArgs) {
       INSERT INTO vec_memory (rowid, embedding)
       VALUES (?, ?)
     `);
-    
+
     // sqlite-vec requires Float32Array
     const floatArray = new Float32Array(embedding);
     vecStmt.run(rowid, floatArray);
-    
+
     return id;
   });
 

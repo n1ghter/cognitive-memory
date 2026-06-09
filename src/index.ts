@@ -3,20 +3,20 @@ import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import { z } from 'zod';
 import { DatabaseManager } from './db.js';
-import { executeMemoryStore } from './tools/store.js';
-import { executeMemorySearch } from './tools/search.js';
-import { executeMemoryDelete } from './tools/delete.js';
-import { executeMemoryConsolidate } from './tools/consolidate.js';
-import { executeMemoryRelate } from './tools/graph.js';
-import { executeMemoryExport } from './tools/export.js';
 import { executeMemoryClearAll } from './tools/clear.js';
+import { executeMemoryConsolidate } from './tools/consolidate.js';
+import { executeMemoryDelete } from './tools/delete.js';
+import { executeMemoryExport } from './tools/export.js';
+import { executeMemoryRelate } from './tools/graph.js';
+import { executeMemorySearch } from './tools/search.js';
+import { executeMemoryStore } from './tools/store.js';
 
 /**
  * Critical Performance Enhancement: Stdio Safeguard
- * 
+ *
  * Redirects all stdout logging to stderr, forcing safe transport of JSON-RPC message packets.
  */
-const originalLog = console.log;
+const _originalLog = console.log;
 console.log = console.error;
 
 /**
@@ -53,11 +53,20 @@ server.tool(
     /**
      * Optional input parameter for auxiliary metadata object association.
      */
-    metadata: z.record(z.any()).optional().describe('Optional auxiliary metadata object to associate with the memory'),
+    metadata: z
+      .record(z.string(), z.any())
+      .optional()
+      .describe('Optional auxiliary metadata object to associate with the memory'),
     /**
      * Optional input parameter for importance score (0.0 to 1.0).
      */
-    importance: z.number().min(0.0).max(1.0).optional().default(0.5).describe('The importance score of the memory (0.0 to 1.0)'),
+    importance: z
+      .number()
+      .min(0.0)
+      .max(1.0)
+      .optional()
+      .default(0.5)
+      .describe('The importance score of the memory (0.0 to 1.0)'),
   },
   /**
    * Asynchronous function that executes the tool's logic.
@@ -98,11 +107,24 @@ server.tool(
     /**
      * Optional input parameter for maximum closely related memories to retrieve (1-100).
      */
-    limit: z.number().int().min(1).max(100).optional().default(5).describe('Max number of closely related memories to retrieve'),
+    limit: z
+      .number()
+      .int()
+      .min(1)
+      .max(100)
+      .optional()
+      .default(5)
+      .describe('Max number of closely related memories to retrieve'),
     /**
      * Optional input parameter for minimum cosine similarity match threshold (0.0-1.0).
      */
-    threshold: z.number().min(0.0).max(1.0).optional().default(0.6).describe('Minimum cosine similarity match threshold (0.0 to 1.0)'),
+    threshold: z
+      .number()
+      .min(0.0)
+      .max(1.0)
+      .optional()
+      .default(0.6)
+      .describe('Minimum cosine similarity match threshold (0.0 to 1.0)'),
   },
   /**
    * Asynchronous function that executes the tool's logic.
@@ -143,7 +165,13 @@ server.tool(
     /**
      * Optional input parameter for physical purging of records (true/false).
      */
-    hard: z.boolean().optional().default(false).describe('If true, physically purges the record. Otherwise performs a soft-delete (default)'),
+    hard: z
+      .boolean()
+      .optional()
+      .default(false)
+      .describe(
+        'If true, physically purges the record. Otherwise performs a soft-delete (default)'
+      ),
   },
   /**
    * Asynchronous function that executes the tool's logic.
@@ -171,7 +199,9 @@ server.tool(
   'memory_clear_all',
   'NUCLEAR OPTION: Completely wipe all memories, vectors, and graph edges from the database. Cannot be undone.',
   {
-    confirm: z.boolean().describe('Must be set to true to confirm the complete deletion of all data'),
+    confirm: z
+      .boolean()
+      .describe('Must be set to true to confirm the complete deletion of all data'),
   },
   async ({ confirm }) => {
     try {
@@ -245,14 +275,20 @@ server.tool(
     /**
      * Input parameter for the type of relation (e.g. dependency, contradicts, consolidated_from).
      */
-    relationType: z.string().describe('Type of relation (e.g. dependency, contradicts, consolidated_from)'),
+    relationType: z
+      .string()
+      .describe('Type of relation (e.g. dependency, contradicts, consolidated_from)'),
   },
   /**
    * Asynchronous function that executes the tool's logic.
    */
   async ({ sourceId, targetId, relationType }) => {
     try {
-      const result = await executeMemoryRelate({ sourceId, targetId, relationType });
+      const result = await executeMemoryRelate({
+        sourceId,
+        targetId,
+        relationType,
+      });
       return {
         content: [{ type: 'text', text: JSON.stringify(result, null, 2) }],
       };
@@ -282,7 +318,10 @@ server.tool(
     /**
      * Optional input parameter for custom path to the Obsidian vault directory.
      */
-    vaultPath: z.string().optional().describe('Optional custom path to the Obsidian vault directory'),
+    vaultPath: z
+      .string()
+      .optional()
+      .describe('Optional custom path to the Obsidian vault directory'),
   },
   /**
    * Asynchronous function that executes the tool's logic.

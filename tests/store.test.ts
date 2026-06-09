@@ -1,7 +1,7 @@
-import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { executeMemoryStore } from '../src/tools/store.js';
-import { executeMemorySearch } from '../src/tools/search.js';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { DatabaseManager } from '../src/db.js';
+import { executeMemorySearch } from '../src/tools/search.js';
+import { executeMemoryStore } from '../src/tools/store.js';
 
 // Mock Ollama so we don't need a real container
 vi.mock('../src/ollama.js', () => ({
@@ -9,7 +9,7 @@ vi.mock('../src/ollama.js', () => ({
     getEmbedding: vi.fn(async (text: string) => {
       // Return a fake 4096-dim vector where the first element changes based on text length
       const vec = new Array(4096).fill(0.1);
-      vec[0] = text.length; 
+      vec[0] = text.length;
       return vec;
     }),
   },
@@ -25,7 +25,7 @@ describe('Memory Store & Search (Integration)', () => {
     const storeResult = await executeMemoryStore({
       text: 'Hello test database',
       metadata: { test: true },
-      importance: 0.8
+      importance: 0.8,
     });
 
     expect(storeResult.success).toBe(true);
@@ -35,7 +35,7 @@ describe('Memory Store & Search (Integration)', () => {
     const searchResult = await executeMemorySearch({
       query: 'Hello test',
       limit: 1,
-      threshold: 0.0
+      threshold: 0.0,
     });
 
     expect(searchResult.success).toBe(true);

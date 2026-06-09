@@ -16,12 +16,12 @@ interface DeleteArgs {
 
 /**
  * Executes a memory delete operation, either physically purging a record or soft-deleting it.
- * 
+ *
  * @param args - An object containing the ID of the record to be deleted or soft-deleted and an optional flag for hard deletion.
  * @returns A promise resolving with an object indicating whether the operation was successful and additional information about the result.
  */
 export async function executeMemoryDelete(args: DeleteArgs): Promise<any> {
-  let { id, hard = false } = args;
+  const { id, hard = false } = args;
 
   if (!id) {
     throw new Error('Invalid input: "id" is required');
@@ -32,8 +32,14 @@ export async function executeMemoryDelete(args: DeleteArgs): Promise<any> {
 
   if (hard) {
     // Hard delete - physical purge
-    const stmt = db.prepare('DELETE FROM memory WHERE id = ?');
-    const info = stmt.run(id);
+    const transaction = db.transaction(() => {
+      // Delete any edges referencing this memory
+      db.prepare('DELETE FROM edges WHERE source_id = ? OR target_id = ?').run(id, id);
+      const stmt = db.prepare('DELETE FROM memory WHERE id = ?');
+      return stmt.run(id);
+    });
+
+    const info = transaction();
     if (info.changes > 0) {
       found = true;
     }

@@ -1,7 +1,7 @@
+import crypto from 'node:crypto';
+import path from 'node:path';
 import Database from 'better-sqlite3';
 import * as sqliteVec from 'sqlite-vec';
-import path from 'path';
-import crypto from 'crypto';
 
 // In-process database file path
 const DB_PATH = process.env.MEMORY_DB_PATH || path.join(process.cwd(), 'memory.sqlite');
@@ -51,21 +51,21 @@ export class DatabaseManager {
    * @returns The singleton instance of the database.
    */
   public static getInstance(): Database.Database {
-    if (!this.instance) {
+    if (!DatabaseManager.instance) {
       const db = new Database(DB_PATH);
-      
+
       // Load sqlite-vec extension
       sqliteVec.load(db);
 
       // Enable WAL mode for better concurrency
       db.pragma('journal_mode = WAL');
-      
+
       // Setup schema
-      this.initSchema(db);
-      
-      this.instance = db;
+      DatabaseManager.initSchema(db);
+
+      DatabaseManager.instance = db;
     }
-    return this.instance;
+    return DatabaseManager.instance;
   }
 
   /**
@@ -126,9 +126,9 @@ export class DatabaseManager {
    * @returns No value, but returns undefined if successful.
    */
   public static close(): void {
-    if (this.instance) {
-      this.instance.close();
-      this.instance = null;
+    if (DatabaseManager.instance) {
+      DatabaseManager.instance.close();
+      DatabaseManager.instance = null;
     }
   }
 }

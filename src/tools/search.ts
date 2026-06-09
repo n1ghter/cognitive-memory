@@ -1,5 +1,5 @@
-import { DatabaseManager } from '../db.js';
 import { EmbeddingCache } from '../cache.js';
+import { DatabaseManager } from '../db.js';
 
 /**
  * Search arguments.
@@ -21,7 +21,7 @@ interface SearchArgs {
 
 /**
  * Execute a memory search with the given query and optional parameters.
- * 
+ *
  * @param args Search arguments.
  * @returns An object containing the result status and the searched items.
  */
@@ -69,7 +69,7 @@ export async function executeMemorySearch(args: SearchArgs) {
 
   // Update last_accessed_at and increment accessed_count
   if (results.length > 0) {
-    const rowids = results.map(r => r.rowid);
+    const rowids = results.map((r) => r.rowid);
     const placeholders = rowids.map(() => '?').join(',');
     try {
       db.prepare(`
@@ -96,7 +96,7 @@ export async function executeMemorySearch(args: SearchArgs) {
       if (r.metadata) {
         try {
           parsedMetadata = JSON.parse(r.metadata);
-        } catch (e) {
+        } catch (_e) {
           parsedMetadata = r.metadata;
         }
       }
@@ -108,7 +108,7 @@ export async function executeMemorySearch(args: SearchArgs) {
         importance: r.importance,
         created_at: r.created_at,
         last_accessed_at: r.last_accessed_at,
-        accessed_count: r.accessed_count
+        accessed_count: r.accessed_count,
       };
     }),
   };

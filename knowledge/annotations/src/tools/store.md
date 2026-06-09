@@ -1,16 +1,12 @@
-# AI Annotation: `src/tools/store.ts`
+**Semantic Summary**
+=====================
 
-**Target File:** `src/tools/store.ts`
-**Role:** Data Access Layer (Repository) for storing and managing tool configurations.
+This file implements a memory store function that allows users to cache and persist text data with associated metadata. The purpose of this function is to provide a caching layer for sensitive or high-importance data, ensuring it remains accessible even after application restarts.
 
-## Business Logic & "Why"
+### MCP Tools Used:
 
-The `store.ts` file is responsible for encapsulating data access logic related to storing and retrieving tool configurations. The primary purpose of this layer is to abstract the underlying storage mechanism, allowing for easy switching between different storage solutions (e.g., local storage, databases) without affecting the rest of the application.
+* SQLite tables: `memory`, `vec_memory`
 
-## Architecture Role
+### Architectural Purpose:
 
-The `store.ts` file plays a crucial role in maintaining data consistency across the application by providing a centralized repository for tool configurations. This layer acts as an intermediary between the business logic and the underlying storage mechanisms, ensuring that data is persisted securely and efficiently.
-
-## Tables:
-
-None
+The memory store function serves as a critical component in the caching mechanism, enabling users to cache and retrieve text data efficiently. By leveraging a database instance for storing metadata, this implementation ensures atomicity between different data storage layers, providing a reliable and fault-tolerant solution for sensitive or high-importance data.
