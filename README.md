@@ -4,7 +4,6 @@
 [![TypeScript](https://img.shields.io/badge/TypeScript-Ready-blue.svg)](https://www.typescriptlang.org/)
 [![Testing](https://img.shields.io/badge/Tested_with-Vitest-yellow.svg)](https://vitest.dev/)
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](CONTRIBUTING.md)
-[![Support me on Ko-fi](https://img.shields.io/badge/Support_me_on-Ko--fi-ff5f5f.svg?style=flat-square&logo=ko-fi&logoColor=white)](https://ko-fi.com/cemised)
 
 <p align="center">
   <img src="assets/hero.png" alt="Cognitive Memory Architecture" width="800">
@@ -119,3 +118,11 @@ This project is licensed under the [Apache 2.0 License](LICENSE). This provides 
 
 **Author / Creator:**  
 [Eduards Čemis](https://www.linkedin.com/in/cemised/)
+
+## 💖 Support the Project
+
+If you find this project helpful and want to support its continued development, consider buying me a coffee! ☕
+
+<a href='https://ko-fi.com/cemised' target='_blank'>
+  <img height='36' style='border:0px;height:36px;' src='https://storage.ko-fi.com/cdn/kofi2.png?v=3' border='0' alt='Buy Me a Coffee at ko-fi.com' />
+</a>
