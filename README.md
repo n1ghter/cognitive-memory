@@ -4,7 +4,6 @@
 [![TypeScript](https://img.shields.io/badge/TypeScript-Ready-blue.svg)](https://www.typescriptlang.org/)
 [![Testing](https://img.shields.io/badge/Tested_with-Vitest-yellow.svg)](https://vitest.dev/)
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](CONTRIBUTING.md)
-[![Support me on Ko-fi](https://img.shields.io/badge/Support_me_on-Ko--fi-ff5f5f.svg?style=flat-square&logo=ko-fi&logoColor=white)](https://ko-fi.com/cemised)
 
 <p align="center">
   <img src="assets/hero.png" alt="Cognitive Memory Architecture" width="800">
@@ -46,7 +45,27 @@ We bridge the gap between an AI's Long-Term Memory and a human's Second Brain. T
   ollama pull llama3.2
   ```
 
-### Build from Source
+## 💻 Usage (MCP Client Configuration)
+
+The easiest and recommended way to use this server with an MCP-compatible client (like Claude Desktop, Cursor, or custom AI agents) is via `npx`. Add the following to your client's MCP configuration JSON:
+
+```json
+{
+  "mcpServers": {
+    "cognitive-memory": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@cemised/cognitive-memory"
+      ]
+    }
+  }
+}
+```
+
+### Build from Source (For Developers)
+If you want to modify the source code or if your environment requires compiling native C++ bindings for SQLite manually:
+
 ```bash
 git clone <repository-url>
 cd cognitive-memory
@@ -55,9 +74,7 @@ pnpm rebuild  # Crucial for native SQLite C++ bindings
 pnpm run build
 ```
 
-## 💻 Usage (MCP Client Configuration)
-
-To use this server with an MCP-compatible client (like Claude Desktop, Cursor, or custom AI agents), add the following to your client's MCP configuration JSON:
+Then configure your MCP client to point to the local build instead:
 
 ```json
 {
