@@ -4,13 +4,21 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
-## [1.1.18] - 2026-06-09
+## [1.1.19] - 2026-06-09
 
-## [1.1.17] - 2026-06-09
+### Added
+- Added `memory_clear_all` MCP tool for a nuclear wipe of the database.
+- Added GitHub Actions CI workflow and Dependabot configuration.
+- Added Ko-fi funding badge and GitHub sponsors configuration.
+- Added "Knowledge Domains" architecture documentation to ROADMAP.
 
-## [1.1.16] - 2026-06-09
+### Changed
+- Scoped npm package to `@cemised/cognitive-memory` to match npm username.
+- Set `npx` as the primary recommended usage method in README.
+- Updated dependencies: `gitnexus`, `typescript`, `zod`, `@types/node`.
 
-## [1.1.15] - 2026-06-09
+### Fixed
+- Fixed missing `bin` field formatting and missing shebang `#!/usr/bin/env node` for `npx` execution.
 
 ## [1.1.14] - 2026-06-09
 
