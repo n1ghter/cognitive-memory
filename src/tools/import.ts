@@ -69,15 +69,21 @@ export async function executeMemoryImport(args: ImportArgs = {}): Promise<{
       validIdsOnDisk.add(fullId);
 
       const row = db
-        .prepare('SELECT id, updated_at FROM memory WHERE id = ? OR id = ?')
-        .get(shortId, fullId) as { id: string; updated_at: string } | undefined;
+        .prepare('SELECT id, updated_at, is_active FROM memory WHERE id = ? OR id = ?')
+        .get(shortId, fullId) as { id: string; updated_at: string; is_active: number } | undefined;
 
       let dbUpdatedMs = 0;
-      if (row && row.updated_at) {
-        dbUpdatedMs = new Date(row.updated_at.replace(' ', 'T') + 'Z').getTime();
+      if (row?.updated_at) {
+        dbUpdatedMs = new Date(`${row.updated_at.replace(' ', 'T')}Z`).getTime();
       }
 
       if (row && mtimeMs <= dbUpdatedMs + 2000) {
+        if (row.is_active === 0) {
+          // The agent deleted this memory, and the user hasn't modified the file.
+          // Delete the lingering file to reflect the agent's deletion in Obsidian.
+          fs.unlinkSync(filePath);
+          validIdsOnDisk.delete(fullId);
+        }
         continue;
       }
 

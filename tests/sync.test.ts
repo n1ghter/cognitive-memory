@@ -61,4 +61,24 @@ importance: 0.5
     const files = fs.readdirSync(tmpDir).filter((f) => f.endsWith('.md'));
     expect(files.length).toBe(2);
   });
+
+  it('should propagate agent deletions to disk', async () => {
+    // 1. Store a memory in DB
+    const resStore = await executeMemoryStore({ text: 'To be deleted' });
+    const id = resStore.record.id;
+
+    // 2. Sync to create the file on disk
+    await executeMemorySync({ vaultPath: tmpDir });
+    let files = fs.readdirSync(tmpDir).filter(f => f.endsWith('.md'));
+    expect(files.length).toBe(1);
+
+    // 3. Agent deletes the memory
+    const { executeMemoryDelete } = await import('../src/tools/delete.js');
+    await executeMemoryDelete({ id });
+
+    // 4. Sync again. The file should be deleted from disk by import.ts!
+    await executeMemorySync({ vaultPath: tmpDir });
+    files = fs.readdirSync(tmpDir).filter(f => f.endsWith('.md'));
+    expect(files.length).toBe(0);
+  });
 });

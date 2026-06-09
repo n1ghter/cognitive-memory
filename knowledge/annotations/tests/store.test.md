@@ -1,12 +1,14 @@
-### Purpose and Business Logic
-#### Memory Store & Search Integration Tests
+```markdown
+# Memory Store & Search Integration Tests
 
-This file contains integration tests for the `executeMemoryStore` and `executeMemorySearch` functions, which interact with SQLite databases and utilize MCP tools like Ollama. The tests verify the correctness of storing and searching memory records, handling invalid inputs, parsing metadata, and logging errors during access stat updates.
+This file contains tests for the memory store and search functionality, ensuring that data is correctly stored and retrieved from the SQLite database. It also verifies error handling for invalid inputs and logging of errors during access stat updates.
 
-#### Tested Functions:
+## Exposes:
+
 - `executeMemoryStore`
 - `executeMemorySearch`
 
-#### Interacted Systems:
-- SQLite database
-- MCP Ollama tool
+## Interacts with: 
+
+- SQLite tables
+```

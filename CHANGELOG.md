@@ -5,6 +5,7 @@ All notable changes to this project will be documented in this file.
 ## [Unreleased]
 
 ### Added
+- **Agent-to-Obsidian Deletion Propagation**: If the AI agent deletes a memory (via `memory_delete` -> `is_active = 0`), the next `memory_sync` will automatically remove the corresponding `.md` file from the Obsidian vault (unless the human modified the file after the agent deleted it, in which case the human's edit wins and the memory is resurrected).
 - **Two-Phase Graph Import**: Eliminated `FOREIGN KEY` race conditions by decoupling node insertion from edge linking during Obsidian synchronization.
 - **Sync Deletion Ledger**: Deleting a Markdown file in Obsidian now correctly sets `is_active = 0` in SQLite instead of silently re-creating the file on next sync. Uses a lightweight `.sync_state.json` ledger.
 - **Frontmatter Identity Binding**: Implemented decoupling of logical IDs from filenames. Users can now freely rename their memory `.md` files in Obsidian without breaking graph integrity, as the agent parses `id: ...` directly from YAML frontmatter.

@@ -1,10 +1,12 @@
-```markdown
-# Sync Tools Test Suite
+**Semantic Summary**
+=====================
 
-This test suite verifies the bidirectional syncing functionality of the memory sync tools. It ensures that data is correctly imported and exported between Obsidian vaults and a SQLite database.
+### Purpose
+This file tests the `executeMemorySync` function from the Obsidian app, ensuring bidirectional syncing of memories between the database and Obsidian vaults. It also verifies that agent deletions are propagated to disk.
 
-MCP tools used:
-- sqlite
+### Tools Interacted With
 
-Architectural purpose: Verifies the correctness of the memory sync logic to ensure seamless data exchange between Obsidian and a SQLite database.
-```
+* SQLite (`DatabaseManager`)
+* MCP tools: `executeMemoryStore`, `executeMemoryDelete`
+* `fs` (Node.js) for interacting with the file system
+* `path` (Node.js) for working with file paths
