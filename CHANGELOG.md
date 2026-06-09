@@ -4,6 +4,8 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [1.1.23] - 2026-06-09
+
 ### Added
 - **Agent-to-Obsidian Deletion Propagation**: If the AI agent deletes a memory (via `memory_delete` -> `is_active = 0`), the next `memory_sync` will automatically remove the corresponding `.md` file from the Obsidian vault (unless the human modified the file after the agent deleted it, in which case the human's edit wins and the memory is resurrected).
 - **Two-Phase Graph Import**: Eliminated `FOREIGN KEY` race conditions by decoupling node insertion from edge linking during Obsidian synchronization.
