@@ -95,3 +95,8 @@ We welcome community contributions, from bug fixes to new features!
 ## 📄 License
 
 This project is licensed under the [Apache 2.0 License](LICENSE). This provides strong patent protection and makes the project safe for enterprise adoption.
+
+---
+
+**Author / Creator:**  
+[Eduards Čemis](https://www.linkedin.com/in/cemised/)
