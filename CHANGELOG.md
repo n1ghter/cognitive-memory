@@ -4,24 +4,31 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
-## [1.1.20] - 2026-06-09
 ### Added
 - Integrated **Biome** as the universal formatter and linter for the project, replacing ESLint/Prettier.
 - Added new NPM scripts: `format`, `lint`, and `check` for blazing-fast code quality enforcement.
-- Strict `LF` line endings are now enforced globally to prevent cross-platform CRLF git issues.
-
-### Changed
-- Ran project-wide `biome check --write` to auto-format all TypeScript source files, normalize indentation, and remove unused imports.
-
-### Added
 - Comprehensive test suite for all MCP tools (`cache`, `db`, `clear`, `consolidate`, `delete`, `export`, `graph`, `search`, `store`).
 - `test:coverage` command using `@vitest/coverage-v8` to track line-level coverage.
+- Split tsconfig to separate `tsconfig.build.json` for compilation, improving IDE module resolution for tests.
+
+### Changed
+- Strict `LF` line endings are now enforced globally to prevent cross-platform CRLF git issues.
+- Ran project-wide `biome check --write` to auto-format all TypeScript source files, normalize indentation, and remove unused imports.
+- Removed deprecated `all` coverage option from Vitest config.
 
 ### Fixed
 - **CRITICAL**: Fixed major bug in `consolidate.ts` where the deduplication transaction function was defined but never invoked, meaning records were never pruned or decayed.
 - **CRITICAL**: Fixed foreign key violation in `delete.ts` where deleting a memory crashed if it had associated edges (sqlite-vec cascade failure). Edges are now properly cleaned up first.
 - **CRITICAL**: Fixed state leak in `clear.ts` where `embedding_cache` was not wiped, leading to inconsistent state between tests.
 - Fixed hardcoded table name bug in `consolidate.ts` (attempted to query `related` instead of `edges`).
+
+## [1.1.19] - 2026-06-09
+
+### Added
+- Added `bin` field to package.json and shebang to `index.js` for direct `npx` execution.
+- Added Knowledge Domains (Namespaces) concept to `ROADMAP.md`.
+- Added Ko-fi funding badge and GitHub sponsors configuration.
+- Set up GitHub Actions CI workflow and Dependabot configuration.
 
 ## [1.1.18] - 2026-06-09
 ### Changed
