@@ -10,7 +10,8 @@
     "dev": "ts-node-esm src/index.ts",
     "gitnexus": "gitnexus analyze --skip-skills --skip-agents-md",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "version": "node scripts/update-changelog.js && git add CHANGELOG.md"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.0.1",
