@@ -1,18 +1,21 @@
-### Semantic Summary for `src/index.ts`
+**Semantic Summary**
+======================
 
-This file serves as the entry point for a high-performance cognitive memory server application. It defines and initializes various tools for managing semantic memories, including encryption, hashing, vectorization, and persistence in a local SQLite database.
+The `src/index.ts` file sets up a high-performance bridge for the Model Context Protocol (MCP). It creates an instance of the `McpServer` class with a specific name and version.
 
-#### Architectural Purpose:
+The server exposes several tools for managing semantic memories, including:
 
-- The server is designed to provide a secure interface for users to interact with their cognitive memories.
-- It utilizes the ModelContext Protocol (MCP) standard for communication and tool interaction.
+*   **Memory Store**: Encrypts, hashes, vectorizes, and persists memories into a local SQLite database.
+*   **Memory Search**: Performs optimized vector similarity cosine searches on stored memories.
+*   **Memory Delete**: Deletes a specific memory record by its identifier.
+*   **Memory Clear All**: Completely wipes all memories from the database (nuclear option).
+*   **Memory Consolidate**: Performs time decay and semantic LLM merging/deduplication on active memories using Ollama.
+*   **Memory Relate**: Establishes a graph relationship between two memory nodes.
+*   **Memory Export**: Exports active database memories into Markdown notes for Obsidian integration.
 
-#### Business Logic:
+The server is initialized using the `bootstrap` function, which sets up the database manager and connects to the MCP protocol.
 
-- Tools are defined for storing, searching, deleting, consolidating, relating, exporting, and clearing memories.
-- Each tool is encapsulated within an async function that executes specific logic in response to user input or server connections.
-- The application includes features like exception shielding for critical uncaught exceptions and unhandled promise rejections.
+**Notes**
+--------
 
-#### Interactions with SQLite Tables:
-
-The MCP tools defined within this file interact with the local SQLite database, which stores and manages semantic memories.
+This code provides a critical performance enhancement by redirecting stdout logging to stderr, ensuring safe transport of JSON-RPC message packets. The tools defined in this file are designed to work together seamlessly, providing a robust framework for managing semantic memories.
