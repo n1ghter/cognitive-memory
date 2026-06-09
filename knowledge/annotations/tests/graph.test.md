@@ -1,8 +1,14 @@
-```markdown
-### Test Suite for Memory Relate MCP Tools
+## Semantic Summary
+### Tests for Memory Relate Tool
 
-This test suite validates the functionality of the `executeMemoryRelate` tool, which establishes relationships between memories in a database. The tests cover scenarios such as creating an edge between valid memories, handling non-existent source IDs, and empty relation types.
+This file contains tests for the `executeMemoryRelate` function in the graph tool suite. The purpose of this test suite is to validate that the tool correctly establishes relationships between valid memory pairs, and handles cases where either the source or target memory does not exist, as well as when the relation type is empty.
 
-* Uses SQLite database for storage
-* Exposes `executeMemoryRelate` MCP tool
-```
+### Exposed MCP Tools:
+
+- `executeMemoryStore`
+- `executeMemoryRelate`
+
+### Interactions with SQLite Tables:
+
+- The test suite closes the database connection after each test.
+- Tests interact with the SQLite table used by the `DatabaseManager`.

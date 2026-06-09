@@ -1,13 +1,7 @@
-```markdown
-# Configuration for Vitest Testing Framework
+### Vitest Configuration File
+#### Purpose
+This file configures the test environment for a Node.js application using Vitest, specifying global setup files and test coverage settings.
 
-This configuration defines the testing environment for the application, including global variables and setup files. The test suite is set up to run in a Node.js environment with TypeScript support.
-
-Exposed MCP Tools:
-- Vitest
-
-Interactions with SQLite Tables: None
-
-Purpose:
-To establish a consistent testing environment across the application.
-```
+#### Interactions
+- Exposes MCP tools: None
+- Interacts with SQLite tables: No explicit interaction is listed; however, if the application uses SQLite under the hood, it may have an indirect impact on this configuration.
