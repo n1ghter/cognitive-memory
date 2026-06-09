@@ -72,9 +72,14 @@ All notable changes to this project will be documented in this file.
 
 ## [1.1.1] - 2026-06-08
 
-### Changed
-- Migrated default embedding model to `qwen3-embedding:8b` (SOTA for multilingual contexts).
-- Updated `sqlite-vec` database schema to expect `4096`-dimensional vectors (previously `768`).
+### Added
+- Implemented `vitest` test suite with in-memory SQLite and mocked Ollama responses.
+
+## [1.1.0] - 2026-06-08
+
+### Fixed
+- Disabled dangerous JSDoc generation in pre-commit hooks to prevent file corruption.
+- Fixed index imports for MCP server.
 
 ## [1.0.0] - 2026-06-08
 
