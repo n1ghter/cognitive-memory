@@ -1,9 +1,12 @@
 # Cognitive Memory MCP Server
 
 [![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
+[![NPM Version](https://img.shields.io/npm/v/@cemised/cognitive-memory.svg)](https://www.npmjs.com/package/@cemised/cognitive-memory)
+[![CI](https://img.shields.io/github/actions/workflow/status/n1ghter/cognitive-memory/ci.yml?branch=main&label=CI)](https://github.com/n1ghter/cognitive-memory/actions)
 [![TypeScript](https://img.shields.io/badge/TypeScript-Ready-blue.svg)](https://www.typescriptlang.org/)
 [![Testing](https://img.shields.io/badge/Tested_with-Vitest-yellow.svg)](https://vitest.dev/)
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](CONTRIBUTING.md)
+[![Support me on Ko-fi](https://img.shields.io/badge/Support_me_on-Ko--fi-ff5f5f.svg?logo=ko-fi&logoColor=white)](https://ko-fi.com/cemised)
 
 <p align="center">
   <img src="assets/hero.png" alt="Cognitive Memory Architecture" width="800">
