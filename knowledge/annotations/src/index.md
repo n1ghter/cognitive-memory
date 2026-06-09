@@ -1,25 +1,18 @@
-**Semantic Summary**
-=====================
+### Semantic Summary for `src/index.ts`
 
-The `src/index.ts` file sets up a high-performance bridge for a cognitive memory application using the MCP (Memory Capture Protocol) standard. It creates a new instance of the `McpServer` with a specific name and version, and defines several tools to interact with the underlying database.
+This file serves as the entry point for a high-performance cognitive memory server application. It defines and initializes various tools for managing semantic memories, including encryption, hashing, vectorization, and persistence in a local SQLite database.
 
-**Business Logic**
------------------
+#### Architectural Purpose:
 
-* Redirects stdout logging to stderr to ensure safe transport of JSON-RPC message packets.
-* Establishes a local SQLite database for storing semantic memories, using the `executeMemoryStore`, `executeMemorySearch`, `executeMemoryDelete`, `executeMemoryConsolidate`, `executeMemoryRelate`, and `executeMemoryExport` tools.
+- The server is designed to provide a secure interface for users to interact with their cognitive memories.
+- It utilizes the ModelContext Protocol (MCP) standard for communication and tool interaction.
 
-**Tools**
----------
+#### Business Logic:
 
-* `memory_store`: encrypts, hashes, vectorizes, and persists a semantic memory into the local SQLite database.
-* `memory_search`: performs optimized vector similarity cosine searches on stored memories.
-* `memory_delete`: deletes a specific semantic memory record by its identifier.
-* `memory_consolidate`: performs time decay and semantic LLM merging/deduplication on active memories using Ollama.
-* `memory_relate`: establishes a graph relationship between two memory nodes.
-* `memory_export`: exports active database memories into Markdown notes for Obsidian integration.
+- Tools are defined for storing, searching, deleting, consolidating, relating, exporting, and clearing memories.
+- Each tool is encapsulated within an async function that executes specific logic in response to user input or server connections.
+- The application includes features like exception shielding for critical uncaught exceptions and unhandled promise rejections.
 
-**Architectural Purpose**
--------------------------
+#### Interactions with SQLite Tables:
 
-The MCP bridge is designed to provide a high-performance interface for interacting with the cognitive memory application's underlying database, while ensuring secure and efficient data transfer. The tools defined in this file enable various operations on semantic memories, such as storage, search, deletion, consolidation, relation establishment, and export.
+The MCP tools defined within this file interact with the local SQLite database, which stores and manages semantic memories.
