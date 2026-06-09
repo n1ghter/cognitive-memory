@@ -4,6 +4,8 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [1.1.21] - 2026-06-09
+
 ### Added
 - Fully achieved 100% line-level test coverage across all tool files and database managers.
 
