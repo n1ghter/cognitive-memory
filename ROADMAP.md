@@ -30,6 +30,11 @@ Currently, our agents must make multiple sequential MCP tool calls to traverse r
   - Adding a `domain` column to the `memories` table for efficient pre-filtering during `sqlite-vec` vector searches (`WHERE domain = 'xyz'`).
   - In Obsidian, this maps perfectly to root-level folders (`/Work`, `/Personal`), allowing seamless domain segregation without needing multiple databases like Qdrant would require.
 
+- **[ ] Knowledge Domains (Namespaces):** 
+  To support distinct contexts (e.g., `Work`, `Personal`, `Project_A`), memories will be partitioned using logical namespaces.
+  - Adding a `domain` column to the `memories` table for efficient pre-filtering during `sqlite-vec` vector searches (`WHERE domain = 'xyz'`).
+  - In Obsidian, this maps perfectly to root-level folders (`/Work`, `/Personal`), allowing seamless domain segregation without needing multiple databases like Qdrant would require.
+
 ## 📅 Phase 2: Autonomous Context Management
 *(Inspired by Letta / MemGPT)*
 
