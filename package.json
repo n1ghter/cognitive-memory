@@ -10,7 +10,7 @@
   "author": "Eduards Čemis <https://www.linkedin.com/in/cemised/>",
   "repository": {
     "type": "git",
-    "url": "https://github.com/n1ghter/cognitive-memory"
+    "url": "git+https://github.com/n1ghter/cognitive-memory.git"
   },
   "keywords": [
     "mcp",
