@@ -1,16 +1,13 @@
-```markdown
-# Memory Export Tool
+**Export Tools Annotation**
+==========================
 
-## Business Logic
+This file exports Obsidian-compatible Markdown files from the database, generating a Graph View for each memory. It fetches all active memories and edges from the database, builds edge lookup maps, and generates a separate Markdown file for each memory.
 
-This file implements the memory export tool that exports memories from a database and saves them in markdown files.
+Exposed MCP Tools:
 
-## Architectural Purpose
+*   `DatabaseManager`
 
-The main purpose of this tool is to synchronize memories across different types and formats, ensuring consistency and accuracy. It also provides a way to generate human-readable content for each memory block.
+Exposed Interactions with SQLite Tables:
 
-## MCP Tools/SQLite Interactions
-
-- This file interacts with the SQLite database using the `DatabaseManager` instance.
-- It exposes the `memory_export` function that can be called programmatically or as part of a workflow.
-```
+*   `memory` table
+*   `edges` table
