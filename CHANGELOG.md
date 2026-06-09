@@ -4,6 +4,9 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+### Added
+- Created `ROADMAP.md` outlining future architectural enhancements (Temporal Graphs, Multi-hop reasoning, Paged Memory, Background Consolidation, Verbatim Episodic Memory) based on competitive analysis.
+
 ### Changed
 - Migrated default embedding model to `qwen3-embedding:8b` (SOTA for multilingual contexts).
 - Updated `sqlite-vec` database schema to expect `4096`-dimensional vectors (previously `768`).
