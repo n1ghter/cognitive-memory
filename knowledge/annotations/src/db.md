@@ -1,7 +1,15 @@
-### Database Manager Purpose
-The `DatabaseManager` class is responsible for managing the in-process database, including creating a new instance upon request, initializing the schema with necessary tables and indexes, and providing methods to normalize record IDs and generate random UUIDs.
+```markdown
+# In-process database management module
 
-* Interacts with:
-	+ SQLite tables (`memory`, `edges`, `sync_ledger`, `embedding_cache`)
-	+ sqlite-vec extension
-* Exposes MCP tools: None
+This module provides a singleton manager for an in-process SQLite database, 
+exposing functionality to interact with the database and its tables.
+
+### Exposed MCP Tools
+
+* `sqlite-vec` extension is loaded for efficient data storage.
+* WAL mode is enabled for improved concurrency.
+
+### Architectural Purpose
+
+The primary purpose of this module is to provide a centralized interface 
+for managing the in-process database, enabling efficient and secure data access.

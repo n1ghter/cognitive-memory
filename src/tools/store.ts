@@ -44,8 +44,8 @@ export async function executeMemoryStore(args: StoreArgs) {
   // 4. Run transaction to ensure atomicity between metadata and vector tables
   const storeTx = db.transaction(() => {
     const stmt = db.prepare(`
-      INSERT INTO memory (id, text, metadata, importance, is_active, created_at, last_accessed_at, accessed_count)
-      VALUES (?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 0)
+      INSERT INTO memory (id, text, metadata, importance, is_active, created_at, updated_at, last_accessed_at, accessed_count)
+      VALUES (?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 0)
     `);
     const info = stmt.run(id, text, JSON.stringify(metadata), importance, 1);
 

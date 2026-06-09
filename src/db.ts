@@ -85,6 +85,7 @@ export class DatabaseManager {
         importance REAL DEFAULT 0.5,
         is_active INTEGER DEFAULT 1,
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
         last_accessed_at DATETIME DEFAULT CURRENT_TIMESTAMP,
         accessed_count INTEGER DEFAULT 0
       );
@@ -118,6 +119,13 @@ export class DatabaseManager {
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP
       );
     `);
+
+    // Migration for existing databases
+    try {
+      db.exec('ALTER TABLE memory ADD COLUMN updated_at DATETIME DEFAULT CURRENT_TIMESTAMP');
+    } catch (_e) {
+      // Column already exists or table doesn't exist yet
+    }
   }
 
   /**

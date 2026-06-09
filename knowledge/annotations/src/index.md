@@ -1,20 +1,26 @@
-### Semantic Summary
-#### MCP Server Application
+```markdown
+# McpServer Bootstrapping and Initialization
 
-The MCP server application provides a set of tools for managing semantic memories. The application uses the `McpServer` class to create an instance and defines several tools that interact with a local SQLite database.
+The `src/index.ts` file initializes the `McpServer` application with various tools and a database manager. This setup enables a high-performance bridge for cognitive memory management.
 
-- **memory_store**: Encrypts, hashes, vectorizes, and persists semantic memories into the database.
-- **memory_search**: Performs optimized vector similarity cosine searches on stored memories.
-- **memory_delete**: Deletes a specific semantic memory record by its identifier.
-- **memory_clear_all**: Completely wipes all memories from the database (nuclear option).
-- **memory_consolidate**: Performs time decay and semantic LLM merging/deduplication on active memories using Ollama.
-- **memory_relate**: Establishes a graph relationship between two memory nodes.
-- **memory_export**: Exports active database memories into Markdown notes for Obsidian integration.
+## Tools and Functions
 
-The tools are defined as part of the `McpServer` instance and utilize asynchronous functions to execute their logic. The application uses an `StdioServerTransport` for standard input/output and has global exception shielding mechanisms to catch uncaught exceptions and unhandled promise rejections.
+*   The server includes several tools, each responsible for a specific task:
+    *   `memory_store`: encrypts, hashes, vectorizes, and persists semantic memories into a local SQLite database.
+    *   `memory_search`: performs optimized vector similarity cosine searches on stored memories.
+    *   `memory_delete`: deletes a specific semantic memory record by its identifier.
+    *   `memory_clear_all`: completely wipes all memories from the database (Nuclear Option).
+    *   `memory_consolidate`: performs time decay and semantic LLM merging/deduplication on active memories using Ollama.
+    *   `memory_relate`: establishes a graph relationship between two memory nodes.
+    *   `memory_export`: exports active database memories into Markdown notes for Obsidian integration.
+    *   `memory_sync`: performs a bidirectional synchronization between local Obsidian Markdown files and the SQLite database.
 
-#### MCP Tools
-- MCP Tools: `memory_store`, `memory_search`, `memory_delete`, `memory_clear_all`, `memory_consolidate`, `memory_relate`, `memory_export`
+## Database Management
 
-#### Database Interaction
-The application interacts with the SQLite database through the `DatabaseManager` class and its tools.
+*   The server uses a `DatabaseManager` instance to manage connections to the SQLite database.
+*   A new `StdioServerTransport` is used for establishing communication with clients.
+
+## Exception Handling
+
+*   Global exception shielding is implemented using `process.on('uncaughtException')` and `process.on('unhandledRejection')`.
+```
