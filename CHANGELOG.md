@@ -4,6 +4,16 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+### Added
+- Implemented robust bidirectional synchronization between SQLite database and local Markdown vault (`memory_sync` tool).
+- Memory files created or updated in Obsidian (or other Markdown editors) sync directly to the AI's core SQLite schema.
+- Added extensive test coverage for `import`, `export`, and `sync` orchestrations (`sync.test.ts`, `import.test.ts`).
+
+### Fixed
+- Fixed SQLite timestamps parsing inside `import` for incremental file updates.
+- Fixed `sqlite-vec` integer limits by correctly casting `rowid` to `BigInt` when replacing embeddings during sync.
+- Fixed FOREIGN KEY constraint violations when edge targets were absent during Obsidian Markdown import.
+
 ## [1.1.21] - 2026-06-09
 
 ### Added
