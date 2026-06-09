@@ -4,6 +4,8 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [1.1.14] - 2026-06-09
+
 ### Added
 - Added automated `CHANGELOG.md` updater script mapped to npm `version` lifecycle.
 
