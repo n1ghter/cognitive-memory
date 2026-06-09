@@ -1,5 +1,5 @@
 {
-  "name": "@n1ghter/cognitive-memory",
+  "name": "@cemised/cognitive-memory",
   "version": "1.1.18",
   "description": "High-performance stdio MCP server for cognitive memory using SQLite",
   "main": "dist/index.js",
