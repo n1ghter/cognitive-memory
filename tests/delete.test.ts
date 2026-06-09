@@ -1,14 +1,13 @@
-import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { executeMemoryStore } from '../src/tools/store.js';
-import { executeMemoryDelete } from '../src/tools/delete.js';
-import { executeMemorySearch } from '../src/tools/search.js';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { DatabaseManager } from '../src/db.js';
+import { executeMemoryDelete } from '../src/tools/delete.js';
+import { executeMemoryStore } from '../src/tools/store.js';
 
 vi.mock('../src/ollama.js', () => ({
   OllamaClient: {
     getEmbedding: vi.fn(async (text: string) => {
       const vec = new Array(4096).fill(0.1);
-      vec[0] = text.length; 
+      vec[0] = text.length;
       return vec;
     }),
   },
@@ -57,6 +56,8 @@ describe('Memory Delete', () => {
   });
 
   it('should fail if no id is provided', async () => {
-    await expect(executeMemoryDelete({ id: '' })).rejects.toThrow('Invalid input: "id" is required');
+    await expect(executeMemoryDelete({ id: '' })).rejects.toThrow(
+      'Invalid input: "id" is required'
+    );
   });
 });

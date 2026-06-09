@@ -29,7 +29,7 @@ interface GraphRelateArgs {
  * @returns An object containing information about the created edge.
  */
 export async function executeMemoryRelate(args: GraphRelateArgs) {
-  let { sourceId, targetId, relationType, metadata = {} } = args;
+  const { sourceId, targetId, relationType, metadata = {} } = args;
 
   if (!sourceId || !targetId || !relationType) {
     throw new Error('Invalid input: sourceId, targetId, and relationType are required');
@@ -46,7 +46,13 @@ export async function executeMemoryRelate(args: GraphRelateArgs) {
     VALUES (?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
   `);
 
-  stmt.run(edgeId, sourceId, targetId, relationType.toLowerCase().replace(/[^a-z0-9_]/g, '_'), JSON.stringify(metadata));
+  stmt.run(
+    edgeId,
+    sourceId,
+    targetId,
+    relationType.toLowerCase().replace(/[^a-z0-9_]/g, '_'),
+    JSON.stringify(metadata)
+  );
 
   return {
     /**
@@ -64,7 +70,7 @@ export async function executeMemoryRelate(args: GraphRelateArgs) {
       id: edgeId,
       source_id: sourceId,
       target_id: targetId,
-      relation_type: relationType
-    }
+      relation_type: relationType,
+    },
   };
 }

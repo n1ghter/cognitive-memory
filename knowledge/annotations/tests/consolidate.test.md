@@ -1,11 +1,9 @@
-### Tests for Memory Consolidate Tool
-#### Purpose:
-This file tests the functionality of the Memory Consolidate tool, ensuring that it correctly consolidates memories with similar content and maintains active memory indicators.
-
-#### Interactions:
-- SQLite table: `memory`
-- MCP tools (Mocked): `OllamaClient`
-
 ```markdown
-This test suite validates the logic behind the Memory Consolidate tool. It tests scenarios where less than three memories are present, ensuring no issues arise from this case. It also checks active memory consolidation by storing and querying data in a database.
+# Consolidate Tool Test Suite
+
+This test suite ensures the proper functioning of the `executeMemoryConsolidate` tool, which consolidates duplicate memories in the system.
+
+The consolidation process is triggered when at least three active memories exist with overlapping text. This process updates the database to remove duplicates and marks them as consolidated.
+
+The tool interacts with the SQLite table "memory" and uses the OllamaClient mock.
 ```

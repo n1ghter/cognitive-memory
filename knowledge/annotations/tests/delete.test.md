@@ -1,10 +1,11 @@
-```markdown
-**Semantic Summary**
+### Semantic Summary
+#### Tests for Memory Delete Functionality
 
-This test suite validates the functionality of the MCP Memory Delete tool, ensuring that soft and hard deletes are performed correctly on memory records. It also verifies error handling for non-existent IDs and missing ID parameters.
- 
-**Exposes:**
-- `executeMemoryStore`
+This file contains unit tests for the `executeMemoryDelete` function, ensuring it correctly handles soft and hard deletes of memory records in the database. The tests also verify the expected behavior when deleting non-existent memories and handling invalid input.
+
+#### Exposed MCP Tools:
 - `executeMemoryDelete`
-- SQLite tables (`memory` table)
-```
+
+#### Interacted with SQLite Tables: 
+- `memory`
+- `memory.id`

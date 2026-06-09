@@ -1,11 +1,8 @@
 ```markdown
-# Tests for Graph Memory Relate Tools
+### Test Suite for Memory Relate MCP Tools
 
-This test suite validates the functionality of the MCP tools in `graph.test.ts`, specifically:
-* The creation of edges between valid memories using `executeMemoryRelate`
-* Handling of invalid source IDs resulting in a FOREIGN KEY constraint failed error (indicating an interaction with SQLite's tables)
+This test suite validates the functionality of the `executeMemoryRelate` tool, which establishes relationships between memories in a database. The tests cover scenarios such as creating an edge between valid memories, handling non-existent source IDs, and empty relation types.
 
-Tools used:
-* `executeMemoryStore` and `executeMemoryRelate` from `store.js` and `graph.js`, respectively
-* `DatabaseManager` for interacting with SQLite tables
+* Uses SQLite database for storage
+* Exposes `executeMemoryRelate` MCP tool
 ```

@@ -1,12 +1,13 @@
-### Semantic Summary
+```markdown
+# Configuration for Vitest Testing Framework
 
-This configuration file sets up the testing environment for a Node.js application, specifying global variables and setup files. The test coverage is configured to capture code changes in the source directory (`src`), excluding the initial bootstrap file (`index.ts`). The test framework is enabled using Vitest.
+This configuration defines the testing environment for the application, including global variables and setup files. The test suite is set up to run in a Node.js environment with TypeScript support.
 
-### Exposed MCP Tools/Interactions
+Exposed MCP Tools:
+- Vitest
 
-* Vitest configuration
-* SQLite interaction (not explicitly listed, but related to testing environment)
+Interactions with SQLite Tables: None
 
-### Architectural Purpose
-
-This configuration serves as a business logic-driven setup for end-to-end testing and code coverage analysis in the application.
+Purpose:
+To establish a consistent testing environment across the application.
+```

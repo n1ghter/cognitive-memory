@@ -1,13 +1,13 @@
-import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { executeMemoryStore } from '../src/tools/store.js';
-import { executeMemoryRelate } from '../src/tools/graph.js';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { DatabaseManager } from '../src/db.js';
+import { executeMemoryRelate } from '../src/tools/graph.js';
+import { executeMemoryStore } from '../src/tools/store.js';
 
 vi.mock('../src/ollama.js', () => ({
   OllamaClient: {
     getEmbedding: vi.fn(async (text: string) => {
       const vec = new Array(4096).fill(0.1);
-      vec[0] = text.length; 
+      vec[0] = text.length;
       return vec;
     }),
   },
@@ -25,7 +25,7 @@ describe('Memory Relate', () => {
     const relRes = await executeMemoryRelate({
       sourceId: s1.record.id,
       targetId: s2.record.id,
-      relationType: 'related_to'
+      relationType: 'related_to',
     });
 
     expect(relRes.success).toBe(true);
@@ -35,18 +35,22 @@ describe('Memory Relate', () => {
 
   it('should fail if source does not exist', async () => {
     const s2 = await executeMemoryStore({ text: 'Concept B' });
-    await expect(executeMemoryRelate({
-      sourceId: 'fake-id',
-      targetId: s2.record.id,
-      relationType: 'related_to'
-    })).rejects.toThrow('FOREIGN KEY constraint failed'); // SQLite throws this
+    await expect(
+      executeMemoryRelate({
+        sourceId: 'fake-id',
+        targetId: s2.record.id,
+        relationType: 'related_to',
+      })
+    ).rejects.toThrow('FOREIGN KEY constraint failed'); // SQLite throws this
   });
 
   it('should fail if relation is empty', async () => {
-    await expect(executeMemoryRelate({
-      sourceId: 'id1',
-      targetId: 'id2',
-      relationType: ''
-    })).rejects.toThrow('Invalid input: sourceId, targetId, and relationType are required');
+    await expect(
+      executeMemoryRelate({
+        sourceId: 'id1',
+        targetId: 'id2',
+        relationType: '',
+      })
+    ).rejects.toThrow('Invalid input: sourceId, targetId, and relationType are required');
   });
 });

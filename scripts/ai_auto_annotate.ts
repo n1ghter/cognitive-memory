@@ -1,8 +1,8 @@
-import { OllamaClient } from '../src/ollama.js';
 import { execSync } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { OllamaClient } from '../src/ollama.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -12,7 +12,7 @@ const ANNOTATIONS_DIR = path.join(ROOT_DIR, 'knowledge', 'annotations');
 /**
  * Helper to extract code from markdown backticks.
  */
-function extractCode(llmResponse: string): string {
+function _extractCode(llmResponse: string): string {
   const match = llmResponse.match(/```(?:typescript|ts)?\n([\s\S]*?)```/);
   return match ? match[1].trim() : llmResponse.trim();
 }
@@ -34,8 +34,8 @@ async function run() {
     const gitDiffOutput = execSync('git diff --cached --name-only --diff-filter=ACM').toString();
     const tsFiles = gitDiffOutput
       .split('\n')
-      .map(f => f.trim())
-      .filter(f => f.endsWith('.ts'));
+      .map((f) => f.trim())
+      .filter((f) => f.endsWith('.ts'));
 
     if (tsFiles.length === 0) {
       console.log('No .ts files to annotate.');
@@ -57,17 +57,20 @@ Do NOT modify the logic, only add comments. Return ONLY the full updated code wr
 ${code}`;
 
       try {
-        const docRes = await OllamaClient.generateText(jsDocPrompt);
+        const _docRes = await OllamaClient.generateText(jsDocPrompt);
         const updatedCode = code; // extractCode(docRes);
-        
+
         // Simple heuristic to ensure it didn't truncate
-        if (false) { // Disabled JSDoc generation because it's too dangerous
+        if (false) {
+          // Disabled JSDoc generation because it's too dangerous
 
           fs.writeFileSync(absolutePath, updatedCode, 'utf8');
           console.log(`   ✅ JSDoc inserted into ${relativePath}`);
           execSync(`git add "${absolutePath}"`);
         } else {
-          console.log(`   ⚠️ JSDoc response was abnormally short. Skipping JSDoc insertion to prevent corruption.`);
+          console.log(
+            `   ⚠️ JSDoc response was abnormally short. Skipping JSDoc insertion to prevent corruption.`
+          );
         }
       } catch (err) {
         console.error(`   ❌ Failed to generate JSDoc for ${relativePath}`, err);
@@ -87,12 +90,12 @@ ${code}`;
 
       try {
         const annotationRes = await OllamaClient.generateText(annotationPrompt);
-        
+
         // Use nested structure!
         // relativePath is like "src/tools/export.ts"
         // Target: "knowledge/annotations/src/tools/export.md"
         const targetMarkdownPath = path.join(ANNOTATIONS_DIR, relativePath.replace(/\.ts$/, '.md'));
-        
+
         ensureDirectoryExistence(targetMarkdownPath);
         fs.writeFileSync(targetMarkdownPath, annotationRes.trim(), 'utf8');
         console.log(`   ✅ Annotation generated at ${path.relative(ROOT_DIR, targetMarkdownPath)}`);

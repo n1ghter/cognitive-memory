@@ -8,7 +8,7 @@ export default defineConfig({
     coverage: {
       all: true,
       include: ['src/**/*.ts'],
-      exclude: ['src/index.ts'] // Usually exclude bootstrap index
-    }
+      exclude: ['src/index.ts'], // Usually exclude bootstrap index
+    },
   },
 });

@@ -1,16 +1,16 @@
-import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { executeMemoryStore } from '../src/tools/store.js';
-import { executeMemoryExport } from '../src/tools/export.js';
+import fs from 'node:fs';
+import os from 'node:os';
+import path from 'node:path';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { DatabaseManager } from '../src/db.js';
-import fs from 'fs';
-import path from 'path';
-import os from 'os';
+import { executeMemoryExport } from '../src/tools/export.js';
+import { executeMemoryStore } from '../src/tools/store.js';
 
 vi.mock('../src/ollama.js', () => ({
   OllamaClient: {
     getEmbedding: vi.fn(async (text: string) => {
       const vec = new Array(4096).fill(0.1);
-      vec[0] = text.length; 
+      vec[0] = text.length;
       return vec;
     }),
   },

@@ -1,8 +1,13 @@
-```markdown
-# End-to-End Tests for Store, Search, and Relate Functionality
-The purpose of this file is to run end-to-end tests for the store, search, relate, and delete functionality in our database tools.
+**End-to-End Testing for Store and Search Functionality**
+===========================================================
 
-It uses the MCP tools `executeMemoryStore`, `executeMemorySearch`, and `executeMemoryRelate` to test these functionalities. Additionally, it interacts with SQLite tables through the `DatabaseManager`.
+This file runs end-to-end (E2E) tests to validate the store and search functionality of the application. It checks the success of storing, searching, relating, and deleting records in a simulated database environment.
 
-The tests ensure that the various operations are executed correctly and cover different scenarios, such as storing records, searching for text, relating records, and deleting records.
-```
+The test suite uses the `DatabaseManager` class to interact with the SQLite database (`mcp`) and executes several tools:
+
+*   `executeMemoryStore` for storing records
+*   `executeMemorySearch` for searching records
+*   `executeMemoryRelate` for relating records through a graph (utilizing `graph.js`)
+*   `executeMemoryDelete` for deleting records
+
+The test ensures that each step is executed successfully and logs the results to the console.

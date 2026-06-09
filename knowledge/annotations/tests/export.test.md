@@ -1,7 +1,13 @@
-### Semantic Summary (Annotation)
-#### Why
-This test suite validates the functionality of the `executeMemoryExport` tool, ensuring that it correctly exports memories to Markdown files. It checks for the presence of category information in the exported files and verifies the successful execution of memory export operations.
+**Semantic Summary**
+======================
 
-#### Exposes
-- MCP tools: None
-- SQLite tables: None
+This test file verifies the functionality of memory export tools in the application. It ensures that memories are correctly exported to Markdown files with frontmatter, including category information.
+
+Expose:
+* SQLite tables: None
+* MCP tools:
+	+ `executeMemoryExport`
+	+ `executeMemoryStore`
+
+Purpose:
+The purpose of this file is to validate the business logic of memory export tools, ensuring they meet the application's requirements.

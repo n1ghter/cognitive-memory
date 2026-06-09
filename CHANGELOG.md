@@ -3,6 +3,13 @@
 All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
+### Added
+- Integrated **Biome** as the universal formatter and linter for the project, replacing ESLint/Prettier.
+- Added new NPM scripts: `format`, `lint`, and `check` for blazing-fast code quality enforcement.
+- Strict `LF` line endings are now enforced globally to prevent cross-platform CRLF git issues.
+
+### Changed
+- Ran project-wide `biome check --write` to auto-format all TypeScript source files, normalize indentation, and remove unused imports.
 
 ### Added
 - Comprehensive test suite for all MCP tools (`cache`, `db`, `clear`, `consolidate`, `delete`, `export`, `graph`, `search`, `store`).
@@ -15,12 +22,21 @@ All notable changes to this project will be documented in this file.
 - Fixed hardcoded table name bug in `consolidate.ts` (attempted to query `related` instead of `edges`).
 
 ## [1.1.18] - 2026-06-09
+### Changed
+- Scope npm package to `@cemised` to prevent registry collision.
+- Update repository URL to real github handle.
 
 ## [1.1.17] - 2026-06-09
+### Docs
+- Set package authorship to Eduards Čemis.
 
 ## [1.1.16] - 2026-06-09
+### Docs
+- Add generated hero image to README.
 
 ## [1.1.15] - 2026-06-09
+### Build
+- Add npm package metadata and `files` array targeting `dist/` directory.
 
 ## [1.1.14] - 2026-06-09
 

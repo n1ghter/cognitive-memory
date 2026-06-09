@@ -1,6 +1,6 @@
-import { executeMemoryStore } from '../src/tools/store.js';
-import { executeMemorySearch } from '../src/tools/search.js';
 import { DatabaseManager } from '../src/db.js';
+import { executeMemorySearch } from '../src/tools/search.js';
+import { executeMemoryStore } from '../src/tools/store.js';
 
 /**
  * Run end-to-end (E2E) tests for store and search functionality.
@@ -23,7 +23,7 @@ async function runE2E(): Promise<void> {
       /**
        * Importance level of the stored record (on a scale of 0 to 1).
        */
-      importance: 0.8
+      importance: 0.8,
     });
     console.log('Store 1 Success:', storeRes1.success, storeRes1.record.id);
 
@@ -39,7 +39,7 @@ async function runE2E(): Promise<void> {
       /**
        * Importance level of the stored record (on a scale of 0 to 1).
        */
-      importance: 0.8
+      importance: 0.8,
     });
     console.log('Store 2 Success:', storeRes2.success, storeRes2.record.id);
 
@@ -57,7 +57,7 @@ async function runE2E(): Promise<void> {
       /**
        * Threshold for matching records (on a scale of 0 to 1).
        */
-      threshold: 0.5
+      threshold: 0.5,
     });
 
     console.log('Search Success:', searchRes.success);
@@ -72,7 +72,7 @@ async function runE2E(): Promise<void> {
     const relateRes = await executeMemoryRelate({
       sourceId: storeRes1.record.id,
       targetId: storeRes2.record.id,
-      relationType: 'compared_to'
+      relationType: 'compared_to',
     });
     console.log('Relate Success:', relateRes.success);
 
@@ -81,10 +81,9 @@ async function runE2E(): Promise<void> {
     const { executeMemoryDelete } = await import('../src/tools/delete.js');
     const deleteRes = await executeMemoryDelete({
       id: storeRes2.record.id,
-      hard: true
+      hard: true,
     });
     console.log('Delete Success:', deleteRes.success);
-
   } catch (error) {
     console.error('E2E Test Failed:', error);
   } finally {

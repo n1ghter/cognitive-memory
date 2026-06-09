@@ -1,5 +1,5 @@
-import fs from 'fs';
-import path from 'path';
+import fs from 'node:fs';
+import path from 'node:path';
 
 const packageJsonPath = path.join(process.cwd(), 'package.json');
 const changelogPath = path.join(process.cwd(), 'CHANGELOG.md');

@@ -1,10 +1,9 @@
-```markdown
 **Semantic Summary**
+======================
 
-This test file verifies the functionality of the `executeMemoryClearAll` tool, ensuring that data is successfully cleared from the database when the confirmation option is set to `true`. It also tests that an error occurs when attempting to clear data without confirmation. Specifically, this test interacts with:
- 
-* MCP tools: `executeMemoryStore`, `executeMemoryRelate`
-* SQLite tables: `memory`, `vec_memory`, `edges`, `embedding_cache`
+This test suite validates the functionality of the `executeMemoryClearAll` tool, which clears all data from the database and related caches. The test ensures that:
 
-The purpose of this file is to validate the business logic surrounding memory clearance in our application.
-```
+* Data is successfully cleared when confirming deletion.
+* A rejection occurs if confirmation is not provided.
+
+Note: This test interacts with the `DatabaseManager` to update SQLite tables (`memory`, `vec_memory`, `edges`, and `embedding_cache`) and uses the `executeMemoryClearAll` tool, which exposes the MCP tools.
