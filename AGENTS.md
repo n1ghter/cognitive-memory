@@ -45,6 +45,9 @@ This project is indexed by GitNexus as **cognitive-memory** (311 symbols, 458 re
 ## Changelog Automation
 
 Every time an AI Agent completes a significant task, feature implementation, bug fix, or refactoring session in this repository, it MUST automatically update the `CHANGELOG.md` file as part of its final execution steps.
+
+⚠️ **CRITICAL ORDER OF OPERATIONS:** This project has an automated `update-changelog.js` script bound to the `npm version` lifecycle. You MUST write your changes under `## [Unreleased]` **BEFORE** running `npm version patch`. If you run `npm version` first, the script will consume an empty `[Unreleased]` block and generate a blank changelog entry!
+
 1. **Format:** Adhere strictly to the "Keep a Changelog" format (https://keepachangelog.com/).
 2. **Location:** Always append new entries under the `## [Unreleased]` section header. If the header doesn't exist, create it above the latest version.
 3. **Categories:** Group changes under appropriate sub-headers: `### Added`, `### Changed`, `### Deprecated`, `### Removed`, `### Fixed`, or `### Security`.
