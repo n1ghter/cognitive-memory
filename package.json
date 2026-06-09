@@ -4,6 +4,23 @@
   "description": "High-performance stdio MCP server for cognitive memory using SQLite",
   "main": "dist/index.js",
   "type": "module",
+  "author": "Cognitive Memory Contributors",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/yourusername/cognitive-memory"
+  },
+  "keywords": [
+    "mcp",
+    "ai",
+    "memory",
+    "sqlite",
+    "obsidian",
+    "agent",
+    "rag"
+  ],
+  "files": [
+    "dist"
+  ],
   "scripts": {
     "build": "tsc",
     "start": "node dist/index.js",
