@@ -32,7 +32,64 @@ const server = new McpServer({
    * Version of the server application
    */
   version: '1.0.0',
-});
+});/**
+ * Define a tool that performs optimized vector similarity cosine searches on stored memories.
+ */
+server.tool(
+  /**
+   * Tool ID
+   */
+  'memory_search',
+  /**
+   * Tool description
+   */
+  'Perform optimized vector similarity cosine searches on stored memories',
+  {
+    /**
+     * Input parameter for the semantic search query.
+     */
+    query: z.string().describe('Semantic search query'),
+    /**
+     * Optional input parameter for maximum closely related memories to retrieve (1-100).
+     */
+    limit: z
+      .number()
+      .int()
+      .min(1)
+      .max(100)
+      .optional()
+      .default(5)
+      .describe('Max number of closely related memories to retrieve'),
+    /**
+     * Optional input parameter for minimum cosine similarity match threshold (0.0-1.0).
+     */
+    threshold: z
+      .number()
+      .min(0.0)
+      .max(1.0)
+      .optional()
+      .default(0.6)
+      .describe('Minimum cosine similarity match threshold (0.0 to 1.0)'),
+  },
+  /**
+   * Asynchronous function that executes the tool's logic.
+   */
+  async ({ query, limit, threshold }) => {
+    try {
+      const result = await executeMemorySearch({ query, limit, threshold });
+      return {
+        content: [{ type: 'text', text: JSON.stringify(result, null, 2) }],
+      };
+    } catch (error: any) {
+      console.error('[MCP Error] memory_search failed:', error);
+      return {
+        isError: true,
+        content: [{ type: 'text', text: error.message || String(error) }],
+      };
+    }
+  }
+);
+
 /**
  * Define a tool that encrypts, hashes, vectorizes, and persists semantic memories into a local SQLite database.
  */
@@ -79,46 +136,6 @@ server.tool(
       };
     } catch (error: any) {
       console.error('[MCP Error] memory_store failed:', error);
-      return {
-        isError: true,
-        content: [{ type: 'text', text: error.message || String(error) }],
-      };
-    }
-  }
-);
-
-/**
- * Define a tool that performs a bidirectional synchronization between Obsidian and SQLite.
- */
-server.tool(
-  /**
-   * Tool ID
-   */
-  'memory_sync',
-  /**
-   * Tool description
-   */
-  'Perform a bidirectional synchronization between local Obsidian Markdown files and the SQLite database',
-  {
-    /**
-     * Optional input parameter for custom path to the Obsidian vault directory.
-     */
-    vaultPath: z
-      .string()
-      .optional()
-      .describe('Optional custom path to the Obsidian vault directory'),
-  },
-  /**
-   * Asynchronous function that executes the tool's logic.
-   */
-  async ({ vaultPath }) => {
-    try {
-      const result = await executeMemorySync({ vaultPath });
-      return {
-        content: [{ type: 'text', text: JSON.stringify(result, null, 2) }],
-      };
-    } catch (error: any) {
-      console.error('[MCP Error] memory_sync failed:', error);
       return {
         isError: true,
         content: [{ type: 'text', text: error.message || String(error) }],
@@ -179,55 +196,37 @@ server.tool(
 );
 
 /**
- * Define a tool that performs optimized vector similarity cosine searches on stored memories.
+ * Define a tool that performs a bidirectional synchronization between Obsidian and SQLite.
  */
 server.tool(
   /**
    * Tool ID
    */
-  'memory_search',
+  'memory_sync',
   /**
    * Tool description
    */
-  'Perform optimized vector similarity cosine searches on stored memories',
+  'Perform a bidirectional synchronization between local Obsidian Markdown files and the SQLite database',
   {
     /**
-     * Input parameter for the semantic search query.
+     * Optional input parameter for custom path to the Obsidian vault directory.
      */
-    query: z.string().describe('Semantic search query'),
-    /**
-     * Optional input parameter for maximum closely related memories to retrieve (1-100).
-     */
-    limit: z
-      .number()
-      .int()
-      .min(1)
-      .max(100)
+    vaultPath: z
+      .string()
       .optional()
-      .default(5)
-      .describe('Max number of closely related memories to retrieve'),
-    /**
-     * Optional input parameter for minimum cosine similarity match threshold (0.0-1.0).
-     */
-    threshold: z
-      .number()
-      .min(0.0)
-      .max(1.0)
-      .optional()
-      .default(0.6)
-      .describe('Minimum cosine similarity match threshold (0.0 to 1.0)'),
+      .describe('Optional custom path to the Obsidian vault directory'),
   },
   /**
    * Asynchronous function that executes the tool's logic.
    */
-  async ({ query, limit, threshold }) => {
+  async ({ vaultPath }) => {
     try {
-      const result = await executeMemorySearch({ query, limit, threshold });
+      const result = await executeMemorySync({ vaultPath });
       return {
         content: [{ type: 'text', text: JSON.stringify(result, null, 2) }],
       };
     } catch (error: any) {
-      console.error('[MCP Error] memory_search failed:', error);
+      console.error('[MCP Error] memory_sync failed:', error);
       return {
         isError: true,
         content: [{ type: 'text', text: error.message || String(error) }],
@@ -380,8 +379,7 @@ server.tool(
       };
     }
   }
-);
-/**
+);/**
  * Bootstrap function that sets up the server application.
  */
 async function bootstrap() {
