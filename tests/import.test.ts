@@ -295,7 +295,7 @@ id: db-error-3
     const future = new Date(Date.now() + 10000);
     fs.utimesSync(p3, future, future);
     
-    let prepareCallCount = 0;
+
     const originalPrepare2 = db.prepare.bind(db);
     const dbSpy2 = vi.spyOn(db, 'prepare').mockImplementation((sql: string) => {
       // Throw only when inserting edges

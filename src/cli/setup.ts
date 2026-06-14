@@ -83,7 +83,7 @@ export async function runSetup() {
           const content = fs.readFileSync(configPath, 'utf-8');
 
           if (format === 'json') {
-            let json = JSON.parse(content || '{}');
+            const json = JSON.parse(content || '{}');
             if (!json[rootKey]) json[rootKey] = {};
 
             if (json[rootKey][MCP_SERVER_NAME]) {

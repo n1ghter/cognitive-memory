@@ -84,8 +84,11 @@ describe('Memory Export', () => {
       f.includes((targetId as string).split(':')[1] || targetId)
     );
 
-    const sourceContent = fs.readFileSync(path.join(tmpDir, sourceFile!), 'utf-8');
-    const targetContent = fs.readFileSync(path.join(tmpDir, targetFile!), 'utf-8');
+    if (!sourceFile || !targetFile) {
+      throw new Error('Exported markdown files not found');
+    }
+    const sourceContent = fs.readFileSync(path.join(tmpDir, sourceFile), 'utf-8');
+    const targetContent = fs.readFileSync(path.join(tmpDir, targetFile), 'utf-8');
 
     expect(sourceContent).toContain('**references** ➡️ [[Memory_');
     expect(targetContent).toContain('⬅️ **references** by [[Memory_');
@@ -138,6 +141,7 @@ describe('Memory Export', () => {
     db.prepare('UPDATE memory SET updated_at = ? WHERE id = ?').run('2026-06-14 10:00:00', res1.record.id);
 
     const expRes1 = await executeMemoryExport({ vaultPath: tmpDir });
+    expect(expRes1.success).toBe(true);
     
     const shortId = (res1.record.id as string).split(':')[1] || res1.record.id;
     const filePath = path.join(tmpDir, `Memory_${shortId}.md`);
@@ -149,6 +153,7 @@ describe('Memory Export', () => {
 
     // Export again
     const expRes2 = await executeMemoryExport({ vaultPath: tmpDir });
+    expect(expRes2.success).toBe(true);
     
     // The file should still contain human edit
     const content = fs.readFileSync(filePath, 'utf-8');

@@ -1,9 +1,11 @@
-```markdown
-### Why (Business Logic, Architectural Purpose)
+### Semantic Summary
+#### Business Logic and Architectural Purpose
 
-This setup script is designed to automate the configuration of cognitive-memory (MCP) servers in various development environments. It scans for existing MCP server configurations and updates or creates them as needed.
+This script is responsible for scanning for installed AI agents and IDEs, detecting if their configuration files already contain cognitive-memory setup. If a file needs updating with the standard MCP config, it injects or appends this to the relevant path.
 
-The script interacts with SQLite tables not explicitly listed here but is responsible for exposing standard CLI tools such as `npx`.
+Exposed tools:
+* `fs`
+* SQLite tables are not interacted with in this script
 
-It utilizes a predefined list of targets, each corresponding to a specific IDE or editor.
-```
+#### Why
+This script's purpose is to facilitate the automation and consistency of setting up the Cognitive Memory Protocol (MCP) across various configurations and platforms.
