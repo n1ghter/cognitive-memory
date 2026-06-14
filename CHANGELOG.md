@@ -4,6 +4,17 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [1.5.6] - 2026-06-15
+
+### Added
+- **Graph UX**: Added "Connected Memories" section to `NodeDetailsPanel` to traverse connected nodes directly.
+- **Graph UX**: Added empty state overlay ("No matches found") when search or filter returns no results.
+- **Graph UX**: Added `Escape` key handler to quickly clear search input.
+- **Responsive UI**: Updated layout of UI overlays to dynamically adapt for mobile screens via CSS media queries.
+
+### Fixed
+- **CI Pipeline**: Rebuilt `pnpm-lock.yaml` to fix out-of-sync package specifications that blocked the GitHub Actions CI `test` job.
+
 ## [1.5.5] - 2026-06-14
 
 ### Fixed

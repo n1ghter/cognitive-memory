@@ -4,9 +4,18 @@ import { useState } from 'react';
 interface NodeDetailsPanelProps {
   selectedNode: any;
   onClose: () => void;
+  links: any[];
+  allNodes: any[];
+  onNavigateToNode: (node: any) => void;
 }
 
-export default function NodeDetailsPanel({ selectedNode, onClose }: NodeDetailsPanelProps) {
+export default function NodeDetailsPanel({
+  selectedNode,
+  onClose,
+  links,
+  allNodes,
+  onNavigateToNode,
+}: NodeDetailsPanelProps) {
   const [copiedId, setCopiedId] = useState<string | null>(null);
 
   const handleCopy = (text: string, id: string) => {
@@ -16,28 +25,7 @@ export default function NodeDetailsPanel({ selectedNode, onClose }: NodeDetailsP
   };
 
   return (
-    <div
-      style={{
-        position: 'absolute',
-        right: selectedNode ? '20px' : '-400px',
-        top: '90px',
-        bottom: '20px',
-        width: '350px',
-        background: 'rgba(15, 23, 42, 0.65)',
-        backdropFilter: 'blur(24px)',
-        WebkitBackdropFilter: 'blur(24px)',
-        borderRadius: '20px',
-        border: '1px solid rgba(255, 255, 255, 0.08)',
-        boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.1)',
-        zIndex: 20,
-        transition: 'right 0.4s cubic-bezier(0.16, 1, 0.3, 1)',
-        display: 'flex',
-        flexDirection: 'column',
-        overflow: 'hidden',
-        color: 'white',
-        padding: '24px',
-      }}
-    >
+    <div className={`node-details-panel ${selectedNode ? 'open' : 'closed'}`}>
       {selectedNode && (
         <>
           <div
@@ -232,7 +220,7 @@ export default function NodeDetailsPanel({ selectedNode, onClose }: NodeDetailsP
             </div>
 
             {selectedNode.metadata && (
-              <div style={{ marginTop: 'auto' }}>
+              <div>
                 <h4
                   style={{
                     fontSize: '0.75rem',
@@ -270,6 +258,88 @@ export default function NodeDetailsPanel({ selectedNode, onClose }: NodeDetailsP
                 </pre>
               </div>
             )}
+
+            {/* Connected Memories */}
+            <div style={{ marginTop: 'auto', paddingBottom: '10px' }}>
+              <h4
+                style={{
+                  fontSize: '0.75rem',
+                  color: '#94a3b8',
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.1em',
+                  marginBottom: '12px',
+                  fontWeight: 600,
+                }}
+              >
+                Connected Memories
+              </h4>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+                {(() => {
+                  const connectedEdges = links.filter(
+                    (link) =>
+                      link.source.id === selectedNode.id ||
+                      link.target.id === selectedNode.id ||
+                      link.source === selectedNode.id ||
+                      link.target === selectedNode.id
+                  );
+                  if (connectedEdges.length === 0) {
+                    return (
+                      <span style={{ fontSize: '0.8rem', color: '#64748b' }}>No connections.</span>
+                    );
+                  }
+
+                  // Map to the other node
+                  const connectedNodes = connectedEdges
+                    .map((link) => {
+                      const sourceId =
+                        typeof link.source === 'object' ? link.source.id : link.source;
+                      const targetId =
+                        typeof link.target === 'object' ? link.target.id : link.target;
+                      const otherId = sourceId === selectedNode.id ? targetId : sourceId;
+                      return allNodes.find((n) => n.id === otherId);
+                    })
+                    .filter(Boolean);
+
+                  return connectedNodes.map((node) => (
+                    <button
+                      key={node.id}
+                      type="button"
+                      onClick={() => onNavigateToNode(node)}
+                      style={{
+                        background: 'rgba(59, 130, 246, 0.15)',
+                        border: '1px solid rgba(59, 130, 246, 0.3)',
+                        color: '#93c5fd',
+                        padding: '6px 12px',
+                        borderRadius: '100px',
+                        fontSize: '0.75rem',
+                        cursor: 'pointer',
+                        transition: 'all 0.2s',
+                        maxWidth: '100%',
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                        whiteSpace: 'nowrap',
+                      }}
+                      /* v8 ignore start */
+                      onMouseOver={(e) => {
+                        e.currentTarget.style.background = 'rgba(59, 130, 246, 0.25)';
+                      }}
+                      onFocus={(e) => {
+                        e.currentTarget.style.background = 'rgba(59, 130, 246, 0.25)';
+                      }}
+                      onMouseOut={(e) => {
+                        e.currentTarget.style.background = 'rgba(59, 130, 246, 0.15)';
+                      }}
+                      onBlur={(e) => {
+                        e.currentTarget.style.background = 'rgba(59, 130, 246, 0.15)';
+                      }}
+                      /* v8 ignore stop */
+                    >
+                      {node.name || node.fullText || node.id.substring(0, 8)}
+                    </button>
+                  ));
+                })()}
+              </div>
+            </div>
           </div>
         </>
       )}

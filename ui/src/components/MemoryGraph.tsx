@@ -187,6 +187,7 @@ export default function MemoryGraph() {
         </div>
 
         <div
+          className="search-container"
           style={{
             background: 'rgba(15, 23, 42, 0.7)',
             backdropFilter: 'blur(10px)',
@@ -197,7 +198,6 @@ export default function MemoryGraph() {
             gap: 10,
             pointerEvents: 'auto',
             border: '1px solid rgba(255,255,255,0.1)',
-            width: '300px',
           }}
         >
           <Search size={16} color="#94a3b8" />
@@ -209,7 +209,10 @@ export default function MemoryGraph() {
             onChange={(e) => setSearchQuery(e.target.value)}
             /* v8 ignore start */
             onKeyDown={(e) => {
-              if (e.key === 'Enter' && searchQuery) {
+              if (e.key === 'Escape') {
+                setSearchQuery('');
+                e.currentTarget.blur();
+              } else if (e.key === 'Enter' && searchQuery) {
                 const matchedNodes = filteredData.nodes.filter((n) => n._highlighted);
                 if (matchedNodes.length > 0) {
                   const nextIndex = (searchIndex + 1) % matchedNodes.length;
@@ -239,19 +242,7 @@ export default function MemoryGraph() {
         </div>
       </div>
 
-      <div
-        style={{
-          position: 'absolute',
-          top: 75,
-          right: 20,
-          zIndex: 10,
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'flex-end',
-          gap: 8,
-          pointerEvents: 'none',
-        }}
-      >
+      <div className="filter-container">
         <div style={{ display: 'flex', gap: 8, pointerEvents: 'auto' }}>
           {(['all', 'global', 'local'] as const).map((filter) => (
             <button
@@ -364,24 +355,56 @@ export default function MemoryGraph() {
         </div>
       )}
 
+      {/* Search Empty State */}
+      {data.nodes.length > 0 && filteredData.nodes.length === 0 && (
+        <div
+          style={{
+            position: 'absolute',
+            top: '50%',
+            left: '50%',
+            transform: 'translate(-50%, -50%)',
+            background: 'rgba(255, 255, 255, 0.05)',
+            backdropFilter: 'blur(12px)',
+            padding: '40px 50px',
+            borderRadius: '24px',
+            color: 'rgba(255, 255, 255, 0.8)',
+            textAlign: 'center',
+            maxWidth: '550px',
+            border: '1px solid rgba(255, 255, 255, 0.1)',
+            boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5)',
+            zIndex: 5,
+          }}
+        >
+          <h3
+            style={{
+              marginTop: 0,
+              fontSize: '1.5rem',
+              color: 'white',
+              fontWeight: 600,
+              letterSpacing: '-0.02em',
+            }}
+          >
+            No matches found
+          </h3>
+          <p style={{ lineHeight: '1.6', fontSize: '1rem', marginBottom: 0 }}>
+            Try modifying your search query or switching the active filter.
+          </p>
+        </div>
+      )}
+
       {/* Sidebar Details Panel */}
       {/* v8 ignore start */}
-      <NodeDetailsPanel selectedNode={selectedNode} onClose={() => setSelectedNode(null)} />
+      <NodeDetailsPanel
+        selectedNode={selectedNode}
+        onClose={() => setSelectedNode(null)}
+        links={data.links}
+        allNodes={data.nodes}
+        onNavigateToNode={handleNodeClick}
+      />
       {/* v8 ignore stop */}
 
       {/* Graph Controls Overlay */}
-      <div
-        style={{
-          position: 'absolute',
-          bottom: 30,
-          right: selectedNode ? 400 : 30,
-          zIndex: 10,
-          display: 'flex',
-          flexDirection: 'column',
-          gap: 10,
-          transition: 'right 0.4s cubic-bezier(0.16, 1, 0.3, 1)',
-        }}
-      >
+      <div className="graph-controls">
         <button
           type="button"
           onClick={() => {

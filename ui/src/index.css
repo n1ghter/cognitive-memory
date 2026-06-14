@@ -30,6 +30,60 @@ body {
   }
 }
 
+.node-details-panel {
+  position: absolute;
+  top: 90px;
+  bottom: 20px;
+  width: 350px;
+  background: rgba(15, 23, 42, 0.65);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border-radius: 20px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  z-index: 20;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  color: white;
+  padding: 24px;
+  right: -400px;
+  transition: right 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.node-details-panel.open {
+  right: 20px;
+}
+
+@media (max-width: 768px) {
+  .search-container {
+    width: calc(100% - 40px);
+  }
+  .filter-container {
+    top: auto;
+    bottom: 90px;
+    right: 20px;
+  }
+  .graph-controls {
+    bottom: 20px;
+    flex-direction: row;
+    right: 20px !important;
+  }
+  .node-details-panel {
+    top: auto;
+    left: 0;
+    right: 0 !important;
+    width: 100%;
+    height: 50vh;
+    border-radius: 20px 20px 0 0;
+    bottom: -60vh;
+    transition: bottom 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  .node-details-panel.open {
+    bottom: 0;
+  }
+}
+
 /* Custom Tooltip Styling */
 .custom-tooltip {
   background: rgba(15, 23, 42, 0.75);
