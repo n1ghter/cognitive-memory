@@ -1,12 +1,8 @@
-### Semantic Summary: Web Server Startup
-#### Business Logic and Architectural Purpose
+```markdown
+### Web Server Start Functionality
 
-The `startWebServer` function initiates the web server to serve a graphical user interface (GUI) for displaying network visualization data. It exposes a REST API endpoint `/api/graph` that fetches graph nodes and links from an underlying database using SQLite.
+This file exports a function `startWebServer` that starts an Express.js web server, responsible for serving the UI dashboard and providing graph data through API endpoints. It interacts with SQLite tables via the `DatabaseManager` instance.
 
-This setup enables a web-based frontend to display interactive visualizations, allowing users to explore complex network structures.
-
-### Explicitly Listed MCP Tools and Interactions
-
-*   SQLite tables (`memory`, `edges`)
-*   Exposes CORS capabilities
-*   Serves static files from the UI dist directory
+- Exposes API endpoint '/api/graph' to fetch graph data.
+- Serves static files from the UI dist directory.
+```

@@ -27,6 +27,8 @@
   "scripts": {
     "build": "tsc -p tsconfig.build.json",
     "start": "node dist/index.js",
+    "dashboard": "node dist/index.js dashboard",
+    "ui": "node dist/index.js ui",
     "dev": "ts-node-esm src/index.ts",
     "gitnexus": "gitnexus analyze --skip-skills --skip-agents-md",
     "test": "vitest run",

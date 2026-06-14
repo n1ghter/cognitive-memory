@@ -51,6 +51,13 @@ export function startWebServer(port: number = 3000) {
   });
 
   app.listen(port, () => {
-    console.error(`Web UI Dashboard is running at http://localhost:${port}`);
+    const url = `http://localhost:${port}`;
+    console.log(`Web UI Dashboard is running at ${url}`);
+    
+    // Auto-open browser
+    import('child_process').then(({ exec }) => {
+      const start = process.platform === 'darwin' ? 'open' : process.platform === 'win32' ? 'start' : 'xdg-open';
+      exec(`${start} ${url}`);
+    }).catch(err => console.error('Failed to open browser:', err));
   });
 }
