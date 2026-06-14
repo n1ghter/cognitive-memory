@@ -1,9 +1,11 @@
+```markdown
 ### Semantic Summary
 
-This file contains tests for the `executeMemoryImport` function, which imports markdown files into a SQLite database. The purpose of this function is to:
+This test file validates the behavior of `executeMemoryImport` tool against various edge cases.
 
-*   Create new memory entries from non-existent directories.
-*   Update existing memory entries when newer files are found.
-*   Skip importing if older files exist.
-
-The tests also cover scenarios with malformed markdown files, ensuring the function can handle them gracefully.
+*   It tests importing new markdown files into SQLite.
+*   It verifies that the importer handles existing memories and updates them if the new file is newer.
+*   It ensures the importer skips imports if the file is not newer.
+*   It checks for graceful handling of malformed markdown files.
+*   It tests critical failure cases where the importer triggers catch blocks in parsing or database operations.
+```

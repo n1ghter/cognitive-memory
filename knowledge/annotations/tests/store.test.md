@@ -1,14 +1,23 @@
-```markdown
-# Memory Store & Search Integration Tests
+**Semantic Summary**
+======================
 
-This file contains tests for the memory store and search functionality, ensuring that data is correctly stored and retrieved from the SQLite database. It also verifies error handling for invalid inputs and logging of errors during access stat updates.
+This test suite verifies the functionality of the `executeMemoryStore` and `executeMemorySearch` tools, which store and retrieve metadata from a SQLite database. The tests ensure that:
 
-## Exposes:
+*   Stores are successfully inserted with correct metadata.
+*   Searches return accurate results within a specified limit.
+*   Invalid queries (empty or null) throw an error.
+*   Empty text inputs trigger errors.
+*   Malformed JSON metadata defaults to string representation.
+*   Database access updates log errors.
+*   Critical search failures result in proper error handling.
 
-- `executeMemoryStore`
-- `executeMemorySearch`
+**Exposed MCP Tools:**
 
-## Interacts with: 
+*   `DatabaseManager`
+*   `executeMemoryStore`
+*   `executeMemorySearch`
 
-- SQLite tables
-```
+**Interaction with SQLite Tables:**
+
+*   `memory` table (INSERT, SELECT)
+*   `vec_memory` table (INSERT)

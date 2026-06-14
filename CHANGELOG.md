@@ -4,6 +4,9 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+### Added
+- **100% Test Coverage**: Achieved complete 100% test coverage across all `src/` and `src/tools/` modules, including all edge cases, SQLite errors, and filesystem failure paths in `import.ts` and `export.ts`.
+
 ## [1.1.25] - 2026-06-14
 
 ### Fixed

@@ -32,4 +32,30 @@ describe('DatabaseManager & Utils', () => {
     expect(normalizeRecordId(123)).toBe('123');
     expect(normalizeRecordId(null)).toBe('null');
   });
+
+  it('should use MEMORY_DB_PATH from environment if set', async () => {
+    const { vi } = await import('vitest');
+    const path = await import('node:path');
+    const fs = await import('node:fs');
+
+    const customPath = path.join(process.cwd(), 'custom_memory.sqlite');
+    process.env.MEMORY_DB_PATH = customPath;
+    
+    vi.resetModules();
+    const dbModule = await import('../src/db.js');
+    
+    const db = dbModule.DatabaseManager.getInstance();
+    expect(db).toBeDefined();
+    
+    dbModule.DatabaseManager.close();
+    
+    expect(fs.existsSync(customPath)).toBe(true);
+    
+    if (fs.existsSync(customPath)) {
+      fs.unlinkSync(customPath);
+    }
+    
+    delete process.env.MEMORY_DB_PATH;
+    vi.resetModules();
+  });
 });

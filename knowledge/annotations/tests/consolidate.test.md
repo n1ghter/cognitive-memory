@@ -1,18 +1,14 @@
-```markdown
-# Memory Consolidation Tool Tests
+**Consolidation Tools Test Suite**
+=====================================
 
-This file contains unit tests for the memory consolidation tool, which is responsible for deduplicating and pruning memories in the system.
+This test suite verifies the functionality of memory consolidation tools, ensuring that memories are properly consolidated, pruned, and handled during errors.
 
-## Purpose
+### Exposed MCP Tools:
 
-The purpose of this test suite is to ensure that the memory consolidation tool functions correctly under various scenarios, including:
+*   `DatabaseManager`
+*   `executeMemoryStore` (SQLite table interaction)
+*   `executeMemoryConsolidate` (SQLite table interaction)
 
-* Deduplication with less than 3 memories
-* Consolidation of active memories
-* Pruning of old memories whose importance decays below 0.25
-* Handling errors during generation
+### Test Purpose:
 
-## Tools and Interactions
-
-This file interacts with the SQLite database using the `DatabaseManager` class.
-```
+This suite tests the business logic of memory consolidation tools to ensure that memories are consolidated correctly, pruned when necessary, and errors are handled gracefully.

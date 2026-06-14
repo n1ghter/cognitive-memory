@@ -50,9 +50,13 @@ describe('Memory Delete', () => {
   });
 
   it('should handle non-existent memory delete', async () => {
-    const delRes = await executeMemoryDelete({ id: 'fake-id', hard: true });
-    expect(delRes.success).toBe(true);
-    expect(delRes.deleted).toBe(false);
+    const delResHard = await executeMemoryDelete({ id: 'fake-id', hard: true });
+    expect(delResHard.success).toBe(true);
+    expect(delResHard.deleted).toBe(false);
+
+    const delResSoft = await executeMemoryDelete({ id: 'fake-id', hard: false });
+    expect(delResSoft.success).toBe(true);
+    expect(delResSoft.deleted).toBe(false);
   });
 
   it('should fail if no id is provided', async () => {
