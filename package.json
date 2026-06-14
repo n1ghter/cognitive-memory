@@ -1,6 +1,6 @@
 {
   "name": "@cemised/cognitive-memory",
-  "version": "1.1.28",
+  "version": "1.1.29",
   "description": "An autonomous graph-vector memory engine powered by SQLite and Ollama.",
   "main": "dist/index.js",
   "bin": {

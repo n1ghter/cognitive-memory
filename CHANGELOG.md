@@ -4,6 +4,11 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [1.1.29] - 2026-06-14
+
+### Fixed
+- Fixed the `auto-create-pr` GitHub Action to properly request `contents: write` permissions so it can successfully enable auto-merge on the PRs it creates.
+
 ## [1.1.28] - 2026-06-14
 
 ### Added
