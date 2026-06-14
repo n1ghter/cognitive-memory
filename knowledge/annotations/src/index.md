@@ -1,24 +1,23 @@
-### Semantic Summary: MCP Server Bootstrap
+**Semantic Summary**
+=====================
 
-The `src/index.ts` file serves as the entry point for the Model Context Protocol (MCP) server application. Its primary purpose is to set up and initialize the server, which enables various tools for managing semantic memories.
+The `index.ts` file sets up a high-performance bridge for the Model Context Protocol (MCP). It creates an instance of the `McpServer` class, which serves as the entry point for MCP tools. The server is configured with various tools that perform different operations on data stored in a local SQLite database.
 
-**Purpose:**
+**Key Features**
+----------------
 
-* Initialize the MCP server with a specific name and version.
-* Define and register multiple tool instances for various memory management tasks.
+*   **Tool Definition**: The file defines several tools, including:
+    *   `memory_search`: Performs optimized vector similarity cosine searches on stored memories.
+    *   `memory_store`: Encrypts, hashes, vectorizes, and persists semantic memories into the SQLite database.
+    *   `memory_relate`: Establishes a graph relationship between two memory nodes.
+    *   `memory_sync`: Performs bidirectional synchronization between Obsidian Markdown files and the SQLite database.
+    *   `memory_export`: Exports active database memories into Markdown notes for Obsidian integration.
+    *   `memory_consolidate`: Performs time decay and semantic LLM merging/deduplication on active memories using Ollama.
+    *   `memory_delete`: Deletes a specific semantic memory record by its identifier.
+*   **Database Interaction**: The server interacts with the SQLite database through the `DatabaseManager` class, which provides a standardized interface for accessing and modifying data.
+*   **Exception Handling**: The file sets up global exception shielding using `process.on('uncaughtException')` and `process.on('unhandledRejection')`.
 
-**Interactions:**
+**Notes**
+-------
 
-* Exposes `McpServer` from `@modelcontextprotocol/sdk/server/mcp.js`.
-* Interacts with SQLite tables through the `DatabaseManager`.
-
-### Business Logic:
-
-The file orchestrates the bootstrapping process of the MCP server, including:
-
-1. Setting up database connections.
-2. Creating a transport instance for communication (Stdio Server Transport).
-3. Establishing the server connection to the transport.
-4. Registering tool instances for managing semantic memories.
-
-By defining these tools and their corresponding logic, the file enables users to perform various memory-related operations, such as storing, relating, deleting, and consolidating memories.
+The `index.ts` file is the main entry point for the MCP server. It initializes the server, connects it to a transport (in this case, stdio), and sets up various tools that perform different operations on data stored in the SQLite database.

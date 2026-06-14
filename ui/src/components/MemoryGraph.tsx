@@ -52,6 +52,31 @@ export default function MemoryGraph() {
         </button>
       </div>
 
+      {data.nodes.length === 0 && (
+        <div style={{
+          position: 'absolute',
+          top: '50%',
+          left: '50%',
+          transform: 'translate(-50%, -50%)',
+          background: 'rgba(255, 255, 255, 0.05)',
+          backdropFilter: 'blur(12px)',
+          WebkitBackdropFilter: 'blur(12px)',
+          padding: '40px 50px',
+          borderRadius: '24px',
+          color: 'rgba(255, 255, 255, 0.8)',
+          textAlign: 'center',
+          maxWidth: '550px',
+          border: '1px solid rgba(255, 255, 255, 0.1)',
+          boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5)',
+          zIndex: 5
+        }}>
+          <h3 style={{ marginTop: 0, fontSize: '1.8rem', color: 'white', fontWeight: 600, letterSpacing: '-0.02em' }}>🧠 Пустой разум</h3>
+          <p style={{ lineHeight: '1.6', fontSize: '1.1rem', marginBottom: 0 }}>
+            Ваш граф памяти пока пуст. Начните общаться с AI-ассистентом или запустите синхронизацию с Obsidian!
+          </p>
+        </div>
+      )}
+
       <GraphComponent
         ref={fgRef}
         graphData={data}
