@@ -4,6 +4,9 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+### Added
+- Added `auto-create-pr.yml` GitHub Action to automatically generate Pull Requests whenever a new branch is pushed to the repository.
+
 ## [1.1.27] - 2026-06-14
 
 ### Fixed
