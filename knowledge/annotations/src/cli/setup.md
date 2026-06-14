@@ -1,10 +1,9 @@
-### MCP Setup Script
-#### Business Logic and Architectural Purpose
+```markdown
+### Why (Business Logic, Architectural Purpose)
 
-This script runs a setup process for a Cognitive Memory Platform (MCP) tool. It scans installed AI agents and IDEs, detects if any MCP servers are already configured in the target locations, and injects the `@cemised/cognitive-memory` server into their configurations.
+This setup script is designed to automate the configuration of cognitive-memory (MCP) servers in various development environments. It scans for existing MCP server configurations and updates or creates them as needed.
 
-### MCP Tools Used
-- MCP (Cognitive Memory Platform)
-- SQLite
+The script interacts with SQLite tables not explicitly listed here but is responsible for exposing standard CLI tools such as `npx`.
 
-The script targets four platforms: Antigravity, Cursor, Claude Desktop, and Windsurf.
+It utilizes a predefined list of targets, each corresponding to a specific IDE or editor.
+```

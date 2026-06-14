@@ -39,6 +39,8 @@ We bridge the gap between an AI's Long-Term Memory and a human's Second Brain. T
 
 ## 🚀 Installation & Setup
 
+We recommend a simple 2-step process to get Cognitive Memory fully integrated into your workflow.
+
 ### Prerequisites
 - Node.js (v24+ recommended)
 - `pnpm` (v9+)
@@ -48,9 +50,26 @@ We bridge the gap between an AI's Long-Term Memory and a human's Second Brain. T
   ollama pull llama3.2
   ```
 
-## 💻 Usage (MCP Client Configuration)
+### Step 1: Global Editor Setup (The "Hands")
+To give your AI Assistant access to the database tools, run the global setup script. This auto-detects your installed AI Editors (Antigravity, Cursor, Claude Desktop, Claude Code, Copilot, Windsurf, OpenCode) and injects the MCP server directly into their global JSON/TOML configuration files:
 
-The easiest and recommended way to use this server with an MCP-compatible client (like Claude Desktop, Cursor, or custom AI agents) is via `npx`. Add the following to your client's MCP configuration JSON:
+```bash
+npx -y @cemised/cognitive-memory setup
+```
+
+### Step 2: Local Project Initialization (The "Brain")
+Having the tools is not enough; the AI needs to know *when* and *how* to use them autonomously. Navigate to your project folder and run the initialization script to inject the `AGENTS.md` memory forcing-function checklist and the auto-capture `SKILL.md`:
+
+```bash
+cd my-project
+npx -y @cemised/cognitive-memory init
+```
+
+*Note: You only need to run Step 1 once per machine. You should run Step 2 for every new codebase you want your AI to memorize.*
+
+## 💻 Manual MCP Configuration (Optional)
+
+If you prefer not to use the `setup` script, you can manually add the following to your client's MCP configuration file (e.g. `mcp_config.json`):
 
 ```json
 {

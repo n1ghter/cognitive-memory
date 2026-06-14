@@ -11,6 +11,8 @@ const MCP_SERVER_CONFIG = {
 interface ConfigTarget {
   name: string;
   paths: string[];
+  format?: 'json' | 'toml';
+  rootKey?: string;
 }
 
 export async function runSetup() {
@@ -19,8 +21,21 @@ export async function runSetup() {
   const homedir = os.homedir();
   const platform = os.platform();
   const appData = process.env.APPDATA || path.join(homedir, 'AppData', 'Roaming');
+  const macAppSupport = path.join(homedir, 'Library', 'Application Support');
 
   const targets: ConfigTarget[] = [
+    {
+      name: 'Claude Desktop',
+      paths: [
+        platform === 'win32'
+          ? path.join(appData, 'Claude', 'claude_desktop_config.json')
+          : path.join(macAppSupport, 'Claude', 'claude_desktop_config.json')
+      ]
+    },
+    {
+      name: 'Claude Code',
+      paths: [path.join(homedir, '.claude.json')]
+    },
     {
       name: 'Antigravity',
       paths: [path.join(homedir, '.gemini', 'config', 'mcp_config.json')]
@@ -31,20 +46,26 @@ export async function runSetup() {
         path.join(homedir, '.cursor', 'mcp.json'),
         platform === 'win32'
           ? path.join(appData, 'Cursor', 'User', 'globalStorage', 'cursor.mcp', 'mcp.json')
-          : path.join(homedir, 'Library', 'Application Support', 'Cursor', 'User', 'globalStorage', 'cursor.mcp', 'mcp.json')
+          : path.join(macAppSupport, 'Cursor', 'User', 'globalStorage', 'cursor.mcp', 'mcp.json')
       ]
     },
     {
-      name: 'Claude Desktop',
-      paths: [
-        platform === 'win32'
-          ? path.join(appData, 'Claude', 'claude_desktop_config.json')
-          : path.join(homedir, 'Library', 'Application Support', 'Claude', 'claude_desktop_config.json')
-      ]
+      name: 'Copilot CLI',
+      paths: [path.join(homedir, '.copilot', 'mcp-config.json')]
     },
     {
       name: 'Windsurf',
       paths: [path.join(homedir, '.codeium', 'windsurf', 'mcp_config.json')]
+    },
+    {
+      name: 'OpenCode',
+      paths: [path.join(homedir, '.opencode', 'opencode.json')],
+      rootKey: 'mcp'
+    },
+    {
+      name: 'Codex',
+      paths: [path.join(homedir, '.codex', 'config.toml')],
+      format: 'toml'
     }
   ];
 
@@ -52,24 +73,36 @@ export async function runSetup() {
 
   for (const target of targets) {
     let found = false;
+    const format = target.format || 'json';
+    const rootKey = target.rootKey || 'mcpServers';
+
     for (const configPath of target.paths) {
       if (fs.existsSync(configPath)) {
         found = true;
         try {
           const content = fs.readFileSync(configPath, 'utf-8');
-          let json = JSON.parse(content || '{}');
 
-          if (!json.mcpServers) {
-            json.mcpServers = {};
-          }
+          if (format === 'json') {
+            let json = JSON.parse(content || '{}');
+            if (!json[rootKey]) json[rootKey] = {};
 
-          if (json.mcpServers[MCP_SERVER_NAME]) {
-            console.log(`ℹ️ [${target.name}] cognitive-memory is already configured at ${configPath}`);
-          } else {
-            json.mcpServers[MCP_SERVER_NAME] = MCP_SERVER_CONFIG;
-            fs.writeFileSync(configPath, JSON.stringify(json, null, 2), 'utf-8');
-            console.log(`✅ [${target.name}] Successfully injected cognitive-memory into ${configPath}`);
-            configuredCount++;
+            if (json[rootKey][MCP_SERVER_NAME]) {
+              console.log(`ℹ️ [${target.name}] cognitive-memory is already configured at ${configPath}`);
+            } else {
+              json[rootKey][MCP_SERVER_NAME] = MCP_SERVER_CONFIG;
+              fs.writeFileSync(configPath, JSON.stringify(json, null, 2), 'utf-8');
+              console.log(`✅ [${target.name}] Successfully injected cognitive-memory into ${configPath}`);
+              configuredCount++;
+            }
+          } else if (format === 'toml') {
+            const tomlBlock = `\n[mcp_servers.${MCP_SERVER_NAME}]\ncommand = "npx"\nargs = ["-y", "@cemised/cognitive-memory"]\n`;
+            if (content.includes(`[mcp_servers.${MCP_SERVER_NAME}]`)) {
+              console.log(`ℹ️ [${target.name}] cognitive-memory is already configured at ${configPath}`);
+            } else {
+              fs.appendFileSync(configPath, tomlBlock, 'utf-8');
+              console.log(`✅ [${target.name}] Successfully appended cognitive-memory to ${configPath}`);
+              configuredCount++;
+            }
           }
         } catch (err: any) {
           console.error(`❌ [${target.name}] Failed to parse or write to ${configPath}: ${err.message}`);
