@@ -540,6 +540,7 @@ export default function MemoryGraph() {
           !is3D
             ? (node: any, ctx: any) => {
                 const opacity = !searchQuery || node._highlighted ? 1 : 0.15;
+                const isGlobal = node.sourceDb === 'global';
                 const val = Math.max(0, Math.min(1, node.val || 0.5));
                 const hue =
                   node.sourceDb === 'global'
