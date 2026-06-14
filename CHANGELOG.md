@@ -4,6 +4,9 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+### Added
+- Implemented `cognitive-memory init` CLI command to automatically inject autonomous memory behavior (`AGENTS.md` and `SKILL.md`) into NPM user repositories.
+
 ## [1.1.29] - 2026-06-14
 
 ### Fixed

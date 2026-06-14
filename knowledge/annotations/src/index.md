@@ -1,26 +1,10 @@
-```markdown
-# McpServer Bootstrapping and Initialization
+### Semantic Summary
 
-The `src/index.ts` file initializes the `McpServer` application with various tools and a database manager. This setup enables a high-performance bridge for cognitive memory management.
+This file serves as the entry point for a high-performance bridge application, providing an interface for users to interact with their cognitive memories. It initializes a server instance that exposes various tools and services.
 
-## Tools and Functions
+The primary purpose of this file is to set up and bootstrapped the MCP (Model-Context Protocol) server with the following key functionalities:
 
-*   The server includes several tools, each responsible for a specific task:
-    *   `memory_store`: encrypts, hashes, vectorizes, and persists semantic memories into a local SQLite database.
-    *   `memory_search`: performs optimized vector similarity cosine searches on stored memories.
-    *   `memory_delete`: deletes a specific semantic memory record by its identifier.
-    *   `memory_clear_all`: completely wipes all memories from the database (Nuclear Option).
-    *   `memory_consolidate`: performs time decay and semantic LLM merging/deduplication on active memories using Ollama.
-    *   `memory_relate`: establishes a graph relationship between two memory nodes.
-    *   `memory_export`: exports active database memories into Markdown notes for Obsidian integration.
-    *   `memory_sync`: performs a bidirectional synchronization between local Obsidian Markdown files and the SQLite database.
+*   Tool-based interface for interacting with cognitive memories
+*   Support for standardized interfaces for data exchange between the bridge application and external systems, including SQLite databases and Obsidian Markdown files
 
-## Database Management
-
-*   The server uses a `DatabaseManager` instance to manage connections to the SQLite database.
-*   A new `StdioServerTransport` is used for establishing communication with clients.
-
-## Exception Handling
-
-*   Global exception shielding is implemented using `process.on('uncaughtException')` and `process.on('unhandledRejection')`.
-```
+The code establishes a connection to a local SQLite database using the `DatabaseManager` class, sets up an instance of the MCP server with predefined tool functions (`memory_store`, `memory_search`, `memory_delete`, etc.), and configures the server for standard I/O operations.
