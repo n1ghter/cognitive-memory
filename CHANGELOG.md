@@ -4,6 +4,8 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [1.1.27] - 2026-06-14
+
 ### Fixed
 - Fixed broken Auto-Update PRs GitHub Action workflow by updating the `actions-pr-auto-update` repository owner from `castastrophe` to `allonsy-studio` after a repository transfer.
 
