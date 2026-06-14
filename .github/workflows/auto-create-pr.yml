@@ -29,4 +29,4 @@ jobs:
             --body "Automated PR created from branch \`${{ github.ref_name }}\`." || true
 
           # Attempt to enable auto-merge (fails silently if repo settings don't allow it or PR doesn't exist)
-          gh pr merge "${{ github.ref_name }}" --auto --merge || true
+          gh pr merge "${{ github.ref_name }}" --auto --merge --delete-branch || true
