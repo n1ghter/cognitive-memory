@@ -4,6 +4,16 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [1.3.0] - 2026-06-14
+
+### Added
+- Implemented `cognitive-memory setup` CLI command for global IDE auto-discovery. It automatically detects Claude Desktop, Cursor, Antigravity, and Windsurf, and injects the MCP server directly into their global `mcp.json` or `mcp_config.json` configurations.
+
+## [1.2.0] - 2026-06-14
+
+### Added
+- Implemented `cognitive-memory init` CLI command to automatically inject autonomous memory behavior (`AGENTS.md` and `SKILL.md`) into NPM user repositories.
+
 ## [1.1.29] - 2026-06-14
 
 ### Fixed

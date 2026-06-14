@@ -409,4 +409,16 @@ process.on('unhandledRejection', (reason: any, promise: any) => {
   console.error('[Unhandled Promise Rejection]:', reason, 'at:', promise);
 });
 
-bootstrap();
+if (process.argv[2] === 'init') {
+  import('./cli/init.js').then(m => m.runInit()).catch(err => {
+    console.error('Initialization failed:', err);
+    process.exit(1);
+  });
+} else if (process.argv[2] === 'setup') {
+  import('./cli/setup.js').then(m => m.runSetup()).catch(err => {
+    console.error('Setup failed:', err);
+    process.exit(1);
+  });
+} else {
+  bootstrap();
+}
