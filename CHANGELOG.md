@@ -4,6 +4,13 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [1.5.7] - 2026-06-15
+
+### Fixed
+- **Test Isolation (Critical)**: Made `GLOBAL_DB_DIR` overridable via `GLOBAL_MEMORY_DB_DIR` environment variable. Tests now write to `os.tmpdir()` instead of polluting the user's real `~/.cognitive-memory/global-memory.sqlite` database. Updated `tests/setup.ts` to set both `MEMORY_DB_PATH` and `GLOBAL_MEMORY_DB_DIR` for full isolation.
+- **Data Cleanup**: Purged 22 test garbage nodes from global DB and 13 from project local DB that were created by previous test runs without isolation.
+- **Test Update**: Rewrote `db.test.ts` GLOBAL_DB_DIR creation test to use the new `GLOBAL_MEMORY_DB_DIR` env var instead of attempting to override `HOME`/`USERPROFILE`.
+
 ## [1.5.6] - 2026-06-15
 
 ### Added

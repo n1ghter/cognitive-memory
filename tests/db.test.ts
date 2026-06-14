@@ -64,15 +64,13 @@ describe('DatabaseManager & Utils', () => {
     const path = await import('node:path');
     const fs = await import('node:fs');
 
-    const tempHome = path.join(process.cwd(), 'temp_test_home');
-    const tempGlobalDir = path.join(tempHome, '.cognitive-memory');
+    const tempGlobalDir = path.join(process.cwd(), 'temp_test_global_db');
 
     // Cleanup before test
     if (fs.existsSync(tempGlobalDir)) fs.rmSync(tempGlobalDir, { recursive: true, force: true });
-    if (fs.existsSync(tempHome)) fs.rmSync(tempHome, { recursive: true, force: true });
 
-    process.env.HOME = tempHome;
-    process.env.USERPROFILE = tempHome;
+    // Use the new env var to control GLOBAL_DB_DIR
+    process.env.GLOBAL_MEMORY_DB_DIR = tempGlobalDir;
 
     vi.resetModules();
     const dbModule = await import('../src/db.js');
@@ -85,11 +83,10 @@ describe('DatabaseManager & Utils', () => {
     expect(fs.existsSync(tempGlobalDir)).toBe(true);
 
     // Cleanup after test
-    fs.rmSync(tempHome, { recursive: true, force: true });
+    fs.rmSync(tempGlobalDir, { recursive: true, force: true });
 
     // Restore env
-    delete process.env.HOME;
-    delete process.env.USERPROFILE;
+    delete process.env.GLOBAL_MEMORY_DB_DIR;
     vi.resetModules();
   });
 });
