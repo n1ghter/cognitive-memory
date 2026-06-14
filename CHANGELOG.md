@@ -6,7 +6,12 @@ All notable changes to this project will be documented in this file.
 
 ## [1.1.25] - 2026-06-14
 
+### Fixed
+- Fixed GitHub Packages publication pipeline by granting `packages: write` permissions to GitHub Actions.
 ## [1.1.24] - 2026-06-14
+
+### Fixed
+- Fixed GitHub Packages publication pipeline by dynamically configuring package scope.
 
 ## [1.1.23] - 2026-06-09
 
