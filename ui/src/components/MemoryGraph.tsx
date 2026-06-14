@@ -119,8 +119,10 @@ export default function MemoryGraph() {
           <>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: '15px', marginBottom: '15px' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                <div style={{ width: 12, height: 12, borderRadius: '50%', background: selectedNode.isActive ? '#10b981' : '#6b7280' }} />
-                <span style={{ fontSize: '0.85rem', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 600 }}>Memory Node</span>
+                <div style={{ width: 12, height: 12, borderRadius: '50%', background: selectedNode.sourceDb === 'global' ? '#f59e0b' : (selectedNode.isActive ? '#10b981' : '#6b7280') }} />
+                <span style={{ fontSize: '0.85rem', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 600 }}>
+                  {selectedNode.sourceDb === 'global' ? 'Global Node' : 'Local Node'}
+                </span>
               </div>
               <button type="button" onClick={() => setSelectedNode(null)} style={{ background: 'transparent', border: 'none', color: '#94a3b8', cursor: 'pointer' }}>
                 <X size={18} />
@@ -175,13 +177,19 @@ export default function MemoryGraph() {
           const opacity = (!searchQuery || node._highlighted) ? 1 : 0.15;
           const bgOpacity = opacity === 1 ? 0.8 : 0.1;
 
+          const baseColor = node.sourceDb === 'global' 
+            ? `rgba(245, 158, 11, ${opacity})` 
+            : (node.isActive ? `rgba(16, 185, 129, ${opacity})` : `rgba(107, 114, 128, ${opacity})`);
+            
           const sprite = new SpriteText(node.fullText || node.name);
-          sprite.color = node.isActive ? `rgba(16, 185, 129, ${opacity})` : `rgba(107, 114, 128, ${opacity})`;
+          sprite.color = baseColor;
           sprite.textHeight = 4;
           sprite.padding = [4, 6] as any;
           sprite.backgroundColor = `rgba(15, 23, 42, ${bgOpacity})`;
           sprite.borderRadius = 4;
-          sprite.borderColor = node.isActive ? `rgba(16, 185, 129, ${opacity * 0.5})` : `rgba(107, 114, 128, ${opacity * 0.5})`;
+          sprite.borderColor = node.sourceDb === 'global' 
+            ? `rgba(245, 158, 11, ${opacity * 0.5})` 
+            : (node.isActive ? `rgba(16, 185, 129, ${opacity * 0.5})` : `rgba(107, 114, 128, ${opacity * 0.5})`);
           sprite.borderWidth = 0.5;
           
           sprite.text = (node.fullText || node.name).replace(/(.{1,40})(\s+|$)/g, "$1\n").trim();
@@ -202,7 +210,9 @@ export default function MemoryGraph() {
 
           ctx.textAlign = 'center';
           ctx.textBaseline = 'middle';
-          ctx.fillStyle = node.isActive ? `rgba(16, 185, 129, ${opacity})` : `rgba(107, 114, 128, ${opacity})`;
+          ctx.fillStyle = node.sourceDb === 'global' 
+            ? `rgba(245, 158, 11, ${opacity})` 
+            : (node.isActive ? `rgba(16, 185, 129, ${opacity})` : `rgba(107, 114, 128, ${opacity})`);
           ctx.fillText(label, node.x, node.y);
 
           node.__bckgDimensions = bckgDimensions;

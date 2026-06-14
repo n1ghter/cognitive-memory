@@ -1,8 +1,14 @@
-**Web Server Annotation**
-========================
+### Web Server Implementation
+#### Purpose:
+The `web.ts` file serves as the entry point for the web server, responsible for rendering the graph visualization and serving static files from the UI dist directory.
 
-The purpose of this file is to create an Express.js server that serves a web UI dashboard with an API endpoint for fetching graph data from the SQLite database. The server also serves static files from the UI dist directory and provides a fallback route for single-page applications (SPAs). If exposed, it interacts with the `DatabaseManager` class to retrieve graph data.
+#### Exposed Tools/Interfaces:
 
-It exposes MCP tools: None.
+* SQLite tables: `global.memory`, `main.memory`, `global.edges`, `main.edges`
+* MCP tools: None explicitly listed
 
-If interacting with SQLite tables: yes
+### Why:
+This file is designed to provide a user-friendly interface for accessing the graph data, allowing users to view and interact with the visualization. It serves static files from the UI dist directory, provides a fallback for single-page applications (SPAs), and exposes an API endpoint to fetch the graph data.
+
+### Note:
+The `startWebServer` function is responsible for setting up the Express.js application, handling CORS requests, serving static files, and listening on a specified port. It also includes error handling and logging mechanisms to ensure a smooth user experience.

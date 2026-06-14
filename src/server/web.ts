@@ -16,8 +16,17 @@ export function startWebServer(port: number = 3000) {
     try {
       const db = DatabaseManager.getInstance();
       
-      const nodes = db.prepare('SELECT id, text, metadata, importance, is_active FROM memory').all();
-      const links = db.prepare('SELECT id, source_id as source, target_id as target, relation_type, metadata FROM edges').all();
+      const nodes = db.prepare(`
+        SELECT id, text, metadata, importance, is_active, 'local' as source_db FROM main.memory
+        UNION ALL
+        SELECT id, text, metadata, importance, is_active, 'global' as source_db FROM global.memory
+      `).all();
+      
+      const links = db.prepare(`
+        SELECT id, source_id as source, target_id as target, relation_type, metadata, 'local' as source_db FROM main.edges
+        UNION ALL
+        SELECT id, source_id as source, target_id as target, relation_type, metadata, 'global' as source_db FROM global.edges
+      `).all();
 
       res.json({
         nodes: nodes.map((n: any) => ({
@@ -26,14 +35,16 @@ export function startWebServer(port: number = 3000) {
           fullText: n.text,
           val: Math.max(1, (n.importance || 0.5) * 10),
           metadata: n.metadata,
-          isActive: n.is_active === 1
+          isActive: n.is_active === 1,
+          sourceDb: n.source_db
         })),
         links: links.map((l: any) => ({
           id: l.id,
           source: l.source,
           target: l.target,
           label: l.relation_type,
-          metadata: l.metadata
+          metadata: l.metadata,
+          sourceDb: l.source_db
         }))
       });
     } catch (err: any) {
