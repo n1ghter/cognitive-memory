@@ -99,9 +99,9 @@ export default function MemoryGraph() {
           textAlign: 'center', maxWidth: '550px', border: '1px solid rgba(255, 255, 255, 0.1)',
           boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5)', zIndex: 5
         }}>
-          <h3 style={{ marginTop: 0, fontSize: '1.8rem', color: 'white', fontWeight: 600, letterSpacing: '-0.02em' }}>🧠 Пустой разум</h3>
+          <h3 style={{ marginTop: 0, fontSize: '1.8rem', color: 'white', fontWeight: 600, letterSpacing: '-0.02em' }}>🧠 Empty Mind</h3>
           <p style={{ lineHeight: '1.6', fontSize: '1.1rem', marginBottom: 0 }}>
-            Ваш граф памяти пока пуст. Начните общаться с AI-ассистентом или запустите синхронизацию с Obsidian!
+            Your memory graph is currently empty. Start chatting with an AI assistant or run a sync with Obsidian!
           </p>
         </div>
       )}
