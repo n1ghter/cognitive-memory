@@ -4,6 +4,13 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+### Added
+- **UI Test Coverage**: Added `vitest` and `@testing-library/react` to the `ui/` workspace. Implemented rendering and interaction tests for `MemoryGraph.tsx` and `NodeDetailsPanel.tsx` (Iteration 3).
+- **Graph UX Counter**: Added a dynamic `Showing X / Y nodes` counter to `MemoryGraph` when filtering data.
+
+### Changed
+- **Node Differentiation**: Modified 3D and 2D canvas materials in `MemoryGraph`. Global nodes are now distinctly colored `#f59e0b` (Orange) and Local nodes `#10b981` (Emerald Green) to allow instant visual domain clustering.
+
 ## [1.5.0] - 2026-06-14
 
 ### Added
