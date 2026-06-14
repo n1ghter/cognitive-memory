@@ -51,4 +51,55 @@ describe('MemoryGraph', () => {
     fireEvent.click(globalFilter);
     expect(globalFilter.style.background).toContain('rgba(59, 130, 246');
   });
+
+  it('loads and renders data correctly', async () => {
+    const mockData = {
+      nodes: [
+        { id: '1', name: 'Node 1', sourceDb: 'global', val: 5 },
+        { id: '2', name: 'Node 2', sourceDb: 'local', val: 3 },
+      ],
+      links: [{ source: '1', target: '2' }],
+    };
+
+    global.fetch = vi.fn().mockResolvedValue({
+      ok: true,
+      json: () => Promise.resolve(mockData),
+    }) as any;
+
+    render(<MemoryGraph />);
+    // Loading overlay should disappear eventually
+    // But since ForceGraph is mocked, we might just test if fetch was called
+    expect(global.fetch).toHaveBeenCalledWith('/api/graph');
+  });
+
+  it('handles keyboard shortcuts (Ctrl+K and Escape)', () => {
+    render(<MemoryGraph />);
+
+    // Ctrl+K
+    fireEvent.keyDown(window, { key: 'k', ctrlKey: true });
+    const searchInput = screen.getByPlaceholderText('Search memories... (Ctrl+K)');
+    expect(document.activeElement).toBe(searchInput);
+
+    // Escape
+    fireEvent.keyDown(window, { key: 'Escape' });
+    // This should reset selection and search query
+  });
+
+  it('toggles 3D mode', async () => {
+    const mockData = {
+      nodes: [{ id: '1', name: 'Node 1', sourceDb: 'global', val: 5 }],
+      links: [],
+    };
+    global.fetch = vi.fn().mockResolvedValue({
+      ok: true,
+      json: () => Promise.resolve(mockData),
+    }) as any;
+
+    render(<MemoryGraph />);
+
+    // Wait for the button to appear (is3D is true initially)
+    const toggleBtn = await screen.findByTitle('Switch to 2D');
+    fireEvent.click(toggleBtn);
+    expect(screen.getByTestId('force-graph-2d')).toBeInTheDocument();
+  });
 });

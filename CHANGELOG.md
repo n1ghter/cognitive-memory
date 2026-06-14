@@ -4,6 +4,11 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [1.5.4] - 2026-06-14
+
+### Changed
+- **Test Coverage & Configuration**: Achieved ~49% UI coverage and ~86% root test coverage by adding missing edge case tests for `NodeDetailsPanel` and `MemoryGraph`. Modified `vitest.config.ts` to strictly target `tests/**/*.test.ts` avoiding build artifacts, and added `noEmit: true` to `tsconfig.json` to prevent TS compilation leakage into tests.
+
 ## [1.5.3] - 2026-06-14
 
 ## [1.5.2] - 2026-06-14

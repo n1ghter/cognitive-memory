@@ -46,4 +46,69 @@ describe('NodeDetailsPanel', () => {
 
     expect(screen.getByText('Local Node')).toBeInTheDocument();
   });
+
+  it('handles copy text and copy id', () => {
+    Object.assign(navigator, {
+      clipboard: {
+        writeText: vi.fn(),
+      },
+    });
+
+    render(<NodeDetailsPanel selectedNode={mockNode} onClose={mockOnClose} />);
+
+    const copyTextBtn = screen.getAllByRole('button')[1];
+    fireEvent.click(copyTextBtn);
+    expect(navigator.clipboard.writeText).toHaveBeenCalledWith(
+      'This is a test node with full text content.'
+    );
+
+    const copyIdBtn = screen.getAllByRole('button')[2];
+    fireEvent.click(copyIdBtn);
+    expect(navigator.clipboard.writeText).toHaveBeenCalledWith('test-node-1');
+  });
+
+  it('handles button hover states', () => {
+    render(<NodeDetailsPanel selectedNode={mockNode} onClose={mockOnClose} />);
+    const closeButton = screen.getAllByRole('button')[0];
+
+    fireEvent.mouseOver(closeButton);
+    expect(closeButton.style.background).toBe('rgba(255, 255, 255, 0.1)');
+
+    fireEvent.mouseOut(closeButton);
+    expect(closeButton.style.background).toBe('rgba(255, 255, 255, 0.05)');
+
+    fireEvent.focus(closeButton);
+    expect(closeButton.style.background).toBe('rgba(255, 255, 255, 0.1)');
+
+    fireEvent.blur(closeButton);
+    expect(closeButton.style.background).toBe('rgba(255, 255, 255, 0.05)');
+  });
+
+  it('renders metadata correctly when stringified JSON', () => {
+    const nodeWithMeta = { ...mockNode, metadata: '{"key": "value"}' };
+    render(<NodeDetailsPanel selectedNode={nodeWithMeta} onClose={mockOnClose} />);
+    expect(screen.getByText(/value/)).toBeInTheDocument();
+  });
+
+  it('renders metadata correctly when string', () => {
+    const nodeWithMeta = { ...mockNode, metadata: 'plain string' };
+    render(<NodeDetailsPanel selectedNode={nodeWithMeta} onClose={mockOnClose} />);
+    expect(screen.getByText(/plain string/)).toBeInTheDocument();
+  });
+
+  it('renders metadata correctly when object', () => {
+    const nodeWithMeta = { ...mockNode, metadata: { key: 'object value' } };
+    render(<NodeDetailsPanel selectedNode={nodeWithMeta} onClose={mockOnClose} />);
+    expect(screen.getByText(/object value/)).toBeInTheDocument();
+  });
+  it('renders correctly when selectedNode is null', () => {
+    const { container } = render(<NodeDetailsPanel selectedNode={null} onClose={mockOnClose} />);
+    expect(container.firstChild).toHaveStyle('right: -400px');
+  });
+
+  it('renders correctly for inactive local node', () => {
+    const inactiveLocalNode = { ...mockNode, sourceDb: 'local', isActive: false };
+    render(<NodeDetailsPanel selectedNode={inactiveLocalNode} onClose={mockOnClose} />);
+    expect(screen.getByText('Local Node')).toBeInTheDocument();
+  });
 });
