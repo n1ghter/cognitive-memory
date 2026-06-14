@@ -33,8 +33,7 @@ const server = new McpServer({
    */
   version: '1.0.0',
 });
-
-/**
+/**
  * Define a tool that encrypts, hashes, vectorizes, and persists semantic memories into a local SQLite database.
  */
 server.tool(
@@ -80,6 +79,97 @@ server.tool(
       };
     } catch (error: any) {
       console.error('[MCP Error] memory_store failed:', error);
+      return {
+        isError: true,
+        content: [{ type: 'text', text: error.message || String(error) }],
+      };
+    }
+  }
+);
+
+/**
+ * Define a tool that performs a bidirectional synchronization between Obsidian and SQLite.
+ */
+server.tool(
+  /**
+   * Tool ID
+   */
+  'memory_sync',
+  /**
+   * Tool description
+   */
+  'Perform a bidirectional synchronization between local Obsidian Markdown files and the SQLite database',
+  {
+    /**
+     * Optional input parameter for custom path to the Obsidian vault directory.
+     */
+    vaultPath: z
+      .string()
+      .optional()
+      .describe('Optional custom path to the Obsidian vault directory'),
+  },
+  /**
+   * Asynchronous function that executes the tool's logic.
+   */
+  async ({ vaultPath }) => {
+    try {
+      const result = await executeMemorySync({ vaultPath });
+      return {
+        content: [{ type: 'text', text: JSON.stringify(result, null, 2) }],
+      };
+    } catch (error: any) {
+      console.error('[MCP Error] memory_sync failed:', error);
+      return {
+        isError: true,
+        content: [{ type: 'text', text: error.message || String(error) }],
+      };
+    }
+  }
+);
+
+/**
+ * Define a tool that establishes a graph relationship between two memory nodes.
+ */
+server.tool(
+  /**
+   * Tool ID
+   */
+  'memory_relate',
+  /**
+   * Tool description
+   */
+  'Establish a graph relationship between two memory nodes',
+  {
+    /**
+     * Input parameter for the source memory node ID (e.g. "memory:uuid").
+     */
+    sourceId: z.string().describe('ID of the source memory node (e.g. memory:uuid)'),
+    /**
+     * Input parameter for the target memory node ID (e.g. "memory:uuid").
+     */
+    targetId: z.string().describe('ID of the target memory node (e.g. memory:uuid)'),
+    /**
+     * Input parameter for the type of relation (e.g. dependency, contradicts, consolidated_from).
+     */
+    relationType: z
+      .string()
+      .describe('Type of relation (e.g. dependency, contradicts, consolidated_from)'),
+  },
+  /**
+   * Asynchronous function that executes the tool's logic.
+   */
+  async ({ sourceId, targetId, relationType }) => {
+    try {
+      const result = await executeMemoryRelate({
+        sourceId,
+        targetId,
+        relationType,
+      });
+      return {
+        content: [{ type: 'text', text: JSON.stringify(result, null, 2) }],
+      };
+    } catch (error: any) {
+      console.error('[MCP Error] memory_relate failed:', error);
       return {
         isError: true,
         content: [{ type: 'text', text: error.message || String(error) }],
@@ -138,6 +228,78 @@ server.tool(
       };
     } catch (error: any) {
       console.error('[MCP Error] memory_search failed:', error);
+      return {
+        isError: true,
+        content: [{ type: 'text', text: error.message || String(error) }],
+      };
+    }
+  }
+);
+
+/**
+ * Define a tool that exports active database memories into Markdown notes for Obsidian integration.
+ */
+server.tool(
+  /**
+   * Tool ID
+   */
+  'memory_export',
+  /**
+   * Tool description
+   */
+  'Export active database memories into Markdown notes for Obsidian integration',
+  {
+    /**
+     * Optional input parameter for custom path to the Obsidian vault directory.
+     */
+    vaultPath: z
+      .string()
+      .optional()
+      .describe('Optional custom path to the Obsidian vault directory'),
+  },
+  /**
+   * Asynchronous function that executes the tool's logic.
+   */
+  async ({ vaultPath }) => {
+    try {
+      const result = await executeMemoryExport({ vaultPath });
+      return {
+        content: [{ type: 'text', text: JSON.stringify(result, null, 2) }],
+      };
+    } catch (error: any) {
+      console.error('[MCP Error] memory_export failed:', error);
+      return {
+        isError: true,
+        content: [{ type: 'text', text: error.message || String(error) }],
+      };
+    }
+  }
+);
+
+/**
+ * Define a tool that performs time decay and semantic LLM merging/deduplication on active memories using Ollama.
+ */
+server.tool(
+  /**
+   * Tool ID
+   */
+  'memory_consolidate',
+  /**
+   * Tool description
+   */
+  'Perform time decay and semantic LLM merging/deduplication on active memories using Ollama',
+  {},
+  /**
+   * Asynchronous function that executes the tool's logic.
+   */
+  async () => {
+    try {
+      const result = await executeMemoryConsolidate();
+      return {
+        content: [{ type: 'text', text: JSON.stringify(result, null, 2) }],
+      };
+    } catch (error: any) {
+      console.error('[MCP Error] memory_consolidate failed:', error);
       return {
         isError: true,
         content: [{ type: 'text', text: error.message || String(error) }],
@@ -218,171 +380,7 @@ server.tool(
       };
     }
   }
-);
-
-/**
- * Define a tool that performs time decay and semantic LLM merging/deduplication on active memories using Ollama.
- */
-server.tool(
-  /**
-   * Tool ID
-   */
-  'memory_consolidate',
-  /**
-   * Tool description
-   */
-  'Perform time decay and semantic LLM merging/deduplication on active memories using Ollama',
-  {},
-  /**
-   * Asynchronous function that executes the tool's logic.
-   */
-  async () => {
-    try {
-      const result = await executeMemoryConsolidate();
-      return {
-        content: [{ type: 'text', text: JSON.stringify(result, null, 2) }],
-      };
-    } catch (error: any) {
-      console.error('[MCP Error] memory_consolidate failed:', error);
-      return {
-        isError: true,
-        content: [{ type: 'text', text: error.message || String(error) }],
-      };
-    }
-  }
-);
-
-/**
- * Define a tool that establishes a graph relationship between two memory nodes.
- */
-server.tool(
-  /**
-   * Tool ID
-   */
-  'memory_relate',
-  /**
-   * Tool description
-   */
-  'Establish a graph relationship between two memory nodes',
-  {
-    /**
-     * Input parameter for the source memory node ID (e.g. "memory:uuid").
-     */
-    sourceId: z.string().describe('ID of the source memory node (e.g. memory:uuid)'),
-    /**
-     * Input parameter for the target memory node ID (e.g. "memory:uuid").
-     */
-    targetId: z.string().describe('ID of the target memory node (e.g. memory:uuid)'),
-    /**
-     * Input parameter for the type of relation (e.g. dependency, contradicts, consolidated_from).
-     */
-    relationType: z
-      .string()
-      .describe('Type of relation (e.g. dependency, contradicts, consolidated_from)'),
-  },
-  /**
-   * Asynchronous function that executes the tool's logic.
-   */
-  async ({ sourceId, targetId, relationType }) => {
-    try {
-      const result = await executeMemoryRelate({
-        sourceId,
-        targetId,
-        relationType,
-      });
-      return {
-        content: [{ type: 'text', text: JSON.stringify(result, null, 2) }],
-      };
-    } catch (error: any) {
-      console.error('[MCP Error] memory_relate failed:', error);
-      return {
-        isError: true,
-        content: [{ type: 'text', text: error.message || String(error) }],
-      };
-    }
-  }
-);
-
-/**
- * Define a tool that exports active database memories into Markdown notes for Obsidian integration.
- */
-server.tool(
-  /**
-   * Tool ID
-   */
-  'memory_export',
-  /**
-   * Tool description
-   */
-  'Export active database memories into Markdown notes for Obsidian integration',
-  {
-    /**
-     * Optional input parameter for custom path to the Obsidian vault directory.
-     */
-    vaultPath: z
-      .string()
-      .optional()
-      .describe('Optional custom path to the Obsidian vault directory'),
-  },
-  /**
-   * Asynchronous function that executes the tool's logic.
-   */
-  async ({ vaultPath }) => {
-    try {
-      const result = await executeMemoryExport({ vaultPath });
-      return {
-        content: [{ type: 'text', text: JSON.stringify(result, null, 2) }],
-      };
-    } catch (error: any) {
-      console.error('[MCP Error] memory_export failed:', error);
-      return {
-        isError: true,
-        content: [{ type: 'text', text: error.message || String(error) }],
-      };
-    }
-  }
-);
-
-/**
- * Define a tool that performs a bidirectional synchronization between Obsidian and SQLite.
- */
-server.tool(
-  /**
-   * Tool ID
-   */
-  'memory_sync',
-  /**
-   * Tool description
-   */
-  'Perform a bidirectional synchronization between local Obsidian Markdown files and the SQLite database',
-  {
-    /**
-     * Optional input parameter for custom path to the Obsidian vault directory.
-     */
-    vaultPath: z
-      .string()
-      .optional()
-      .describe('Optional custom path to the Obsidian vault directory'),
-  },
-  /**
-   * Asynchronous function that executes the tool's logic.
-   */
-  async ({ vaultPath }) => {
-    try {
-      const result = await executeMemorySync({ vaultPath });
-      return {
-        content: [{ type: 'text', text: JSON.stringify(result, null, 2) }],
-      };
-    } catch (error: any) {
-      console.error('[MCP Error] memory_sync failed:', error);
-      return {
-        isError: true,
-        content: [{ type: 'text', text: error.message || String(error) }],
-      };
-    }
-  }
-);
-
+);
 /**
  * Bootstrap function that sets up the server application.
  */

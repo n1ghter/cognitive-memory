@@ -1,15 +1,9 @@
-```markdown
-# In-process database management module
+### Purpose
+The `db.ts` file provides a database manager class that handles the in-process database for the application. It generates random UUIDs, normalizes record IDs, and initializes the schema for the database.
 
-This module provides a singleton manager for an in-process SQLite database, 
-exposing functionality to interact with the database and its tables.
-
-### Exposed MCP Tools
-
-* `sqlite-vec` extension is loaded for efficient data storage.
-* WAL mode is enabled for improved concurrency.
+### Interactions with:
+- MCP tools: `sqlite-vec`
+- SQLite tables: `memory`, `edges`, `sync_ledger`, `embedding_cache`
 
 ### Architectural Purpose
-
-The primary purpose of this module is to provide a centralized interface 
-for managing the in-process database, enabling efficient and secure data access.
+The database manager class serves as a singleton instance, providing a centralized point of access to the in-process database. It is responsible for creating and managing the schema, as well as handling database operations such as closing and initializing the database.
