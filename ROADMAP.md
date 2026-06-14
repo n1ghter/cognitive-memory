@@ -65,6 +65,15 @@ While we successfully launched the initial 3D React Dashboard, we need to evolve
 - **[ ] Embedded "Nexus AI" Chat:** Integrate a local LLM chat interface directly into the Web UI so users can query their memory database seamlessly from the browser.
 - **[ ] Deep Tool Hooks (`PreToolUse` / `PostToolUse`):** Implement aggressive, autonomous background telemetry. Instead of relying purely on human invocation or simple background timers, the MCP server will inject hooks that force the agent to auto-trigger `memory_consolidate` or re-index the knowledge base when it detects massive code or architectural changes.
 
+## 📅 Phase 6: Performance & Scalability at the Edge
+*(Handling massive graphs efficiently)*
+
+With the shift to "Calm Interfaces" and minimalistic node rendering, our next challenge is scaling to tens of thousands of memories without browser freezing.
+
+- **[ ] Web Worker Physics Offloading:** Move the `d3-force` simulation computation into a separate Web Worker. This will keep the main UI thread buttery smooth (60fps) even when the graph recalculates forces for thousands of nodes.
+- **[ ] Semantic Clustering & Node Collapsing:** When the user zooms out, highly connected thematic nodes should visually merge into "Cluster Nodes" to avoid the classic graph "hairball" problem. As the user zooms in (Detail-on-Demand), the clusters expand into individual memories.
+- **[ ] Automated Full-Stack Build Pipelines:** The Web UI compilation step (`ui/dist`) needs to be fully integrated into the backend's build process via `tsc` or `vite` orchestrators, so that updates to the UI components are automatically served by the MCP without requiring explicit `pnpm run build` from the user.
+
 ---
 
 ## 🤝 How to Contribute

@@ -58,4 +58,38 @@ describe('DatabaseManager & Utils', () => {
     delete process.env.MEMORY_DB_PATH;
     vi.resetModules();
   });
+
+  it('should create GLOBAL_DB_DIR if it does not exist', async () => {
+    const { vi } = await import('vitest');
+    const path = await import('node:path');
+    const fs = await import('node:fs');
+
+    const tempHome = path.join(process.cwd(), 'temp_test_home');
+    const tempGlobalDir = path.join(tempHome, '.cognitive-memory');
+    
+    // Cleanup before test
+    if (fs.existsSync(tempGlobalDir)) fs.rmSync(tempGlobalDir, { recursive: true, force: true });
+    if (fs.existsSync(tempHome)) fs.rmSync(tempHome, { recursive: true, force: true });
+
+    process.env.HOME = tempHome;
+    process.env.USERPROFILE = tempHome;
+    
+    vi.resetModules();
+    const dbModule = await import('../src/db.js');
+    
+    const db = dbModule.DatabaseManager.getInstance();
+    expect(db).toBeDefined();
+    dbModule.DatabaseManager.close();
+
+    // Verify directory was created
+    expect(fs.existsSync(tempGlobalDir)).toBe(true);
+
+    // Cleanup after test
+    fs.rmSync(tempHome, { recursive: true, force: true });
+    
+    // Restore env
+    delete process.env.HOME;
+    delete process.env.USERPROFILE;
+    vi.resetModules();
+  });
 });

@@ -4,6 +4,13 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+### Added
+- **Web UI Modernization**: Completely overhauled the `/` dashboard UI with responsive glassmorphism (`backdrop-filter`), beautiful 3D glowing spheres (`THREE.MeshPhysicalMaterial`), and a smooth slide-out `NodeDetailsPanel` for inspecting memory contents without clutter.
+- **Exploratory Testing Fixes**: Implemented Quick Filters (All, Global, Local) underneath the search bar to instantly isolate domains.
+- **Graph UX**: Added keyboard shortcut `Ctrl+K` to focus search, `Escape` to close details panel, and `Enter` to cycle through search matches with an animated camera transition.
+- **Developer Experience**: Added inline 'Copy to Clipboard' actions for Node IDs and Text inside the Details panel.
+- **Data Synchronization**: Added a 'Refresh' floating action button to seamlessly fetch the latest database state via `/api/graph` without page reloads.
+- **Physics Optimization**: Tuned the underlying D3 Engine to drastically repel nodes (`d3Force('charge').strength(-200)`), solving the common 'hairball' dense-graph issue.
 ## [1.4.0] - 2026-06-14
 
 ## [1.3.0] - 2026-06-14

@@ -1,8 +1,9 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import ForceGraph3D from 'react-force-graph-3d';
 import ForceGraph2D from 'react-force-graph-2d';
-import SpriteText from 'three-spritetext';
-import { Layers, Search, X, Database, Hash } from 'lucide-react';
+import * as THREE from 'three';
+import { Layers, Search, X, ZoomIn, ZoomOut, Maximize, RefreshCw } from 'lucide-react';
+import NodeDetailsPanel from './NodeDetailsPanel.js';
 
 interface GraphData {
   nodes: any[];
@@ -11,29 +12,61 @@ interface GraphData {
 
 export default function MemoryGraph() {
   const [data, setData] = useState<GraphData>({ nodes: [], links: [] });
+  const [isLoading, setIsLoading] = useState(true);
   const [is3D, setIs3D] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
+  const [searchIndex, setSearchIndex] = useState(0);
+  const [activeFilter, setActiveFilter] = useState<'all'|'global'|'local'>('all');
   const [selectedNode, setSelectedNode] = useState<any | null>(null);
   const fgRef = useRef<any>(null);
+  const searchInputRef = useRef<HTMLInputElement>(null);
 
-  useEffect(() => {
+  const loadData = useCallback(() => {
+    setIsLoading(true);
     fetch('/api/graph')
       .then(res => res.json())
-      .then(data => {
-        setData(data);
+      .then(d => {
+        setData(d);
+        setIsLoading(false);
       })
-      .catch(err => console.error("Failed to load graph data", err));
+      .catch(err => {
+        console.error("Failed to load graph data", err);
+        setIsLoading(false);
+      });
   }, []);
+
+  useEffect(() => {
+    loadData();
+  }, [loadData]);
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setSelectedNode(null);
+        setSearchQuery('');
+      }
+      if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
+        e.preventDefault();
+        searchInputRef.current?.focus();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
+
+  useEffect(() => {
+    setSearchIndex(-1);
+  }, [searchQuery]);
 
   const handleNodeClick = useCallback((node: any) => {
     setSelectedNode(node);
     // Aim at node from outside it
     const distance = 40;
-    const distRatio = 1 + distance/Math.hypot(node.x, node.y, node.z);
+    const distRatio = 1 + distance/Math.hypot(node.x || 1, node.y || 1, node.z || 1);
 
     if (fgRef.current && is3D) {
       fgRef.current.cameraPosition(
-        { x: node.x * distRatio, y: node.y * distRatio, z: node.z * distRatio }, // new position
+        { x: (node.x || 0) * distRatio, y: (node.y || 0) * distRatio, z: (node.z || 0) * distRatio }, // new position
         node, // lookAt ({ x, y, z })
         3000  // ms transition duration
       );
@@ -43,22 +76,49 @@ export default function MemoryGraph() {
     }
   }, [is3D]);
 
+  // Adjust Physics to reduce clustering
+  useEffect(() => {
+    if (fgRef.current && data.nodes.length > 0) {
+      setTimeout(() => {
+        if (fgRef.current && fgRef.current.d3Force) {
+          fgRef.current.d3Force('charge')?.strength(-200)?.distanceMax(800);
+          fgRef.current.d3Force('link')?.distance(60);
+          fgRef.current.d3ReheatSimulation();
+        }
+      }, 500); // Slight delay ensures engine is mounted
+    }
+  }, [is3D, data]);
+
   const GraphComponent = is3D ? ForceGraph3D : ForceGraph2D as any;
 
   const filteredData = useMemo(() => {
-    if (!searchQuery) return data;
+    let filteredNodes = data.nodes;
+    if (activeFilter === 'global') filteredNodes = filteredNodes.filter(n => n.sourceDb === 'global');
+    if (activeFilter === 'local') filteredNodes = filteredNodes.filter(n => n.sourceDb !== 'global');
+
+    if (searchQuery) {
+      const lowerQuery = searchQuery.toLowerCase();
+      filteredNodes = filteredNodes.map(n => ({
+        ...n,
+        _highlighted: n.fullText?.toLowerCase().includes(lowerQuery) || n.name?.toLowerCase().includes(lowerQuery)
+      }));
+    } else {
+      filteredNodes = filteredNodes.map(n => ({ ...n, _highlighted: false }));
+    }
     
-    const lowerQuery = searchQuery.toLowerCase();
-    const filteredNodes = data.nodes.map(n => ({
-      ...n,
-      _highlighted: n.fullText?.toLowerCase().includes(lowerQuery) || n.name?.toLowerCase().includes(lowerQuery)
-    }));
-    
+    // Filter links to only those where both source and target are in filteredNodes
+    const nodeIds = new Set(filteredNodes.map(n => n.id));
+    const filteredLinks = data.links.filter(l => {
+      const sourceId = typeof l.source === 'object' ? l.source.id : l.source;
+      const targetId = typeof l.target === 'object' ? l.target.id : l.target;
+      return nodeIds.has(sourceId) && nodeIds.has(targetId);
+    });
+
     return {
       nodes: filteredNodes,
-      links: data.links
+      links: filteredLinks
     };
-  }, [data, searchQuery]);
+  }, [data, searchQuery, activeFilter]);
 
   return (
     <div style={{ width: '100vw', height: '100vh', position: 'relative', overflow: 'hidden', background: '#0b0f19' }}>
@@ -68,28 +128,65 @@ export default function MemoryGraph() {
         
         <div style={{ background: 'rgba(15, 23, 42, 0.7)', backdropFilter: 'blur(10px)', padding: '12px 24px', borderRadius: 12, color: 'white', display: 'flex', alignItems: 'center', gap: 15, pointerEvents: 'auto', border: '1px solid rgba(255,255,255,0.1)' }}>
           <h2 style={{ margin: 0, fontSize: '1.2rem', fontWeight: 600 }}>Cognitive Memory</h2>
-          <button 
-            type="button"
-            onClick={() => setIs3D(!is3D)}
-            style={{ background: 'rgba(59, 130, 246, 0.2)', color: '#60a5fa', border: '1px solid rgba(59, 130, 246, 0.5)', padding: '6px 12px', borderRadius: 6, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 5, fontSize: '0.85rem', transition: 'all 0.2s' }}
-          >
-            <Layers size={14} />
-            {is3D ? 'Switch to 2D' : 'Switch to 3D'}
-          </button>
         </div>
 
         <div style={{ background: 'rgba(15, 23, 42, 0.7)', backdropFilter: 'blur(10px)', padding: '8px 16px', borderRadius: 12, display: 'flex', alignItems: 'center', gap: 10, pointerEvents: 'auto', border: '1px solid rgba(255,255,255,0.1)', width: '300px' }}>
           <Search size={16} color="#94a3b8" />
           <input 
+            ref={searchInputRef}
             type="text" 
-            placeholder="Search memories..." 
+            placeholder="Search memories... (Ctrl+K)" 
             value={searchQuery}
             onChange={e => setSearchQuery(e.target.value)}
+            onKeyDown={e => {
+              if (e.key === 'Enter' && searchQuery) {
+                const matchedNodes = filteredData.nodes.filter(n => n._highlighted);
+                if (matchedNodes.length > 0) {
+                  const nextIndex = (searchIndex + 1) % matchedNodes.length;
+                  setSearchIndex(nextIndex);
+                  handleNodeClick(matchedNodes[nextIndex]);
+                }
+              }
+            }}
             style={{ background: 'transparent', border: 'none', color: 'white', outline: 'none', width: '100%', fontSize: '0.95rem' }}
           />
           {searchQuery && <X size={16} color="#94a3b8" style={{ cursor: 'pointer' }} onClick={() => setSearchQuery('')} />}
         </div>
       </div>
+
+      {/* Quick Filters */}
+      <div style={{ position: 'absolute', top: 75, right: 20, zIndex: 10, display: 'flex', gap: 8, pointerEvents: 'auto' }}>
+        {(['all', 'global', 'local'] as const).map(filter => (
+          <button
+            key={filter}
+            onClick={() => setActiveFilter(filter)}
+            style={{
+              background: activeFilter === filter ? 'rgba(59, 130, 246, 0.4)' : 'rgba(15, 23, 42, 0.7)',
+              border: `1px solid ${activeFilter === filter ? 'rgba(59, 130, 246, 0.8)' : 'rgba(255,255,255,0.1)'}`,
+              color: activeFilter === filter ? '#fff' : '#94a3b8',
+              padding: '4px 12px', borderRadius: 12, fontSize: '0.8rem', cursor: 'pointer', backdropFilter: 'blur(10px)', transition: 'all 0.2s'
+            }}
+          >
+            {filter === 'all' ? 'All' : filter === 'global' ? '🌍 Global' : '🏠 Local'}
+          </button>
+        ))}
+      </div>
+
+      {/* Loading State */}
+      {isLoading && (
+        <div style={{
+          position: 'absolute', top: '0', left: '0', right: '0', bottom: '0',
+          background: 'rgba(11, 15, 25, 0.8)', backdropFilter: 'blur(10px)',
+          display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+          color: 'white', zIndex: 50
+        }}>
+          <div style={{
+            width: '40px', height: '40px', border: '3px solid rgba(255,255,255,0.1)',
+            borderTopColor: '#3b82f6', borderRadius: '50%', animation: 'spin 1s linear infinite'
+          }} />
+          <p style={{ marginTop: '20px', color: '#94a3b8', letterSpacing: '0.05em' }}>RECONSTRUCTING MEMORY LINKS...</p>
+        </div>
+      )}
 
       {/* Empty State */}
       {data.nodes.length === 0 && (
@@ -108,114 +205,101 @@ export default function MemoryGraph() {
       )}
 
       {/* Sidebar Details Panel */}
-      <div style={{
-        position: 'absolute', right: selectedNode ? '20px' : '-400px', top: '90px', bottom: '20px', width: '350px',
-        background: 'rgba(15, 23, 42, 0.85)', backdropFilter: 'blur(20px)', borderRadius: '16px',
-        border: '1px solid rgba(255,255,255,0.1)', boxShadow: '0 20px 40px rgba(0,0,0,0.5)', zIndex: 20,
-        transition: 'right 0.3s cubic-bezier(0.16, 1, 0.3, 1)', display: 'flex', flexDirection: 'column',
-        overflow: 'hidden', color: 'white', padding: '20px'
+      <NodeDetailsPanel 
+        selectedNode={selectedNode} 
+        onClose={() => setSelectedNode(null)} 
+      />
+
+      {/* Graph Controls Overlay */}
+      <div style={{ 
+        position: 'absolute', bottom: 30, right: selectedNode ? 400 : 30, zIndex: 10, 
+        display: 'flex', flexDirection: 'column', gap: 10, 
+        transition: 'right 0.4s cubic-bezier(0.16, 1, 0.3, 1)' 
       }}>
-        {selectedNode && (
-          <>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: '15px', marginBottom: '15px' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                <div style={{ width: 12, height: 12, borderRadius: '50%', background: selectedNode.sourceDb === 'global' ? '#f59e0b' : (selectedNode.isActive ? '#10b981' : '#6b7280') }} />
-                <span style={{ fontSize: '0.85rem', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 600 }}>
-                  {selectedNode.sourceDb === 'global' ? 'Global Node' : 'Local Node'}
-                </span>
-              </div>
-              <button type="button" onClick={() => setSelectedNode(null)} style={{ background: 'transparent', border: 'none', color: '#94a3b8', cursor: 'pointer' }}>
-                <X size={18} />
-              </button>
-            </div>
-
-            <div style={{ overflowY: 'auto', flex: 1, paddingRight: '5px' }}>
-              <p style={{ fontSize: '1.1rem', lineHeight: '1.6', margin: '0 0 20px 0', fontWeight: 400 }}>
-                {selectedNode.fullText || selectedNode.name}
-              </p>
-
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 12, background: 'rgba(0,0,0,0.3)', padding: '15px', borderRadius: '8px' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 10, fontSize: '0.85rem', color: '#cbd5e1' }}>
-                  <Hash size={14} color="#64748b" />
-                  <span style={{ color: '#64748b', width: '80px' }}>ID</span>
-                  <span style={{ fontFamily: 'monospace', color: '#38bdf8' }}>{selectedNode.id?.split('-')[0]}...</span>
-                </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 10, fontSize: '0.85rem', color: '#cbd5e1' }}>
-                  <Database size={14} color="#64748b" />
-                  <span style={{ color: '#64748b', width: '80px' }}>Importance</span>
-                  <span>{(selectedNode.val / 10).toFixed(2)}</span>
-                </div>
-              </div>
-
-              {selectedNode.metadata && (
-                <div style={{ marginTop: '20px' }}>
-                  <h4 style={{ fontSize: '0.85rem', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '10px' }}>Metadata</h4>
-                  <pre style={{ background: 'rgba(0,0,0,0.3)', padding: '15px', borderRadius: '8px', fontSize: '0.8rem', color: '#a7f3d0', overflowX: 'auto', whiteSpace: 'pre-wrap' }}>
-                    {typeof selectedNode.metadata === 'string' ? (
-                      (() => { try { return JSON.stringify(JSON.parse(selectedNode.metadata), null, 2) } catch { return selectedNode.metadata } })()
-                    ) : JSON.stringify(selectedNode.metadata, null, 2)}
-                  </pre>
-                </div>
-              )}
-            </div>
-          </>
-        )}
+        <button onClick={() => { if(is3D){ fgRef.current?.cameraPosition({ x:0, y:0, z:800 }, { x:0, y:0, z:0 }, 1000); } else { fgRef.current?.zoomToFit(1000); } }} style={{ background: 'rgba(15, 23, 42, 0.8)', border: '1px solid rgba(255,255,255,0.1)', padding: '12px', borderRadius: '50%', color: '#94a3b8', cursor: 'pointer', display: 'flex' }} title="Reset View">
+          <Maximize size={18} />
+        </button>
+        <button onClick={() => { if(is3D){ const pos = fgRef.current?.cameraPosition(); fgRef.current?.cameraPosition({ x: pos.x*0.6, y: pos.y*0.6, z: pos.z*0.6 }, pos.lookAt, 400); } else { fgRef.current?.zoom(fgRef.current.zoom() * 1.5, 400); } }} style={{ background: 'rgba(15, 23, 42, 0.8)', border: '1px solid rgba(255,255,255,0.1)', padding: '12px', borderRadius: '50%', color: '#94a3b8', cursor: 'pointer', display: 'flex' }} title="Zoom In">
+          <ZoomIn size={18} />
+        </button>
+        <button onClick={() => { if(is3D){ const pos = fgRef.current?.cameraPosition(); fgRef.current?.cameraPosition({ x: pos.x*1.5, y: pos.y*1.5, z: pos.z*1.5 }, pos.lookAt, 400); } else { fgRef.current?.zoom(fgRef.current.zoom() / 1.5, 400); } }} style={{ background: 'rgba(15, 23, 42, 0.8)', border: '1px solid rgba(255,255,255,0.1)', padding: '12px', borderRadius: '50%', color: '#94a3b8', cursor: 'pointer', display: 'flex' }} title="Zoom Out">
+          <ZoomOut size={18} />
+        </button>
+        <button onClick={() => setIs3D(!is3D)} style={{ background: 'rgba(59, 130, 246, 0.2)', border: '1px solid rgba(59, 130, 246, 0.5)', padding: '12px', borderRadius: '50%', color: '#60a5fa', cursor: 'pointer', display: 'flex' }} title={is3D ? "Switch to 2D" : "Switch to 3D"}>
+          <Layers size={18} />
+        </button>
+        <button onClick={loadData} style={{ background: 'rgba(16, 185, 129, 0.2)', border: '1px solid rgba(16, 185, 129, 0.5)', padding: '12px', borderRadius: '50%', color: '#34d399', cursor: 'pointer', display: 'flex' }} title="Sync / Refresh Data">
+          <RefreshCw size={18} />
+        </button>
       </div>
 
       <GraphComponent
         ref={fgRef}
         graphData={filteredData}
-        nodeLabel={is3D ? undefined : "name"}
-        nodeAutoColorBy="isActive"
+        nodeLabel={(node: any) => {
+          const badgeColor = node.sourceDb === 'global' ? '#f59e0b' : (node.isActive ? '#10b981' : '#6b7280');
+          const typeLabel = node.sourceDb === 'global' ? 'Global Node' : 'Local Node';
+          return `
+            <div class="custom-tooltip">
+              <div class="tooltip-badge" style="color: ${badgeColor}; border-color: ${badgeColor}40; background: ${badgeColor}15;">
+                <span class="tooltip-dot" style="background: ${badgeColor};"></span>
+                ${typeLabel}
+              </div>
+              <div class="tooltip-title">${node.name}</div>
+            </div>
+          `;
+        }}
+        linkWidth={1.5}
         linkDirectionalArrowLength={3.5}
         linkDirectionalArrowRelPos={1}
-        linkDirectionalParticles={2}
+        linkDirectionalParticles={4}
+        linkDirectionalParticleWidth={2}
         linkDirectionalParticleSpeed={0.005}
+        linkColor={() => 'rgba(255,255,255,0.1)'}
         onNodeClick={handleNodeClick}
         onBackgroundClick={() => setSelectedNode(null)}
         nodeThreeObject={is3D ? (node: any) => {
           const opacity = (!searchQuery || node._highlighted) ? 1 : 0.15;
-          const bgOpacity = opacity === 1 ? 0.8 : 0.1;
-
-          const baseColor = node.sourceDb === 'global' 
+          const isGlobal = node.sourceDb === 'global';
+          const colorHex = isGlobal ? 0xf59e0b : (node.isActive ? 0x10b981 : 0x6b7280);
+          
+          const radius = Math.cbrt(node.val) * 4;
+          const geometry = new THREE.SphereGeometry(radius, 32, 32); 
+          const material = new THREE.MeshPhysicalMaterial({ 
+            color: colorHex, 
+            transparent: true, 
+            opacity: opacity,
+            transmission: 0.2,
+            roughness: 0.1,
+            metalness: 0.1,
+            clearcoat: 1.0,
+            clearcoatRoughness: 0.1,
+            emissive: colorHex,
+            emissiveIntensity: 0.3
+          });
+          return new THREE.Mesh(geometry, material);
+        } : undefined}
+        nodeCanvasObject={!is3D ? (node: any, ctx: any) => {
+          const opacity = (!searchQuery || node._highlighted) ? 1 : 0.15;
+          const isGlobal = node.sourceDb === 'global';
+          const colorStr = isGlobal 
             ? `rgba(245, 158, 11, ${opacity})` 
             : (node.isActive ? `rgba(16, 185, 129, ${opacity})` : `rgba(107, 114, 128, ${opacity})`);
             
-          const sprite = new SpriteText(node.fullText || node.name);
-          sprite.color = baseColor;
-          sprite.textHeight = 4;
-          sprite.padding = [4, 6] as any;
-          sprite.backgroundColor = `rgba(15, 23, 42, ${bgOpacity})`;
-          sprite.borderRadius = 4;
-          sprite.borderColor = node.sourceDb === 'global' 
-            ? `rgba(245, 158, 11, ${opacity * 0.5})` 
-            : (node.isActive ? `rgba(16, 185, 129, ${opacity * 0.5})` : `rgba(107, 114, 128, ${opacity * 0.5})`);
-          sprite.borderWidth = 0.5;
-          
-          sprite.text = (node.fullText || node.name).replace(/(.{1,40})(\s+|$)/g, "$1\n").trim();
-          
-          return sprite;
-        } : undefined}
-        nodeCanvasObject={!is3D ? (node: any, ctx: any, globalScale: number) => {
-          const label = node.name;
-          const fontSize = 12/globalScale;
-          const opacity = (!searchQuery || node._highlighted) ? 1 : 0.15;
-          
-          ctx.font = `${fontSize}px Sans-Serif`;
-          const textWidth = ctx.measureText(label).width;
-          const bckgDimensions = [textWidth, fontSize].map(n => n + fontSize * 0.8);
+          const radius = Math.cbrt(node.val) * 6;
 
-          ctx.fillStyle = `rgba(15, 23, 42, ${opacity === 1 ? 0.8 : 0.2})`;
-          ctx.fillRect(node.x - bckgDimensions[0] / 2, node.y - bckgDimensions[1] / 2, bckgDimensions[0], bckgDimensions[1]);
+          ctx.beginPath();
+          ctx.arc(node.x, node.y, radius, 0, 2 * Math.PI, false);
+          ctx.fillStyle = colorStr;
+          ctx.fill();
 
+          // Draw Icon
+          const fontSize = radius * 1.2;
+          ctx.font = `${fontSize}px Arial`;
           ctx.textAlign = 'center';
           ctx.textBaseline = 'middle';
-          ctx.fillStyle = node.sourceDb === 'global' 
-            ? `rgba(245, 158, 11, ${opacity})` 
-            : (node.isActive ? `rgba(16, 185, 129, ${opacity})` : `rgba(107, 114, 128, ${opacity})`);
-          ctx.fillText(label, node.x, node.y);
-
-          node.__bckgDimensions = bckgDimensions;
+          ctx.fillStyle = `rgba(255, 255, 255, ${opacity * 0.9})`;
+          ctx.fillText(isGlobal ? '🌍' : '🏠', node.x, node.y);
         } : undefined}
       />
     </div>

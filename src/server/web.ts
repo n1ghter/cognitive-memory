@@ -62,14 +62,18 @@ export function startWebServer(port: number = 3000) {
     res.sendFile(path.join(uiDistPath, 'index.html'));
   });
 
-  app.listen(port, () => {
+  const server = app.listen(port, () => {
     const url = `http://localhost:${port}`;
-    console.log(`Web UI Dashboard is running at ${url}`);
-    
-    // Auto-open browser
-    import('child_process').then(({ exec }) => {
-      const start = process.platform === 'darwin' ? 'open' : process.platform === 'win32' ? 'start' : 'xdg-open';
-      exec(`${start} ${url}`);
-    }).catch(err => console.error('Failed to open browser:', err));
+    if (process.env.NODE_ENV !== 'test') {
+      console.log(`Web UI Dashboard is running at ${url}`);
+      
+      // Auto-open browser
+      import('child_process').then(({ exec }) => {
+        const start = process.platform === 'darwin' ? 'open' : process.platform === 'win32' ? 'start' : 'xdg-open';
+        exec(`${start} ${url}`);
+      }).catch(err => console.error('Failed to open browser:', err));
+    }
   });
+
+  return { app, server };
 }
