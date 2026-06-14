@@ -84,3 +84,15 @@ Whenever an AI Agent completes a task that warrants a changelog update, it MUST 
 
 - **Format:** `<type>(<scope>): <description>` (e.g., `fix(tests): resolve login timeout`).
 - **Allowed Types:** `feat`, `fix`, `docs`, `perf`, `refactor`, `style`, `test`, `chore`, `ci`.
+
+
+## Autonomous Memory Checklist
+**CRITICAL FORCING FUNCTION**: As an autonomous agent operating in this repository, you are strictly required to manage long-term memory via the `cognitive-memory` MCP tools. 
+
+Before providing your final response or concluding any major task (e.g. bug fix, feature implementation, refactor), you **MUST** execute the `memory-auto-capture` skill and output the following completed checklist in your response:
+
+- [ ] Task completed and verified.
+- [ ] Episodic Memory recorded via `memory_store` (summarizing what was done and why).
+- [ ] Semantic Annotations updated for any modified core files.
+
+**DO NOT** conclude a conversation without completing this checklist.
