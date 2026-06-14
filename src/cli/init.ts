@@ -73,6 +73,17 @@ Call the \`memory_store\` MCP tool with \`metadata.type = "episodic"\`:
   }
 }
 \`\`\`
+
+---
+
+## 4. Graph Relations and Housekeeping
+
+You have full access to manage the memory database autonomously using the complete suite of 7 MCP tools:
+- **memory_relate**: When you realize two separate memories are conceptually linked, create a relationship between them to build the knowledge graph.
+- **memory_delete**: If you verify a memory is objectively false, obsolete, or incorrect, delete it.
+- **memory_consolidate**: If there are many duplicate or noisy memories about a single topic, trigger consolidation to merge them into a single high-quality node.
+- **memory_export**: Export the database into Markdown files for the user's Obsidian vault.
+- **memory_clear_all**: NUCLEAR OPTION - use only if explicitly requested by the user.
 `;
 
 const AGENTS_MD_CHECKLIST = `
