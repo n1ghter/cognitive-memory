@@ -4,6 +4,8 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [1.5.1] - 2026-06-14
+
 ### Added
 - **UI Test Coverage**: Added `vitest` and `@testing-library/react` to the `ui/` workspace. Implemented rendering and interaction tests for `MemoryGraph.tsx` and `NodeDetailsPanel.tsx` (Iteration 3).
 - **Graph UX Counter**: Added a dynamic `Showing X / Y nodes` counter to `MemoryGraph` when filtering data.
