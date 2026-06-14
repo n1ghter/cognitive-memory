@@ -94,6 +94,7 @@ export class DatabaseManager {
         embedding float[4096]
       );
 
+
       CREATE TABLE IF NOT EXISTS edges (
         id TEXT PRIMARY KEY,
         source_id TEXT NOT NULL,
@@ -122,7 +123,7 @@ export class DatabaseManager {
 
     // Migration for existing databases
     try {
-      db.exec('ALTER TABLE memory ADD COLUMN updated_at DATETIME DEFAULT CURRENT_TIMESTAMP');
+      db.exec('ALTER TABLE memory ADD COLUMN updated_at DATETIME');
     } catch (_e) {
       // Column already exists or table doesn't exist yet
     }
