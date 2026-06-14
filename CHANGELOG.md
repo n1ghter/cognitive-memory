@@ -4,6 +4,8 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [1.5.0] - 2026-06-14
+
 ### Added
 - **Web UI Modernization**: Completely overhauled the `/` dashboard UI with responsive glassmorphism (`backdrop-filter`), beautiful 3D glowing spheres (`THREE.MeshPhysicalMaterial`), and a smooth slide-out `NodeDetailsPanel` for inspecting memory contents without clutter.
 - **Exploratory Testing Fixes**: Implemented Quick Filters (All, Global, Local) underneath the search bar to instantly isolate domains.
