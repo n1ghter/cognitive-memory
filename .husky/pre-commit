@@ -1,0 +1,16 @@
+#!/usr/bin/env sh
+. "$(dirname -- "$0")/_/husky.sh"
+
+echo "🧠 Running lint-staged (Biome checks)..."
+npx lint-staged || exit 1
+
+echo "🧠 Running root TypeScript check..."
+npx tsc -b || exit 1
+
+echo "🧠 Running UI TypeScript check..."
+cd ui && npx tsc -b || exit 1
+
+echo "🧠 Running UI tests..."
+npm run test || exit 1
+
+echo "✅ All pre-commit checks passed!"

@@ -119,14 +119,16 @@ describe('Memory Export', () => {
     const res1 = await executeMemoryStore({ text: 'Node A' });
     const res2 = await executeMemoryStore({ text: 'Node B' });
     const res3 = await executeMemoryStore({ text: 'Node C' });
-    
+
     const { generateId } = await import('../src/db.js');
-    const insertEdge = db.prepare('INSERT INTO edges (id, source_id, target_id, relation_type) VALUES (?, ?, ?, ?)');
-    
+    const insertEdge = db.prepare(
+      'INSERT INTO edges (id, source_id, target_id, relation_type) VALUES (?, ?, ?, ?)'
+    );
+
     // Node A has 2 outgoing edges
     insertEdge.run(generateId(), res1.record.id, res2.record.id, 'ref1');
     insertEdge.run(generateId(), res1.record.id, res3.record.id, 'ref2');
-    
+
     // Node C has 2 incoming edges
     insertEdge.run(generateId(), res2.record.id, res3.record.id, 'ref3');
 
@@ -136,16 +138,19 @@ describe('Memory Export', () => {
 
   it('should skip overwrite if file on disk is newer', async () => {
     const res1 = await executeMemoryStore({ text: 'Node to skip' });
-    
+
     const db = DatabaseManager.getInstance();
-    db.prepare('UPDATE memory SET updated_at = ? WHERE id = ?').run('2026-06-14 10:00:00', res1.record.id);
+    db.prepare('UPDATE memory SET updated_at = ? WHERE id = ?').run(
+      '2026-06-14 10:00:00',
+      res1.record.id
+    );
 
     const expRes1 = await executeMemoryExport({ vaultPath: tmpDir });
     expect(expRes1.success).toBe(true);
-    
+
     const shortId = (res1.record.id as string).split(':')[1] || res1.record.id;
     const filePath = path.join(tmpDir, `Memory_${shortId}.md`);
-    
+
     // Write a manual edit
     fs.writeFileSync(filePath, 'Human edited', 'utf-8');
     const futureTime = new Date(Date.now() + 100000);
@@ -154,7 +159,7 @@ describe('Memory Export', () => {
     // Export again
     const expRes2 = await executeMemoryExport({ vaultPath: tmpDir });
     expect(expRes2.success).toBe(true);
-    
+
     // The file should still contain human edit
     const content = fs.readFileSync(filePath, 'utf-8');
     expect(content).toBe('Human edited');

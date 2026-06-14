@@ -113,7 +113,9 @@ export async function runInit() {
 
   if (!fs.existsSync(skillPath)) {
     fs.writeFileSync(skillPath, SKILL_CONTENT, 'utf-8');
-    console.log('✅ Created memory-auto-capture skill at .agents/skills/memory-auto-capture/SKILL.md');
+    console.log(
+      '✅ Created memory-auto-capture skill at .agents/skills/memory-auto-capture/SKILL.md'
+    );
   } else {
     console.log('ℹ️ Skill already exists at .agents/skills/memory-auto-capture/SKILL.md');
   }
@@ -127,11 +129,13 @@ export async function runInit() {
   }
 
   if (!agentsMdContent.includes('Autonomous Memory Checklist')) {
-    fs.writeFileSync(agentsMdPath, agentsMdContent + '\n' + AGENTS_MD_CHECKLIST, 'utf-8');
+    fs.writeFileSync(agentsMdPath, `${agentsMdContent}\n${AGENTS_MD_CHECKLIST}`, 'utf-8');
     console.log('✅ Injected Autonomous Memory Checklist forcing function into AGENTS.md');
   } else {
     console.log('ℹ️ Autonomous Memory Checklist already exists in AGENTS.md');
   }
 
-  console.log('\n🚀 Initialization complete! Your local AI agents will now automatically write to memory.');
+  console.log(
+    '\n🚀 Initialization complete! Your local AI agents will now automatically write to memory.'
+  );
 }

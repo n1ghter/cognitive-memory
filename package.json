@@ -1,6 +1,6 @@
 {
   "name": "@cemised/cognitive-memory",
-  "version": "1.4.0",
+  "version": "1.5.5",
   "description": "An autonomous graph-vector memory engine powered by SQLite and Ollama.",
   "main": "dist/index.js",
   "bin": {
@@ -30,14 +30,21 @@
     "dashboard": "node dist/index.js dashboard",
     "ui": "node dist/index.js ui",
     "dev": "ts-node-esm src/index.ts",
+    "seed": "npx tsx scripts/seed-test-data.ts",
     "gitnexus": "gitnexus analyze --skip-skills --skip-agents-md",
     "test": "vitest run",
     "test:coverage": "vitest run --coverage",
     "test:watch": "vitest",
-    "version": "node scripts/update-changelog.js && git add CHANGELOG.md",
+    "version": "npx tsx scripts/update-changelog.ts && git add CHANGELOG.md",
     "format": "biome format --write .",
     "lint": "biome lint --write .",
-    "check": "biome check --write ."
+    "check": "biome check --write .",
+    "prepare": "husky"
+  },
+  "lint-staged": {
+    "*.{ts,tsx,js,json}": [
+      "biome check --write"
+    ]
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.0.1",
@@ -53,8 +60,12 @@
     "@types/cors": "^2.8.19",
     "@types/express": "^5.0.6",
     "@types/node": "^25.9.2",
+    "@types/supertest": "^7.2.0",
     "@vitest/coverage-v8": "^4.1.8",
     "gitnexus": "^1.6.5",
+    "husky": "^9.1.7",
+    "lint-staged": "^17.0.7",
+    "supertest": "^7.2.2",
     "ts-node": "^10.9.2",
     "typescript": "^6.0.3",
     "vitest": "^4.1.8"

@@ -1,10 +1,8 @@
-import MemoryGraph from './components/MemoryGraph'
-import './App.css'
+import MemoryGraph from './components/MemoryGraph';
+import './App.css';
 
 function App() {
-  return (
-    <MemoryGraph />
-  )
+  return <MemoryGraph />;
 }
 
-export default App
+export default App;

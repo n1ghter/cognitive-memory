@@ -210,7 +210,9 @@ importance: 0.5
     expect(res.success).toBe(true);
 
     const db = DatabaseManager.getInstance();
-    const mem = db.prepare('SELECT text FROM memory WHERE id = ?').get('memory:weird-syntax') as any;
+    const mem = db
+      .prepare('SELECT text FROM memory WHERE id = ?')
+      .get('memory:weird-syntax') as any;
     expect(mem.text).toContain('This line was preceded by an exact ">"');
   });
 
@@ -235,14 +237,17 @@ importance: 0.5
   });
 
   it('should hit catch blocks on database and file system errors', async () => {
-    fs.writeFileSync(path.join(tmpDir, 'Memory_db-error.md'), `---
+    fs.writeFileSync(
+      path.join(tmpDir, 'Memory_db-error.md'),
+      `---
 id: db-error
 ---
-# Test`);
+# Test`
+    );
     fs.writeFileSync(path.join(tmpDir, '.sync_state.json'), '{}');
 
     const db = DatabaseManager.getInstance();
-    
+
     // Insert target so edges test succeeds later
     db.prepare(
       'INSERT INTO memory (id, text, metadata, importance, is_active) VALUES (?, ?, ?, ?, ?)'
@@ -262,14 +267,17 @@ id: db-error
 
     const res1 = await executeMemoryImport({ vaultPath: tmpDir });
     expect(res1.errors.length).toBeGreaterThan(0);
-    
+
     fsSpy.mockRestore();
 
     // Now mock db.prepare to throw during node insertion
-    fs.writeFileSync(path.join(tmpDir, 'Memory_db-error-2.md'), `---
+    fs.writeFileSync(
+      path.join(tmpDir, 'Memory_db-error-2.md'),
+      `---
 id: db-error-2
 ---
-# Test`);
+# Test`
+    );
     const originalPrepare = db.prepare.bind(db);
     const dbSpy = vi.spyOn(db, 'prepare').mockImplementation((sql: string) => {
       if (sql.includes('INSERT INTO memory')) {
@@ -279,22 +287,24 @@ id: db-error-2
     });
 
     const res2 = await executeMemoryImport({ vaultPath: tmpDir });
-    expect(res2.errors.some(e => e.includes('Error inserting node'))).toBe(true);
+    expect(res2.errors.some((e) => e.includes('Error inserting node'))).toBe(true);
 
     dbSpy.mockRestore();
 
     // Now mock db.prepare to throw during edge insertion
     const p3 = path.join(tmpDir, 'Memory_db-error-3.md');
-    fs.writeFileSync(p3, `---
+    fs.writeFileSync(
+      p3,
+      `---
 id: db-error-3
 ---
 # Test
 ## Graph Relations
 - **test** ➡️ [[memory:54321]]
-`);
+`
+    );
     const future = new Date(Date.now() + 10000);
     fs.utimesSync(p3, future, future);
-    
 
     const originalPrepare2 = db.prepare.bind(db);
     const dbSpy2 = vi.spyOn(db, 'prepare').mockImplementation((sql: string) => {
@@ -307,7 +317,7 @@ id: db-error-3
     });
 
     const res3 = await executeMemoryImport({ vaultPath: tmpDir });
-    expect(res3.errors.some(e => e.includes('Error inserting edges'))).toBe(true);
+    expect(res3.errors.some((e) => e.includes('Error inserting edges'))).toBe(true);
 
     dbSpy2.mockRestore();
   });

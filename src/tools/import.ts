@@ -107,7 +107,7 @@ export async function executeMemoryImport(args: ImportArgs = {}): Promise<{
           }
         }
       }
-    } catch (e) {
+    } catch (_e) {
       errors.push('Failed to process .sync_state.json for deletions');
     }
   }
@@ -279,14 +279,14 @@ function parseMarkdownMemory(content: string): ParsedMemory | null {
         continue;
       }
       if (inJson && line.startsWith('```')) inJson = false;
-      if (inJson) jsonString += line + '\n';
+      if (inJson) jsonString += `${line}\n`;
     }
 
     let metadata = {};
     if (jsonString.trim()) {
       try {
         metadata = JSON.parse(jsonString);
-      } catch (e) {}
+      } catch (_e) {}
     }
 
     return {
@@ -297,7 +297,7 @@ function parseMarkdownMemory(content: string): ParsedMemory | null {
       metadata,
       relations,
     };
-  } catch (e) {
+  } catch (_e) {
     return null;
   }
 }

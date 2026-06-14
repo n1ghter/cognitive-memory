@@ -69,7 +69,7 @@ importance: 0.5
 
     // 2. Sync to create the file on disk
     await executeMemorySync({ vaultPath: tmpDir });
-    let files = fs.readdirSync(tmpDir).filter(f => f.endsWith('.md'));
+    let files = fs.readdirSync(tmpDir).filter((f) => f.endsWith('.md'));
     expect(files.length).toBe(1);
 
     // 3. Agent deletes the memory
@@ -78,7 +78,7 @@ importance: 0.5
 
     // 4. Sync again. The file should be deleted from disk by import.ts!
     await executeMemorySync({ vaultPath: tmpDir });
-    files = fs.readdirSync(tmpDir).filter(f => f.endsWith('.md'));
+    files = fs.readdirSync(tmpDir).filter((f) => f.endsWith('.md'));
     expect(files.length).toBe(0);
   });
   it('should propagate user deletions to sqlite', async () => {
@@ -88,9 +88,9 @@ importance: 0.5
 
     // 2. Sync to create the file on disk and write .sync_state.json
     await executeMemorySync({ vaultPath: tmpDir });
-    
+
     // Find the file that was created
-    const files = fs.readdirSync(tmpDir).filter(f => f.endsWith('.md'));
+    const files = fs.readdirSync(tmpDir).filter((f) => f.endsWith('.md'));
     expect(files.length).toBe(1);
     const mdFile = files[0];
 

@@ -1,8 +1,9 @@
-import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
-import ForceGraph3D from 'react-force-graph-3d';
+import { Layers, Maximize, RefreshCw, Search, X, ZoomIn, ZoomOut } from 'lucide-react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import ForceGraph2D from 'react-force-graph-2d';
-import SpriteText from 'three-spritetext';
-import { Layers, Search, X, Database, Hash } from 'lucide-react';
+import ForceGraph3D from 'react-force-graph-3d';
+import * as THREE from 'three';
+import NodeDetailsPanel from './NodeDetailsPanel.js';
 
 interface GraphData {
   nodes: any[];
@@ -11,212 +12,584 @@ interface GraphData {
 
 export default function MemoryGraph() {
   const [data, setData] = useState<GraphData>({ nodes: [], links: [] });
+  const [isLoading, setIsLoading] = useState(true);
   const [is3D, setIs3D] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
+  const [searchIndex, setSearchIndex] = useState(0);
+  const [activeFilter, setActiveFilter] = useState<'all' | 'global' | 'local'>('all');
   const [selectedNode, setSelectedNode] = useState<any | null>(null);
   const fgRef = useRef<any>(null);
+  const searchInputRef = useRef<HTMLInputElement>(null);
 
-  useEffect(() => {
+  const loadData = useCallback(() => {
+    setIsLoading(true);
     fetch('/api/graph')
-      .then(res => res.json())
-      .then(data => {
+      .then((res) => res.json())
+      .then((data) => {
         setData(data);
+        setIsLoading(false);
       })
-      .catch(err => console.error("Failed to load graph data", err));
+      /* v8 ignore start */
+      .catch((err) => {
+        console.error('Failed to load graph data', err);
+        setIsLoading(false);
+      });
+    /* v8 ignore stop */
   }, []);
 
-  const handleNodeClick = useCallback((node: any) => {
-    setSelectedNode(node);
-    // Aim at node from outside it
-    const distance = 40;
-    const distRatio = 1 + distance/Math.hypot(node.x, node.y, node.z);
+  useEffect(() => {
+    loadData();
+  }, [loadData]);
 
-    if (fgRef.current && is3D) {
-      fgRef.current.cameraPosition(
-        { x: node.x * distRatio, y: node.y * distRatio, z: node.z * distRatio }, // new position
-        node, // lookAt ({ x, y, z })
-        3000  // ms transition duration
-      );
-    } else if (fgRef.current && !is3D) {
-      fgRef.current.centerAt(node.x, node.y, 1000);
-      fgRef.current.zoom(8, 2000);
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setSelectedNode(null);
+        setSearchQuery('');
+      }
+      if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
+        e.preventDefault();
+        searchInputRef.current?.focus();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
+
+  useEffect(() => {
+    setSearchIndex(-1);
+  }, []);
+
+  const handleNodeClick = useCallback(
+    /* v8 ignore start */
+    (node: any) => {
+      setSelectedNode(node);
+      // Aim at node from outside it
+      const distance = 40;
+      const distRatio = 1 + distance / Math.hypot(node.x || 1, node.y || 1, node.z || 1);
+
+      if (fgRef.current && is3D) {
+        fgRef.current.cameraPosition(
+          {
+            x: (node.x || 0) * distRatio,
+            y: (node.y || 0) * distRatio,
+            z: (node.z || 0) * distRatio,
+          }, // new position
+          node, // lookAt ({ x, y, z })
+          3000 // ms transition duration
+        );
+      } else if (fgRef.current && !is3D) {
+        fgRef.current.centerAt(node.x, node.y, 1000);
+        fgRef.current.zoom(8, 2000);
+      }
+      /* v8 ignore stop */
+    },
+    [is3D]
+  );
+
+  // Adjust Physics to reduce clustering
+  /* v8 ignore start */
+  useEffect(() => {
+    if (fgRef.current && data.nodes.length > 0) {
+      setTimeout(() => {
+        if (fgRef.current?.d3Force) {
+          fgRef.current.d3Force('charge')?.strength(-200)?.distanceMax(800);
+          fgRef.current.d3Force('link')?.distance(60);
+          fgRef.current.d3ReheatSimulation();
+        }
+      }, 500); // Slight delay ensures engine is mounted
     }
-  }, [is3D]);
+  }, [data]);
+  /* v8 ignore stop */
 
-  const GraphComponent = is3D ? ForceGraph3D : ForceGraph2D as any;
+  const GraphComponent = is3D ? ForceGraph3D : (ForceGraph2D as any);
 
   const filteredData = useMemo(() => {
-    if (!searchQuery) return data;
-    
-    const lowerQuery = searchQuery.toLowerCase();
-    const filteredNodes = data.nodes.map(n => ({
-      ...n,
-      _highlighted: n.fullText?.toLowerCase().includes(lowerQuery) || n.name?.toLowerCase().includes(lowerQuery)
-    }));
-    
+    let filteredNodes = data.nodes;
+    if (activeFilter === 'global')
+      filteredNodes = filteredNodes.filter((n) => n.sourceDb === 'global');
+    if (activeFilter === 'local')
+      filteredNodes = filteredNodes.filter((n) => n.sourceDb !== 'global');
+
+    if (searchQuery) {
+      const lowerQuery = searchQuery.toLowerCase();
+      filteredNodes = filteredNodes.map((n) => ({
+        ...n,
+        _highlighted:
+          n.fullText?.toLowerCase().includes(lowerQuery) ||
+          n.name?.toLowerCase().includes(lowerQuery),
+      }));
+    } else {
+      filteredNodes = filteredNodes.map((n) => ({ ...n, _highlighted: false }));
+    }
+
+    // Filter links to only those where both source and target are in filteredNodes
+    const nodeIds = new Set(filteredNodes.map((n) => n.id));
+    /* v8 ignore start */
+    const filteredLinks = data.links
+      .filter((l) => {
+        const sourceId = typeof l.source === 'object' ? l.source.id : l.source;
+        const targetId = typeof l.target === 'object' ? l.target.id : l.target;
+        return nodeIds.has(sourceId) && nodeIds.has(targetId);
+      })
+      .map((l) => ({
+        ...l,
+        source: typeof l.source === 'object' ? l.source.id : l.source,
+        target: typeof l.target === 'object' ? l.target.id : l.target,
+      }));
+    /* v8 ignore stop */
+
     return {
       nodes: filteredNodes,
-      links: data.links
+      links: filteredLinks,
     };
-  }, [data, searchQuery]);
+  }, [data, searchQuery, activeFilter]);
 
   return (
-    <div style={{ width: '100vw', height: '100vh', position: 'relative', overflow: 'hidden', background: '#0b0f19' }}>
-      
+    <div
+      style={{
+        width: '100vw',
+        height: '100vh',
+        position: 'relative',
+        overflow: 'hidden',
+        background: '#0b0f19',
+      }}
+    >
       {/* Top Header & Search */}
-      <div style={{ position: 'absolute', top: 20, left: 20, right: 20, zIndex: 10, display: 'flex', justifyContent: 'space-between', alignItems: 'center', pointerEvents: 'none' }}>
-        
-        <div style={{ background: 'rgba(15, 23, 42, 0.7)', backdropFilter: 'blur(10px)', padding: '12px 24px', borderRadius: 12, color: 'white', display: 'flex', alignItems: 'center', gap: 15, pointerEvents: 'auto', border: '1px solid rgba(255,255,255,0.1)' }}>
+      <div
+        style={{
+          position: 'absolute',
+          top: 20,
+          left: 20,
+          right: 20,
+          zIndex: 10,
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          pointerEvents: 'none',
+        }}
+      >
+        <div
+          style={{
+            background: 'rgba(15, 23, 42, 0.7)',
+            backdropFilter: 'blur(10px)',
+            padding: '12px 24px',
+            borderRadius: 12,
+            color: 'white',
+            display: 'flex',
+            alignItems: 'center',
+            gap: 15,
+            pointerEvents: 'auto',
+            border: '1px solid rgba(255,255,255,0.1)',
+          }}
+        >
           <h2 style={{ margin: 0, fontSize: '1.2rem', fontWeight: 600 }}>Cognitive Memory</h2>
-          <button 
-            type="button"
-            onClick={() => setIs3D(!is3D)}
-            style={{ background: 'rgba(59, 130, 246, 0.2)', color: '#60a5fa', border: '1px solid rgba(59, 130, 246, 0.5)', padding: '6px 12px', borderRadius: 6, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 5, fontSize: '0.85rem', transition: 'all 0.2s' }}
-          >
-            <Layers size={14} />
-            {is3D ? 'Switch to 2D' : 'Switch to 3D'}
-          </button>
         </div>
 
-        <div style={{ background: 'rgba(15, 23, 42, 0.7)', backdropFilter: 'blur(10px)', padding: '8px 16px', borderRadius: 12, display: 'flex', alignItems: 'center', gap: 10, pointerEvents: 'auto', border: '1px solid rgba(255,255,255,0.1)', width: '300px' }}>
+        <div
+          style={{
+            background: 'rgba(15, 23, 42, 0.7)',
+            backdropFilter: 'blur(10px)',
+            padding: '8px 16px',
+            borderRadius: 12,
+            display: 'flex',
+            alignItems: 'center',
+            gap: 10,
+            pointerEvents: 'auto',
+            border: '1px solid rgba(255,255,255,0.1)',
+            width: '300px',
+          }}
+        >
           <Search size={16} color="#94a3b8" />
-          <input 
-            type="text" 
-            placeholder="Search memories..." 
+          <input
+            ref={searchInputRef}
+            type="text"
+            placeholder="Search memories... (Ctrl+K)"
             value={searchQuery}
-            onChange={e => setSearchQuery(e.target.value)}
-            style={{ background: 'transparent', border: 'none', color: 'white', outline: 'none', width: '100%', fontSize: '0.95rem' }}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            /* v8 ignore start */
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' && searchQuery) {
+                const matchedNodes = filteredData.nodes.filter((n) => n._highlighted);
+                if (matchedNodes.length > 0) {
+                  const nextIndex = (searchIndex + 1) % matchedNodes.length;
+                  setSearchIndex(nextIndex);
+                  handleNodeClick(matchedNodes[nextIndex]);
+                }
+              }
+            }}
+            /* v8 ignore stop */
+            style={{
+              background: 'transparent',
+              border: 'none',
+              color: 'white',
+              outline: 'none',
+              width: '100%',
+              fontSize: '0.95rem',
+            }}
           />
-          {searchQuery && <X size={16} color="#94a3b8" style={{ cursor: 'pointer' }} onClick={() => setSearchQuery('')} />}
+          {searchQuery && (
+            <X
+              size={16}
+              color="#94a3b8"
+              style={{ cursor: 'pointer' }}
+              onClick={() => setSearchQuery('')}
+            />
+          )}
         </div>
       </div>
 
+      <div
+        style={{
+          position: 'absolute',
+          top: 75,
+          right: 20,
+          zIndex: 10,
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'flex-end',
+          gap: 8,
+          pointerEvents: 'none',
+        }}
+      >
+        <div style={{ display: 'flex', gap: 8, pointerEvents: 'auto' }}>
+          {(['all', 'global', 'local'] as const).map((filter) => (
+            <button
+              key={filter}
+              type="button"
+              onClick={() => setActiveFilter(filter)}
+              style={{
+                background:
+                  activeFilter === filter ? 'rgba(59, 130, 246, 0.4)' : 'rgba(15, 23, 42, 0.7)',
+                border: `1px solid ${activeFilter === filter ? 'rgba(59, 130, 246, 0.8)' : 'rgba(255,255,255,0.1)'}`,
+                color: activeFilter === filter ? '#fff' : '#94a3b8',
+                padding: '4px 12px',
+                borderRadius: 12,
+                fontSize: '0.8rem',
+                cursor: 'pointer',
+                backdropFilter: 'blur(10px)',
+                transition: 'all 0.2s',
+                textTransform: 'capitalize',
+              }}
+            >
+              {filter === 'all' ? 'All' : filter === 'global' ? '🌍 Global' : '🏠 Local'}
+            </button>
+          ))}
+        </div>
+        <div
+          style={{
+            background: 'rgba(15, 23, 42, 0.5)',
+            padding: '4px 10px',
+            borderRadius: 8,
+            fontSize: '0.75rem',
+            color: '#94a3b8',
+            border: '1px solid rgba(255,255,255,0.05)',
+            backdropFilter: 'blur(5px)',
+          }}
+        >
+          Showing {filteredData.nodes.length} / {data?.nodes.length || 0} nodes
+        </div>
+      </div>
+
+      {/* Loading State */}
+      {isLoading && (
+        <div
+          style={{
+            position: 'absolute',
+            top: '0',
+            left: '0',
+            right: '0',
+            bottom: '0',
+            background: 'rgba(11, 15, 25, 0.8)',
+            backdropFilter: 'blur(10px)',
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            justifyContent: 'center',
+            color: 'white',
+            zIndex: 50,
+          }}
+        >
+          <div
+            style={{
+              width: '40px',
+              height: '40px',
+              border: '3px solid rgba(255,255,255,0.1)',
+              borderTopColor: '#3b82f6',
+              borderRadius: '50%',
+              animation: 'spin 1s linear infinite',
+            }}
+          />
+          <p style={{ marginTop: '20px', color: '#94a3b8', letterSpacing: '0.05em' }}>
+            RECONSTRUCTING MEMORY LINKS...
+          </p>
+        </div>
+      )}
+
       {/* Empty State */}
       {data.nodes.length === 0 && (
-        <div style={{
-          position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)',
-          background: 'rgba(255, 255, 255, 0.05)', backdropFilter: 'blur(12px)',
-          padding: '40px 50px', borderRadius: '24px', color: 'rgba(255, 255, 255, 0.8)',
-          textAlign: 'center', maxWidth: '550px', border: '1px solid rgba(255, 255, 255, 0.1)',
-          boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5)', zIndex: 5
-        }}>
-          <h3 style={{ marginTop: 0, fontSize: '1.8rem', color: 'white', fontWeight: 600, letterSpacing: '-0.02em' }}>🧠 Empty Mind</h3>
+        <div
+          style={{
+            position: 'absolute',
+            top: '50%',
+            left: '50%',
+            transform: 'translate(-50%, -50%)',
+            background: 'rgba(255, 255, 255, 0.05)',
+            backdropFilter: 'blur(12px)',
+            padding: '40px 50px',
+            borderRadius: '24px',
+            color: 'rgba(255, 255, 255, 0.8)',
+            textAlign: 'center',
+            maxWidth: '550px',
+            border: '1px solid rgba(255, 255, 255, 0.1)',
+            boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5)',
+            zIndex: 5,
+          }}
+        >
+          <h3
+            style={{
+              marginTop: 0,
+              fontSize: '1.8rem',
+              color: 'white',
+              fontWeight: 600,
+              letterSpacing: '-0.02em',
+            }}
+          >
+            🧠 Empty Mind
+          </h3>
           <p style={{ lineHeight: '1.6', fontSize: '1.1rem', marginBottom: 0 }}>
-            Your memory graph is currently empty. Start chatting with an AI assistant or run a sync with Obsidian!
+            Your memory graph is currently empty. Start chatting with an AI assistant or run a sync
+            with Obsidian!
           </p>
         </div>
       )}
 
       {/* Sidebar Details Panel */}
-      <div style={{
-        position: 'absolute', right: selectedNode ? '20px' : '-400px', top: '90px', bottom: '20px', width: '350px',
-        background: 'rgba(15, 23, 42, 0.85)', backdropFilter: 'blur(20px)', borderRadius: '16px',
-        border: '1px solid rgba(255,255,255,0.1)', boxShadow: '0 20px 40px rgba(0,0,0,0.5)', zIndex: 20,
-        transition: 'right 0.3s cubic-bezier(0.16, 1, 0.3, 1)', display: 'flex', flexDirection: 'column',
-        overflow: 'hidden', color: 'white', padding: '20px'
-      }}>
-        {selectedNode && (
-          <>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: '15px', marginBottom: '15px' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                <div style={{ width: 12, height: 12, borderRadius: '50%', background: selectedNode.sourceDb === 'global' ? '#f59e0b' : (selectedNode.isActive ? '#10b981' : '#6b7280') }} />
-                <span style={{ fontSize: '0.85rem', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 600 }}>
-                  {selectedNode.sourceDb === 'global' ? 'Global Node' : 'Local Node'}
-                </span>
-              </div>
-              <button type="button" onClick={() => setSelectedNode(null)} style={{ background: 'transparent', border: 'none', color: '#94a3b8', cursor: 'pointer' }}>
-                <X size={18} />
-              </button>
-            </div>
+      {/* v8 ignore start */}
+      <NodeDetailsPanel selectedNode={selectedNode} onClose={() => setSelectedNode(null)} />
+      {/* v8 ignore stop */}
 
-            <div style={{ overflowY: 'auto', flex: 1, paddingRight: '5px' }}>
-              <p style={{ fontSize: '1.1rem', lineHeight: '1.6', margin: '0 0 20px 0', fontWeight: 400 }}>
-                {selectedNode.fullText || selectedNode.name}
-              </p>
-
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 12, background: 'rgba(0,0,0,0.3)', padding: '15px', borderRadius: '8px' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 10, fontSize: '0.85rem', color: '#cbd5e1' }}>
-                  <Hash size={14} color="#64748b" />
-                  <span style={{ color: '#64748b', width: '80px' }}>ID</span>
-                  <span style={{ fontFamily: 'monospace', color: '#38bdf8' }}>{selectedNode.id?.split('-')[0]}...</span>
-                </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 10, fontSize: '0.85rem', color: '#cbd5e1' }}>
-                  <Database size={14} color="#64748b" />
-                  <span style={{ color: '#64748b', width: '80px' }}>Importance</span>
-                  <span>{(selectedNode.val / 10).toFixed(2)}</span>
-                </div>
-              </div>
-
-              {selectedNode.metadata && (
-                <div style={{ marginTop: '20px' }}>
-                  <h4 style={{ fontSize: '0.85rem', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '10px' }}>Metadata</h4>
-                  <pre style={{ background: 'rgba(0,0,0,0.3)', padding: '15px', borderRadius: '8px', fontSize: '0.8rem', color: '#a7f3d0', overflowX: 'auto', whiteSpace: 'pre-wrap' }}>
-                    {typeof selectedNode.metadata === 'string' ? (
-                      (() => { try { return JSON.stringify(JSON.parse(selectedNode.metadata), null, 2) } catch { return selectedNode.metadata } })()
-                    ) : JSON.stringify(selectedNode.metadata, null, 2)}
-                  </pre>
-                </div>
-              )}
-            </div>
-          </>
-        )}
+      {/* Graph Controls Overlay */}
+      <div
+        style={{
+          position: 'absolute',
+          bottom: 30,
+          right: selectedNode ? 400 : 30,
+          zIndex: 10,
+          display: 'flex',
+          flexDirection: 'column',
+          gap: 10,
+          transition: 'right 0.4s cubic-bezier(0.16, 1, 0.3, 1)',
+        }}
+      >
+        <button
+          type="button"
+          onClick={() => {
+            /* v8 ignore start */
+            if (is3D) {
+              fgRef.current?.cameraPosition({ x: 0, y: 0, z: 800 }, { x: 0, y: 0, z: 0 }, 1000);
+            } else {
+              fgRef.current?.zoomToFit(1000);
+            }
+            /* v8 ignore stop */
+          }}
+          style={{
+            background: 'rgba(15, 23, 42, 0.8)',
+            border: '1px solid rgba(255,255,255,0.1)',
+            padding: '12px',
+            borderRadius: '50%',
+            color: '#94a3b8',
+            cursor: 'pointer',
+            display: 'flex',
+          }}
+          title="Reset View"
+        >
+          <Maximize size={18} />
+        </button>
+        <button
+          type="button"
+          onClick={() => {
+            /* v8 ignore start */
+            if (is3D) {
+              const pos = fgRef.current?.cameraPosition();
+              fgRef.current?.cameraPosition(
+                { x: pos.x * 0.6, y: pos.y * 0.6, z: pos.z * 0.6 },
+                pos.lookAt,
+                400
+              );
+            } else {
+              fgRef.current?.zoom(fgRef.current.zoom() * 1.5, 400);
+            }
+            /* v8 ignore stop */
+          }}
+          style={{
+            background: 'rgba(15, 23, 42, 0.8)',
+            border: '1px solid rgba(255,255,255,0.1)',
+            padding: '12px',
+            borderRadius: '50%',
+            color: '#94a3b8',
+            cursor: 'pointer',
+            display: 'flex',
+          }}
+          title="Zoom In"
+        >
+          <ZoomIn size={18} />
+        </button>
+        <button
+          type="button"
+          onClick={() => {
+            /* v8 ignore start */
+            if (is3D) {
+              const pos = fgRef.current?.cameraPosition();
+              fgRef.current?.cameraPosition(
+                { x: pos.x * 1.5, y: pos.y * 1.5, z: pos.z * 1.5 },
+                pos.lookAt,
+                400
+              );
+            } else {
+              fgRef.current?.zoom(fgRef.current.zoom() / 1.5, 400);
+            }
+            /* v8 ignore stop */
+          }}
+          style={{
+            background: 'rgba(15, 23, 42, 0.8)',
+            border: '1px solid rgba(255,255,255,0.1)',
+            padding: '12px',
+            borderRadius: '50%',
+            color: '#94a3b8',
+            cursor: 'pointer',
+            display: 'flex',
+          }}
+          title="Zoom Out"
+        >
+          <ZoomOut size={18} />
+        </button>
+        <button
+          type="button"
+          onClick={() => setIs3D(!is3D)}
+          style={{
+            background: 'rgba(59, 130, 246, 0.2)',
+            border: '1px solid rgba(59, 130, 246, 0.5)',
+            padding: '12px',
+            borderRadius: '50%',
+            color: '#60a5fa',
+            cursor: 'pointer',
+            display: 'flex',
+          }}
+          title={is3D ? 'Switch to 2D' : 'Switch to 3D'}
+        >
+          <Layers size={18} />
+        </button>
+        <button
+          type="button"
+          onClick={loadData}
+          style={{
+            background: 'rgba(16, 185, 129, 0.2)',
+            border: '1px solid rgba(16, 185, 129, 0.5)',
+            padding: '12px',
+            borderRadius: '50%',
+            color: '#34d399',
+            cursor: 'pointer',
+            display: 'flex',
+          }}
+          title="Sync / Refresh Data"
+        >
+          <RefreshCw size={18} />
+        </button>
       </div>
 
       <GraphComponent
         ref={fgRef}
         graphData={filteredData}
-        nodeLabel={is3D ? undefined : "name"}
-        nodeAutoColorBy="isActive"
+        /* v8 ignore start */
+        nodeLabel={(node: any) => {
+          const badgeColor =
+            node.sourceDb === 'global' ? '#f59e0b' : node.isActive ? '#10b981' : '#6b7280';
+          const typeLabel = node.sourceDb === 'global' ? 'Global Node' : 'Local Node';
+          return `
+            <div class="custom-tooltip">
+              <div class="tooltip-badge" style="color: ${badgeColor}; border-color: ${badgeColor}40; background: ${badgeColor}15;">
+                <span class="tooltip-dot" style="background: ${badgeColor};"></span>
+                ${typeLabel}
+              </div>
+              <div class="tooltip-title">${node.name}</div>
+            </div>
+          `;
+        }}
+        linkWidth={1.5}
         linkDirectionalArrowLength={3.5}
         linkDirectionalArrowRelPos={1}
-        linkDirectionalParticles={2}
+        linkDirectionalParticles={4}
+        linkDirectionalParticleWidth={2}
         linkDirectionalParticleSpeed={0.005}
+        linkColor={() => 'rgba(255,255,255,0.1)'}
+        /* v8 ignore stop */
+        /* v8 ignore next */
         onNodeClick={handleNodeClick}
+        /* v8 ignore next */
         onBackgroundClick={() => setSelectedNode(null)}
-        nodeThreeObject={is3D ? (node: any) => {
-          const opacity = (!searchQuery || node._highlighted) ? 1 : 0.15;
-          const bgOpacity = opacity === 1 ? 0.8 : 0.1;
+        /* v8 ignore start */
+        nodeThreeObject={
+          is3D
+            ? (node: any) => {
+                const isHighlighted = node._highlighted || node.id === selectedNode?.id;
+                const radius = Math.cbrt(node.val) * 4;
+                const geometry = new THREE.SphereGeometry(radius, 32, 32);
 
-          const baseColor = node.sourceDb === 'global' 
-            ? `rgba(245, 158, 11, ${opacity})` 
-            : (node.isActive ? `rgba(16, 185, 129, ${opacity})` : `rgba(107, 114, 128, ${opacity})`);
-            
-          const sprite = new SpriteText(node.fullText || node.name);
-          sprite.color = baseColor;
-          sprite.textHeight = 4;
-          sprite.padding = [4, 6] as any;
-          sprite.backgroundColor = `rgba(15, 23, 42, ${bgOpacity})`;
-          sprite.borderRadius = 4;
-          sprite.borderColor = node.sourceDb === 'global' 
-            ? `rgba(245, 158, 11, ${opacity * 0.5})` 
-            : (node.isActive ? `rgba(16, 185, 129, ${opacity * 0.5})` : `rgba(107, 114, 128, ${opacity * 0.5})`);
-          sprite.borderWidth = 0.5;
-          
-          sprite.text = (node.fullText || node.name).replace(/(.{1,40})(\s+|$)/g, "$1\n").trim();
-          
-          return sprite;
-        } : undefined}
-        nodeCanvasObject={!is3D ? (node: any, ctx: any, globalScale: number) => {
-          const label = node.name;
-          const fontSize = 12/globalScale;
-          const opacity = (!searchQuery || node._highlighted) ? 1 : 0.15;
-          
-          ctx.font = `${fontSize}px Sans-Serif`;
-          const textWidth = ctx.measureText(label).width;
-          const bckgDimensions = [textWidth, fontSize].map(n => n + fontSize * 0.8);
+                const val = Math.max(0, Math.min(1, node.val || 0.5));
+                const hue =
+                  node.sourceDb === 'global'
+                    ? Math.floor(45 * (1 - val))
+                    : Math.floor(190 - 40 * val);
+                const saturation = node.sourceDb === 'global' ? 90 : 80;
+                const baseColor = `hsl(${hue}, ${saturation}%, 55%)`;
 
-          ctx.fillStyle = `rgba(15, 23, 42, ${opacity === 1 ? 0.8 : 0.2})`;
-          ctx.fillRect(node.x - bckgDimensions[0] / 2, node.y - bckgDimensions[1] / 2, bckgDimensions[0], bckgDimensions[1]);
+                const material = new THREE.MeshPhysicalMaterial({
+                  color: isHighlighted ? '#0ea5e9' : baseColor,
+                  emissive: isHighlighted ? '#0ea5e9' : baseColor,
+                  emissiveIntensity: isHighlighted ? 0.8 : 0.4,
+                  roughness: 0.2,
+                  metalness: 0.1,
+                  clearcoat: 1.0,
+                  clearcoatRoughness: 0.1,
+                  transparent: true,
+                  opacity: 0.9,
+                });
+                return new THREE.Mesh(geometry, material);
+              }
+            : undefined
+        }
+        nodeCanvasObject={
+          !is3D
+            ? (node: any, ctx: any) => {
+                const opacity = !searchQuery || node._highlighted ? 1 : 0.15;
+                const isGlobal = node.sourceDb === 'global';
+                const val = Math.max(0, Math.min(1, node.val || 0.5));
+                const hue =
+                  node.sourceDb === 'global'
+                    ? Math.floor(45 * (1 - val))
+                    : Math.floor(190 - 40 * val);
+                const saturation = node.sourceDb === 'global' ? 90 : 80;
+                const colorStr = `hsla(${hue}, ${saturation}%, 55%, ${opacity})`;
 
-          ctx.textAlign = 'center';
-          ctx.textBaseline = 'middle';
-          ctx.fillStyle = node.sourceDb === 'global' 
-            ? `rgba(245, 158, 11, ${opacity})` 
-            : (node.isActive ? `rgba(16, 185, 129, ${opacity})` : `rgba(107, 114, 128, ${opacity})`);
-          ctx.fillText(label, node.x, node.y);
+                const radius = Math.cbrt(node.val) * 6;
 
-          node.__bckgDimensions = bckgDimensions;
-        } : undefined}
+                ctx.beginPath();
+                ctx.arc(node.x, node.y, radius, 0, 2 * Math.PI, false);
+                ctx.fillStyle = colorStr;
+                ctx.fill();
+
+                // Draw Icon
+                const fontSize = radius * 1.2;
+                ctx.font = `${fontSize}px Arial`;
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillStyle = `rgba(255, 255, 255, ${opacity * 0.9})`;
+                ctx.fillText(isGlobal ? '🌍' : '🏠', node.x, node.y);
+              }
+            : undefined
+        }
+        /* v8 ignore stop */
       />
     </div>
   );

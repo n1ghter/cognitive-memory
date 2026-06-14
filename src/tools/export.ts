@@ -81,7 +81,7 @@ export async function executeMemoryExport(args: ExportArgs = {}): Promise<{
       const stat = fs.statSync(filePath);
       let dbUpdatedMs = 0;
       if (mem.updated_at) {
-        dbUpdatedMs = new Date(mem.updated_at.replace(' ', 'T') + 'Z').getTime();
+        dbUpdatedMs = new Date(`${mem.updated_at.replace(' ', 'T')}Z`).getTime();
       } // If the file on disk is newer or same as the database, skip overwrite
       if (stat.mtimeMs >= dbUpdatedMs - 2000) {
         continue;

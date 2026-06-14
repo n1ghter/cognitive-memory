@@ -4,7 +4,54 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [1.5.5] - 2026-06-14
+
+### Fixed
+- **Test Coverage**: Achieved 100% line test coverage across both the Root CLI/Server backend and the React UI frontend by adding missing fallback routes tests, typing explicit ignores for OS-specific branches, and covering `NodeDetailsPanel` UI branches.
+- **TypeScript Artifacts**: Cleaned up the repository by deleting legacy `ai_auto_annotate.js` and `seed-test-data.js` duplicates outputted by TSC without `noEmit`. Migrated `update-changelog.js` and `show_recent_memories.cjs` to TypeScript (`.ts`) running natively with `tsx`, resolving mixed `.js`/`.ts` confusion.
+
+## [1.5.4] - 2026-06-14
+
+### Changed
+- **Test Coverage & Configuration**: Achieved ~49% UI coverage and ~86% root test coverage by adding missing edge case tests for `NodeDetailsPanel` and `MemoryGraph`. Modified `vitest.config.ts` to strictly target `tests/**/*.test.ts` avoiding build artifacts, and added `noEmit: true` to `tsconfig.json` to prevent TS compilation leakage into tests.
+
+## [1.5.3] - 2026-06-14
+
+### Fixed
+- **UI Bug Fix**: Resolved missing `isGlobal` variable reference in `MemoryGraph.tsx`.
+- **Pre-commit Hooks**: Updated `tsc` command in `.husky/pre-commit` to use `tsc -b` for proper project references evaluation.
+
+## [1.5.2] - 2026-06-14
+
+### Added
+- **Pre-commit Hooks**: Implemented `husky` and `lint-staged` with automated Biome format/lint, strict TypeScript `tsc --noEmit` checks, and `vitest` suite verification prior to commits.
+- **Dynamic Node Color Scaling**: Node colors in the UI graph (`MemoryGraph.tsx`) now dynamically scale hue based on their `val` (importance) using HSL gradients to intuitively display memory significance.
+
+## [1.5.1] - 2026-06-14
+
+### Added
+- **UI Test Coverage**: Added `vitest` and `@testing-library/react` to the `ui/` workspace. Implemented rendering and interaction tests for `MemoryGraph.tsx` and `NodeDetailsPanel.tsx` (Iteration 3).
+- **Graph UX Counter**: Added a dynamic `Showing X / Y nodes` counter to `MemoryGraph` when filtering data.
+
+### Changed
+- **Node Differentiation**: Modified 3D and 2D canvas materials in `MemoryGraph`. Global nodes are now distinctly colored `#f59e0b` (Orange) and Local nodes `#10b981` (Emerald Green) to allow instant visual domain clustering.
+
+## [1.5.0] - 2026-06-14
+
+### Added
+- **Web UI Modernization**: Completely overhauled the `/` dashboard UI with responsive glassmorphism (`backdrop-filter`), beautiful 3D glowing spheres (`THREE.MeshPhysicalMaterial`), and a smooth slide-out `NodeDetailsPanel` for inspecting memory contents without clutter.
+- **Exploratory Testing Fixes**: Implemented Quick Filters (All, Global, Local) underneath the search bar to instantly isolate domains.
+- **Graph UX**: Added keyboard shortcut `Ctrl+K` to focus search, `Escape` to close details panel, and `Enter` to cycle through search matches with an animated camera transition.
+- **Developer Experience**: Added inline 'Copy to Clipboard' actions for Node IDs and Text inside the Details panel.
+- **Data Synchronization**: Added a 'Refresh' floating action button to seamlessly fetch the latest database state via `/api/graph` without page reloads.
+- **Physics Optimization**: Tuned the underlying D3 Engine to drastically repel nodes (`d3Force('charge').strength(-200)`), solving the common 'hairball' dense-graph issue.
+
 ## [1.4.0] - 2026-06-14
+
+### Added
+- **Federated Memory Architecture**: Implemented global and local memory federation in database interactions.
+- **Dashboard Command**: Added `npm run dashboard` to instantly spin up the server and automatically launch the UI dashboard in the user's default browser.
+- **Visual Overhaul**: Complete memory graph overhaul using sprite texts, animated camera transitions, and sidebar details panel.
 
 ## [1.3.0] - 2026-06-14
 

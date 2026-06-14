@@ -32,7 +32,8 @@ const server = new McpServer({
    * Version of the server application
    */
   version: '1.0.0',
-});/**
+});
+/**
  * Define a tool that performs optimized vector similarity cosine searches on stored memories.
  */
 server.tool(
@@ -90,7 +91,7 @@ server.tool(
   }
 );
 
-/**
+/**
  * Define a tool that encrypts, hashes, vectorizes, and persists semantic memories into a local SQLite database.
  */
 server.tool(
@@ -379,7 +380,9 @@ server.tool(
       };
     }
   }
-);/**
+);
+
+/**
  * Bootstrap function that sets up the server application.
  */
 async function bootstrap() {
@@ -406,20 +409,30 @@ process.on('unhandledRejection', (reason: any, promise: any) => {
 });
 
 if (process.argv[2] === 'init') {
-  import('./cli/init.js').then(m => m.runInit()).catch(err => {
-    console.error('Initialization failed:', err);
-    process.exit(1);
-  });
+  import('./cli/init.js')
+    .then((m) => m.runInit())
+    .catch((err) => {
+      console.error('Initialization failed:', err);
+      process.exit(1);
+    });
 } else if (process.argv[2] === 'setup') {
-  import('./cli/setup.js').then(m => m.runSetup()).catch(err => {
-    console.error('Setup failed:', err);
-    process.exit(1);
-  });
-} else if (process.argv[2] === 'serve' || process.argv[2] === 'dashboard' || process.argv[2] === 'ui') {
-  import('./server/web.js').then(m => m.startWebServer()).catch(err => {
-    console.error('Web server failed:', err);
-    process.exit(1);
-  });
+  import('./cli/setup.js')
+    .then((m) => m.runSetup())
+    .catch((err) => {
+      console.error('Setup failed:', err);
+      process.exit(1);
+    });
+} else if (
+  process.argv[2] === 'serve' ||
+  process.argv[2] === 'dashboard' ||
+  process.argv[2] === 'ui'
+) {
+  import('./server/web.js')
+    .then((m) => m.startWebServer())
+    .catch((err) => {
+      console.error('Web server failed:', err);
+      process.exit(1);
+    });
 } else {
   bootstrap();
 }

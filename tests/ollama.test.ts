@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { OllamaClient } from '../src/ollama';
+import { OllamaClient } from '../src/ollama.js';
 
 describe('OllamaClient', () => {
   beforeEach(() => {
