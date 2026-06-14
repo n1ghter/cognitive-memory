@@ -415,6 +415,11 @@ if (process.argv[2] === 'init') {
     console.error('Setup failed:', err);
     process.exit(1);
   });
+} else if (process.argv[2] === 'serve') {
+  import('./server/web.js').then(m => m.startWebServer()).catch(err => {
+    console.error('Web server failed:', err);
+    process.exit(1);
+  });
 } else {
   bootstrap();
 }

@@ -12,9 +12,25 @@
   <img src="assets/hero.png" alt="Cognitive Memory Architecture" width="800">
 </p>
 
-A high-performance, local-first **Model Context Protocol (MCP)** server that provides AI agents with persistent cognitive memory.
+**Building the cognitive nervous system for AI agents.**
 
-Unlike cloud-based memory solutions, Cognitive Memory runs entirely on your local machine using SQLite and local LLM embeddings. This ensures **zero latency, zero API costs, and absolute data privacy** — making it ideal for enterprise and personal environments.
+A high-performance, local-first **Model Context Protocol (MCP)** server that provides AI agents with persistent, human-readable cognitive memory.
+
+> *Unlike cloud-based memory solutions (Letta, Graphiti), Cognitive Memory runs entirely on your local machine using SQLite and local LLM embeddings. This ensures **zero latency, zero API costs, and absolute data privacy**.*
+
+**TL;DR:** The **Web UI Dashboard** (coming soon) is a quick way to visually explore the memory graph. The **CLI + MCP Server** is how you make your AI agent reliable — it gives Antigravity, Cursor, and Claude a deep cognitive memory layer so they stop forgetting past context across sessions.
+
+---
+
+## Two Ways to Use Cognitive Memory
+
+|             | **CLI + MCP Server**                                                  | **Web UI Dashboard (WIP)**                                           |
+| ----------- | --------------------------------------------------------------------- | -------------------------------------------------------------------- |
+| **What**    | Connect AI agents to local SQLite vector memory via MCP               | Visual 3D graph explorer of the agent's brain                        |
+| **For**     | Daily development with Antigravity, Cursor, Claude Code               | Quick exploration, human-agent memory debugging                      |
+| **Scale**   | Unlimited local memory scaling via `better-sqlite3`                   | Visualizes clusters and memory relationships                         |
+| **Storage** | Native SQLite + `sqlite-vec` (fast, persistent)                       | Directly reads the local SQLite database                             |
+| **Privacy** | Everything local, no network (uses local Ollama)                      | Everything local, runs on `localhost`                                |
 
 ---
 
@@ -23,18 +39,16 @@ Unlike cloud-based memory solutions, Cognitive Memory runs entirely on your loca
 Most AI memory platforms (like Graphiti, Letta, Cognee) lock the AI's "brain" inside opaque databases (Neo4j, ChromaDB, Pickles). If the AI remembers something incorrectly, it becomes a "black box" that is difficult for a human to debug or edit.
 
 **Cognitive Memory** pioneers **Bi-directional Human-Agent Symmetry**:
-We bridge the gap between an AI's Long-Term Memory and a human's Second Brain. The AI's memory is simply a collection of interconnected Markdown files in an Obsidian vault. 
-- **Read:** You can open Obsidian and visually read what the agent is thinking.
-- **Edit:** You can delete or modify a markdown file, and the agent's memory instantly updates.
-- **Write:** You can write your own notes, and the agent natively understands them via Vector+Graph search.
+We bridge the gap between an AI's Long-Term Memory and a human's Second Brain.
+- **Obsidian Sync:** The AI's memory synchronizes natively with interconnected Markdown files in an Obsidian vault. 
+- **Read & Edit:** Open Obsidian (or the Web Dashboard) to visually read and edit what the agent is thinking.
+- **Write:** Write your own notes, and the agent natively understands them via Vector+Graph search.
 
 ## ✨ Features
 
 - **Semantic LTM**: Stores and retrieves long-term declarative memories using Cosine Similarity vector search.
-- **Local Vectors**: Uses `sqlite-vec` and `better-sqlite3` for blazing-fast local vector operations.
-- **Local Embeddings**: Integrates directly with Ollama (`qwen3-embedding:8b`) to generate 4096-dimensional embeddings locally without hitting external APIs.
+- **Local Vectors & Embeddings**: Uses `sqlite-vec` and integrates directly with Ollama (`qwen3-embedding:8b`) to generate 4096-dimensional embeddings locally without hitting external APIs.
 - **Hybrid Graph Relations**: Connects memories together to form an explicit, interconnected knowledge graph.
-- **Obsidian Sync**: Bidirectional synchronization with local Markdown vaults (e.g., Obsidian). Manually edit `.md` memory files, and the changes sync back to SQLite.
 - **Code Intelligence**: Integrates **GitNexus** via a Git `post-commit` hook to asynchronously update the AST knowledge graph for deep codebase intelligence.
 
 ## 🚀 Installation & Setup
