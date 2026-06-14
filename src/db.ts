@@ -1,10 +1,16 @@
 import crypto from 'node:crypto';
 import path from 'node:path';
+import fs from 'node:fs';
+import os from 'node:os';
 import Database from 'better-sqlite3';
 import * as sqliteVec from 'sqlite-vec';
 
 // In-process database file path
 const DB_PATH = process.env.MEMORY_DB_PATH || path.join(process.cwd(), 'memory.sqlite');
+
+// Global database path
+const GLOBAL_DB_DIR = path.join(os.homedir(), '.cognitive-memory');
+const GLOBAL_DB_PATH = path.join(GLOBAL_DB_DIR, 'global-memory.sqlite');
 
 /**
  * Generates a random UUID.
@@ -52,6 +58,10 @@ export class DatabaseManager {
    */
   public static getInstance(): Database.Database {
     if (!DatabaseManager.instance) {
+      if (!fs.existsSync(GLOBAL_DB_DIR)) {
+        fs.mkdirSync(GLOBAL_DB_DIR, { recursive: true });
+      }
+
       const db = new Database(DB_PATH);
 
       // Load sqlite-vec extension
@@ -60,8 +70,16 @@ export class DatabaseManager {
       // Enable WAL mode for better concurrency
       db.pragma('journal_mode = WAL');
 
-      // Setup schema
-      DatabaseManager.initSchema(db);
+      // Setup schema for main DB
+      DatabaseManager.initSchema(db, 'main');
+
+      // Attach global DB
+      // Note: we replace backward slashes with forward slashes for SQLite ATTACH path safely
+      const safeGlobalPath = GLOBAL_DB_PATH.replace(/\\/g, '/');
+      db.exec(`ATTACH DATABASE '${safeGlobalPath}' AS global;`);
+
+      // Setup schema for global DB
+      DatabaseManager.initSchema(db, 'global');
 
       DatabaseManager.instance = db;
     }
@@ -76,9 +94,9 @@ export class DatabaseManager {
    * @private
    * @param db The database to initialize the schema for.
    */
-  private static initSchema(db: Database.Database) {
+  private static initSchema(db: Database.Database, schemaName: string = 'main') {
     db.exec(`
-      CREATE TABLE IF NOT EXISTS memory (
+      CREATE TABLE IF NOT EXISTS ${schemaName}.memory (
         id TEXT PRIMARY KEY,
         text TEXT NOT NULL,
         metadata TEXT,
@@ -90,12 +108,12 @@ export class DatabaseManager {
         accessed_count INTEGER DEFAULT 0
       );
 
-      CREATE VIRTUAL TABLE IF NOT EXISTS vec_memory USING vec0(
+      CREATE VIRTUAL TABLE IF NOT EXISTS ${schemaName}.vec_memory USING vec0(
         embedding float[4096]
       );
 
 
-      CREATE TABLE IF NOT EXISTS edges (
+      CREATE TABLE IF NOT EXISTS ${schemaName}.edges (
         id TEXT PRIMARY KEY,
         source_id TEXT NOT NULL,
         target_id TEXT NOT NULL,
@@ -106,14 +124,14 @@ export class DatabaseManager {
         FOREIGN KEY(target_id) REFERENCES memory(id)
       );
 
-      CREATE TABLE IF NOT EXISTS sync_ledger (
+      CREATE TABLE IF NOT EXISTS ${schemaName}.sync_ledger (
         id TEXT PRIMARY KEY,
         type TEXT NOT NULL UNIQUE,
         file_path TEXT NOT NULL,
         last_sync_time DATETIME DEFAULT CURRENT_TIMESTAMP
       );
 
-      CREATE TABLE IF NOT EXISTS embedding_cache (
+      CREATE TABLE IF NOT EXISTS ${schemaName}.embedding_cache (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         text_hash TEXT UNIQUE NOT NULL,
         embedding BLOB NOT NULL,
@@ -123,7 +141,7 @@ export class DatabaseManager {
 
     // Migration for existing databases
     try {
-      db.exec('ALTER TABLE memory ADD COLUMN updated_at DATETIME');
+      db.exec(`ALTER TABLE ${schemaName}.memory ADD COLUMN updated_at DATETIME`);
     } catch (_e) {
       // Column already exists or table doesn't exist yet
     }
