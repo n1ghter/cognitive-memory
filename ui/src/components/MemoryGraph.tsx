@@ -41,7 +41,7 @@ export default function MemoryGraph() {
       fgRef.current.centerAt(node.x, node.y, 1000);
       fgRef.current.zoom(8, 2000);
     }
-  }, [fgRef, is3D]);
+  }, [is3D]);
 
   const GraphComponent = is3D ? ForceGraph3D : ForceGraph2D as any;
 
