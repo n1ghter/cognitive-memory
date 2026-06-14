@@ -8,7 +8,6 @@ All notable changes to this project will be documented in this file.
 
 ### Fixed
 - Fixed GitHub Packages publication pipeline by granting `packages: write` permissions to GitHub Actions.
-
 ## [1.1.24] - 2026-06-14
 
 ### Fixed
