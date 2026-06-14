@@ -112,11 +112,14 @@ Then configure your MCP client to point to the local build instead:
 ```
 
 ### Exposed AI Tools
-Once connected, the server exposes several tools to your AI agent, including:
-- `memory_store`: Save a new fact or concept into long-term memory.
-- `memory_search`: Perform a semantic vector search for related memories.
-- `memory_delete`: Remove obsolete information.
-- `memory_relate`: Create a graph edge between two existing memories.
+Once connected, the server exposes 7 powerful tools to your AI agent:
+- `memory_store`: Encrypt/Hash, vectorize, and persist a semantic memory into a local SQLite database.
+- `memory_search`: Perform optimized vector similarity cosine searches on stored memories.
+- `memory_delete`: Delete a specific semantic memory record by its identifier.
+- `memory_clear_all`: NUCLEAR OPTION: Completely wipe all memories, vectors, and graph edges from the database. Cannot be undone.
+- `memory_consolidate`: Perform time decay and semantic LLM merging/deduplication on active memories using Ollama.
+- `memory_relate`: Establish a graph relationship between two memory nodes.
+- `memory_export`: Export active database memories into Markdown notes for Obsidian integration.
 
 ## 🏗️ Architecture
 
