@@ -1,11 +1,16 @@
 ```markdown
-### Semantic Summary
+**Semantic Summary**
+=====================
 
-This test file validates the behavior of `executeMemoryImport` tool against various edge cases.
+This test file (`tests/import.test.ts`) contains integration tests for the memory import functionality. It ensures that the system correctly imports new markdown files into SQLite databases, updates existing memories with newer versions of the same file, and handles various edge cases such as malformed markdown files, critical failure during parsing, database errors, and file system errors.
 
-*   It tests importing new markdown files into SQLite.
-*   It verifies that the importer handles existing memories and updates them if the new file is newer.
-*   It ensures the importer skips imports if the file is not newer.
-*   It checks for graceful handling of malformed markdown files.
-*   It tests critical failure cases where the importer triggers catch blocks in parsing or database operations.
+**Architectural Purpose**
+-----------------------
+
+The primary purpose of this test file is to validate the business logic of the memory import functionality. It ensures that the system behaves correctly in different scenarios, including successful imports, updates, and failures. The tests also cover various error cases, such as database errors, critical failure during parsing, and file system errors.
+
+**Exposed MCP Tools or Interactions with SQLite Tables**
+---------------------------------------------------
+
+This test file interacts with the `DatabaseManager` class to create, update, and retrieve data from the SQLite tables. It also uses the `executeMemoryImport` and `executeMemoryStore` functions to import and store memories, respectively.
 ```
