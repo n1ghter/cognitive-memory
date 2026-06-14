@@ -414,6 +414,11 @@ if (process.argv[2] === 'init') {
     console.error('Initialization failed:', err);
     process.exit(1);
   });
+} else if (process.argv[2] === 'setup') {
+  import('./cli/setup.js').then(m => m.runSetup()).catch(err => {
+    console.error('Setup failed:', err);
+    process.exit(1);
+  });
 } else {
   bootstrap();
 }

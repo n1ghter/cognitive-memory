@@ -4,6 +4,9 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+### Added
+- Implemented `cognitive-memory setup` CLI command for global IDE auto-discovery. It automatically detects Claude Desktop, Cursor, Antigravity, and Windsurf, and injects the MCP server directly into their global `mcp.json` or `mcp_config.json` configurations.
+
 ## [1.2.0] - 2026-06-14
 
 ### Added
