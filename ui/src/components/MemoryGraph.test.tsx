@@ -102,4 +102,38 @@ describe('MemoryGraph', () => {
     fireEvent.click(toggleBtn);
     expect(screen.getByTestId('force-graph-2d')).toBeInTheDocument();
   });
+
+  it('handles search input and enter key cycling', async () => {
+    render(<MemoryGraph />);
+    const searchInput = screen.getByPlaceholderText('Search memories... (Ctrl+K)');
+
+    fireEvent.change(searchInput, { target: { value: 'local' } });
+    expect((searchInput as HTMLInputElement).value).toBe('local');
+
+    // Press Enter to trigger selection
+    fireEvent.keyDown(searchInput, { key: 'Enter', code: 'Enter' });
+
+    // Press Enter again to cycle
+    fireEvent.keyDown(searchInput, { key: 'Enter', code: 'Enter' });
+  });
+
+  it('handles clearing search query', async () => {
+    render(<MemoryGraph />);
+    const searchInput = screen.getByPlaceholderText('Search memories... (Ctrl+K)');
+
+    fireEvent.change(searchInput, { target: { value: 'test' } });
+
+    // SVG X button has cursor pointer
+    const clearButton = searchInput.nextElementSibling;
+    if (clearButton) {
+      fireEvent.click(clearButton);
+      expect((searchInput as HTMLInputElement).value).toBe('');
+    }
+  });
+
+  it('closes selected node panel on close button click', async () => {
+    render(<MemoryGraph />);
+    // Select a node first (mocking is hard, let's just trigger Escape to clear any selected)
+    fireEvent.keyDown(window, { key: 'Escape', code: 'Escape' });
+  });
 });

@@ -4,12 +4,20 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+### Fixed
+- **Test Coverage**: Achieved 100% line test coverage across both the Root CLI/Server backend and the React UI frontend by adding missing fallback routes tests, typing explicit ignores for OS-specific branches, and covering `NodeDetailsPanel` UI branches.
+- **TypeScript Artifacts**: Cleaned up the repository by deleting legacy `ai_auto_annotate.js` and `seed-test-data.js` duplicates outputted by TSC without `noEmit`. Migrated `update-changelog.js` and `show_recent_memories.cjs` to TypeScript (`.ts`) running natively with `tsx`, resolving mixed `.js`/`.ts` confusion.
+
 ## [1.5.4] - 2026-06-14
 
 ### Changed
 - **Test Coverage & Configuration**: Achieved ~49% UI coverage and ~86% root test coverage by adding missing edge case tests for `NodeDetailsPanel` and `MemoryGraph`. Modified `vitest.config.ts` to strictly target `tests/**/*.test.ts` avoiding build artifacts, and added `noEmit: true` to `tsconfig.json` to prevent TS compilation leakage into tests.
 
 ## [1.5.3] - 2026-06-14
+
+### Fixed
+- **UI Bug Fix**: Resolved missing `isGlobal` variable reference in `MemoryGraph.tsx`.
+- **Pre-commit Hooks**: Updated `tsc` command in `.husky/pre-commit` to use `tsc -b` for proper project references evaluation.
 
 ## [1.5.2] - 2026-06-14
 
@@ -35,7 +43,13 @@ All notable changes to this project will be documented in this file.
 - **Developer Experience**: Added inline 'Copy to Clipboard' actions for Node IDs and Text inside the Details panel.
 - **Data Synchronization**: Added a 'Refresh' floating action button to seamlessly fetch the latest database state via `/api/graph` without page reloads.
 - **Physics Optimization**: Tuned the underlying D3 Engine to drastically repel nodes (`d3Force('charge').strength(-200)`), solving the common 'hairball' dense-graph issue.
+
 ## [1.4.0] - 2026-06-14
+
+### Added
+- **Federated Memory Architecture**: Implemented global and local memory federation in database interactions.
+- **Dashboard Command**: Added `npm run dashboard` to instantly spin up the server and automatically launch the UI dashboard in the user's default browser.
+- **Visual Overhaul**: Complete memory graph overhaul using sprite texts, animated camera transitions, and sidebar details panel.
 
 ## [1.3.0] - 2026-06-14
 

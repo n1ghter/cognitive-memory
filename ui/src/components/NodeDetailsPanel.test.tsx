@@ -111,4 +111,20 @@ describe('NodeDetailsPanel', () => {
     render(<NodeDetailsPanel selectedNode={inactiveLocalNode} onClose={mockOnClose} />);
     expect(screen.getByText('Local Node')).toBeInTheDocument();
   });
+
+  it('renders name fallback when fullText is missing and copies name', () => {
+    Object.assign(navigator, {
+      clipboard: {
+        writeText: vi.fn(),
+      },
+    });
+
+    const nodeWithoutFullText = { ...mockNode, fullText: undefined, name: 'Fallback Name' };
+    render(<NodeDetailsPanel selectedNode={nodeWithoutFullText} onClose={mockOnClose} />);
+    expect(screen.getByText('Fallback Name')).toBeInTheDocument();
+
+    const copyTextBtn = screen.getAllByRole('button')[1];
+    fireEvent.click(copyTextBtn);
+    expect(navigator.clipboard.writeText).toHaveBeenCalledWith('Fallback Name');
+  });
 });

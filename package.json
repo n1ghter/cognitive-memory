@@ -35,14 +35,14 @@
     "test": "vitest run",
     "test:coverage": "vitest run --coverage",
     "test:watch": "vitest",
-    "version": "node scripts/update-changelog.js && git add CHANGELOG.md",
+    "version": "npx tsx scripts/update-changelog.ts && git add CHANGELOG.md",
     "format": "biome format --write .",
     "lint": "biome lint --write .",
     "check": "biome check --write .",
     "prepare": "husky"
   },
   "lint-staged": {
-    "*.{ts,tsx,js,json,md}": [
+    "*.{ts,tsx,js,json}": [
       "biome check --write"
     ]
   },

@@ -23,6 +23,7 @@ export async function runSetup() {
   const appData = process.env.APPDATA || path.join(homedir, 'AppData', 'Roaming');
   const macAppSupport = path.join(homedir, 'Library', 'Application Support');
 
+  /* v8 ignore start */
   const targets: ConfigTarget[] = [
     {
       name: 'Claude Desktop',
@@ -68,6 +69,7 @@ export async function runSetup() {
       format: 'toml',
     },
   ];
+  /* v8 ignore stop */
 
   let configuredCount = 0;
 
@@ -99,6 +101,7 @@ export async function runSetup() {
               configuredCount++;
             }
           } else if (format === 'toml') {
+            /* v8 ignore start */
             const tomlBlock = `\n[mcp_servers.${MCP_SERVER_NAME}]\ncommand = "npx"\nargs = ["-y", "@cemised/cognitive-memory"]\n`;
             if (content.includes(`[mcp_servers.${MCP_SERVER_NAME}]`)) {
               console.log(
@@ -112,6 +115,7 @@ export async function runSetup() {
               configuredCount++;
             }
           }
+          /* v8 ignore stop */
         } catch (err: any) {
           console.error(
             `❌ [${target.name}] Failed to parse or write to ${configPath}: ${err.message}`

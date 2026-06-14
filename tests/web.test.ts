@@ -84,4 +84,19 @@ describe('Web Server API', () => {
     // We just check that the server handles the request without crashing.
     expect([200, 404]).toContain(response.status);
   });
+
+  it('should return 500 if database query fails', async () => {
+    // Mock DatabaseManager.getInstance to throw an error
+    const originalGetInstance = DatabaseManager.getInstance;
+    DatabaseManager.getInstance = () => {
+      throw new Error('Fake DB error');
+    };
+
+    const response = await request(app).get('/api/graph');
+    expect(response.status).toBe(500);
+    expect(response.body).toHaveProperty('error', 'Fake DB error');
+
+    // Restore original method
+    DatabaseManager.getInstance = originalGetInstance;
+  });
 });

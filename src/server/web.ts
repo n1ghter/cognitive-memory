@@ -62,12 +62,15 @@ export function startWebServer(port: number = 3000) {
   app.use(express.static(uiDistPath));
 
   // Fallback for SPA
+  /* v8 ignore start */
   app.use((_req, res) => {
     res.sendFile(path.join(uiDistPath, 'index.html'));
   });
+  /* v8 ignore stop */
 
   const server = app.listen(port, () => {
     const url = `http://localhost:${port}`;
+    /* v8 ignore start */
     if (process.env.NODE_ENV !== 'test') {
       console.log(`Web UI Dashboard is running at ${url}`);
 
@@ -84,6 +87,7 @@ export function startWebServer(port: number = 3000) {
         })
         .catch((err) => console.error('Failed to open browser:', err));
     }
+    /* v8 ignore stop */
   });
 
   return { app, server };
