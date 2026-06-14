@@ -15,7 +15,8 @@
     "react-dom": "^19.2.6",
     "react-force-graph-2d": "^1.29.1",
     "react-force-graph-3d": "^1.29.1",
-    "three": "^0.184.0"
+    "three": "^0.184.0",
+    "three-spritetext": "^1.10.0"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",

@@ -56,6 +56,15 @@ Currently, we rely heavily on vectorization and summarization (Semantic Memory),
 
 - **[ ] Verbatim Episodic Memory (The "Transcript Room"):** Add a dedicated storage layer for exact word-for-word session logs. If the semantic vector search fails to capture the nuance of a past architectural debate, the agent can transition into the episodic layer and "replay" the exact conversation verbatim, utilizing the "Method of Loci" retrieval pattern to prevent hallucinations.
 
+## 📅 Phase 5: Web UI Evolution & Deep Telemetry
+*(Inspired by GitNexus)*
+
+While we successfully launched the initial 3D React Dashboard, we need to evolve it into a fully interactive product:
+
+- **[ ] Interactive Dashboard Editing:** Allow users to directly edit, delete, and merge nodes/clusters directly within the Web UI canvas, syncing changes instantly to SQLite and Obsidian.
+- **[ ] Embedded "Nexus AI" Chat:** Integrate a local LLM chat interface directly into the Web UI so users can query their memory database seamlessly from the browser.
+- **[ ] Deep Tool Hooks (`PreToolUse` / `PostToolUse`):** Implement aggressive, autonomous background telemetry. Instead of relying purely on human invocation or simple background timers, the MCP server will inject hooks that force the agent to auto-trigger `memory_consolidate` or re-index the knowledge base when it detects massive code or architectural changes.
+
 ---
 
 ## 🤝 How to Contribute

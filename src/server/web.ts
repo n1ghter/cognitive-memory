@@ -23,6 +23,7 @@ export function startWebServer(port: number = 3000) {
         nodes: nodes.map((n: any) => ({
           id: n.id,
           name: n.text.substring(0, 50) + (n.text.length > 50 ? '...' : ''),
+          fullText: n.text,
           val: Math.max(1, (n.importance || 0.5) * 10),
           metadata: n.metadata,
           isActive: n.is_active === 1
