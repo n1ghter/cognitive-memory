@@ -69,6 +69,7 @@ export default function MemoryGraph() {
         <div style={{ background: 'rgba(15, 23, 42, 0.7)', backdropFilter: 'blur(10px)', padding: '12px 24px', borderRadius: 12, color: 'white', display: 'flex', alignItems: 'center', gap: 15, pointerEvents: 'auto', border: '1px solid rgba(255,255,255,0.1)' }}>
           <h2 style={{ margin: 0, fontSize: '1.2rem', fontWeight: 600 }}>Cognitive Memory</h2>
           <button 
+            type="button"
             onClick={() => setIs3D(!is3D)}
             style={{ background: 'rgba(59, 130, 246, 0.2)', color: '#60a5fa', border: '1px solid rgba(59, 130, 246, 0.5)', padding: '6px 12px', borderRadius: 6, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 5, fontSize: '0.85rem', transition: 'all 0.2s' }}
           >
@@ -121,7 +122,7 @@ export default function MemoryGraph() {
                 <div style={{ width: 12, height: 12, borderRadius: '50%', background: selectedNode.isActive ? '#10b981' : '#6b7280' }} />
                 <span style={{ fontSize: '0.85rem', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 600 }}>Memory Node</span>
               </div>
-              <button onClick={() => setSelectedNode(null)} style={{ background: 'transparent', border: 'none', color: '#94a3b8', cursor: 'pointer' }}>
+              <button type="button" onClick={() => setSelectedNode(null)} style={{ background: 'transparent', border: 'none', color: '#94a3b8', cursor: 'pointer' }}>
                 <X size={18} />
               </button>
             </div>
