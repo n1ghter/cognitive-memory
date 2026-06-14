@@ -21,11 +21,13 @@ try {
     const id = generateId();
     localNodes.push(id);
     const metadata = JSON.stringify({ category: 'local_test', index: i });
-    
-    const infoLocal = db.prepare(`
+
+    const infoLocal = db
+      .prepare(`
       INSERT INTO main.memory (id, text, metadata, importance)
       VALUES (?, ?, ?, ?)
-    `).run(id, `Local memory node ${i} covering some context.`, metadata, 0.6);
+    `)
+      .run(id, `Local memory node ${i} covering some context.`, metadata, 0.6);
 
     db.prepare(`
       INSERT INTO main.vec_memory (rowid, embedding)
@@ -39,10 +41,12 @@ try {
     globalNodes.push(id);
     const metadata = JSON.stringify({ category: 'global_test', index: i });
 
-    const infoGlobal = db.prepare(`
+    const infoGlobal = db
+      .prepare(`
       INSERT INTO global.memory (id, text, metadata, importance)
       VALUES (?, ?, ?, ?)
-    `).run(id, `Global memory node ${i} covering overarching context.`, metadata, 0.8);
+    `)
+      .run(id, `Global memory node ${i} covering overarching context.`, metadata, 0.8);
 
     db.prepare(`
       INSERT INTO global.vec_memory (rowid, embedding)

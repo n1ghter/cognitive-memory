@@ -1,14 +1,14 @@
-import { render, screen, fireEvent } from '@testing-library/react';
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { fireEvent, render, screen } from '@testing-library/react';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import MemoryGraph from './MemoryGraph';
 
 // Mock react-force-graph components
 vi.mock('react-force-graph-2d', () => ({
-  default: vi.fn(() => <div data-testid="force-graph-2d" />)
+  default: vi.fn(() => <div data-testid="force-graph-2d" />),
 }));
 
 vi.mock('react-force-graph-3d', () => ({
-  default: vi.fn(() => <div data-testid="force-graph-3d" />)
+  default: vi.fn(() => <div data-testid="force-graph-3d" />),
 }));
 
 describe('MemoryGraph', () => {
@@ -33,7 +33,9 @@ describe('MemoryGraph', () => {
 
   it('allows typing in the search bar', () => {
     render(<MemoryGraph />);
-    const searchInput = screen.getByPlaceholderText('Search memories... (Ctrl+K)') as HTMLInputElement;
+    const searchInput = screen.getByPlaceholderText(
+      'Search memories... (Ctrl+K)'
+    ) as HTMLInputElement;
     fireEvent.change(searchInput, { target: { value: 'test search' } });
     expect(searchInput.value).toBe('test search');
   });
@@ -42,10 +44,10 @@ describe('MemoryGraph', () => {
     render(<MemoryGraph />);
     const localFilter = screen.getByText('🏠 Local');
     const globalFilter = screen.getByText('🌍 Global');
-    
+
     fireEvent.click(localFilter);
     expect(localFilter.style.background).toContain('rgba(59, 130, 246');
-    
+
     fireEvent.click(globalFilter);
     expect(globalFilter.style.background).toContain('rgba(59, 130, 246');
   });

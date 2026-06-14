@@ -92,7 +92,9 @@ export default function NodeDetailsPanel({ selectedNode, onClose }: NodeDetailsP
                 transition: 'background 0.2s',
               }}
               onMouseOver={(e) => (e.currentTarget.style.background = 'rgba(255, 255, 255, 0.1)')}
+              onFocus={(e) => (e.currentTarget.style.background = 'rgba(255, 255, 255, 0.1)')}
               onMouseOut={(e) => (e.currentTarget.style.background = 'rgba(255, 255, 255, 0.05)')}
+              onBlur={(e) => (e.currentTarget.style.background = 'rgba(255, 255, 255, 0.05)')}
             >
               <X size={16} strokeWidth={2.5} />
             </button>
@@ -128,6 +130,7 @@ export default function NodeDetailsPanel({ selectedNode, onClose }: NodeDetailsP
                 {selectedNode.fullText || selectedNode.name}
               </p>
               <button
+                type="button"
                 onClick={() => handleCopy(selectedNode.fullText || selectedNode.name, 'text')}
                 style={{
                   background: 'transparent',
@@ -148,7 +151,7 @@ export default function NodeDetailsPanel({ selectedNode, onClose }: NodeDetailsP
                 display: 'flex',
                 flexDirection: 'column',
                 gap: 12,
-                background: 'rgba(0,0,0,0.2)',
+                background: 'rgba(0, 0, 0, 0.2)',
                 padding: '16px',
                 borderRadius: '12px',
                 border: '1px solid rgba(255, 255, 255, 0.03)',
@@ -162,12 +165,12 @@ export default function NodeDetailsPanel({ selectedNode, onClose }: NodeDetailsP
                 >
                   <div
                     style={{
-                      background: 'rgba(255,255,255,0.05)',
-                      padding: '6px',
-                      borderRadius: '6px',
+                      background: 'rgba(255, 255, 255, 0.05)',
+                      padding: 6,
+                      borderRadius: 6,
                     }}
                   >
-                    <Hash size={14} color="#94a3b8" />
+                    <Hash size={14} stroke="#94a3b8" />
                   </div>
                   <div style={{ display: 'flex', flexDirection: 'column' }}>
                     <span
@@ -181,11 +184,12 @@ export default function NodeDetailsPanel({ selectedNode, onClose }: NodeDetailsP
                       ID
                     </span>
                     <span style={{ fontFamily: 'monospace', color: '#e2e8f0' }}>
-                      {selectedNode.id?.split('-')[0]}...
+                      {selectedNode.id.substring(0, 8)}...
                     </span>
                   </div>
                 </div>
                 <button
+                  type="button"
                   onClick={() => handleCopy(selectedNode.id, 'id')}
                   style={{
                     background: 'transparent',

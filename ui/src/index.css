@@ -2,7 +2,7 @@ body {
   margin: 0;
   padding: 0;
   overflow: hidden;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
 }
 
 #root {
@@ -11,18 +11,23 @@ body {
 }
 
 /* Force Graph Tooltip Overrides */
-.graph-tooltip, .scene-tooltip {
-  background: transparent !important;
-  color: inherit !important;
-  padding: 0 !important;
-  border: none !important;
-  box-shadow: none !important;
+.graph-tooltip,
+.scene-tooltip {
+  background: transparent;
+  color: inherit;
+  padding: 0;
+  border: none;
+  box-shadow: none;
   pointer-events: none;
 }
 
 @keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
 }
 
 /* Custom Tooltip Styling */
@@ -75,6 +80,12 @@ body {
 }
 
 @keyframes tooltipFadeIn {
-  from { opacity: 0; transform: translate(10px, -50%) scale(0.95); }
-  to { opacity: 1; transform: translate(15px, -50%) scale(1); }
+  from {
+    opacity: 0;
+    transform: translate(10px, -50%) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translate(15px, -50%) scale(1);
+  }
 }

@@ -40,21 +40,21 @@ describe('DatabaseManager & Utils', () => {
 
     const customPath = path.join(process.cwd(), 'custom_memory.sqlite');
     process.env.MEMORY_DB_PATH = customPath;
-    
+
     vi.resetModules();
     const dbModule = await import('../src/db.js');
-    
+
     const db = dbModule.DatabaseManager.getInstance();
     expect(db).toBeDefined();
-    
+
     dbModule.DatabaseManager.close();
-    
+
     expect(fs.existsSync(customPath)).toBe(true);
-    
+
     if (fs.existsSync(customPath)) {
       fs.unlinkSync(customPath);
     }
-    
+
     delete process.env.MEMORY_DB_PATH;
     vi.resetModules();
   });
@@ -66,17 +66,17 @@ describe('DatabaseManager & Utils', () => {
 
     const tempHome = path.join(process.cwd(), 'temp_test_home');
     const tempGlobalDir = path.join(tempHome, '.cognitive-memory');
-    
+
     // Cleanup before test
     if (fs.existsSync(tempGlobalDir)) fs.rmSync(tempGlobalDir, { recursive: true, force: true });
     if (fs.existsSync(tempHome)) fs.rmSync(tempHome, { recursive: true, force: true });
 
     process.env.HOME = tempHome;
     process.env.USERPROFILE = tempHome;
-    
+
     vi.resetModules();
     const dbModule = await import('../src/db.js');
-    
+
     const db = dbModule.DatabaseManager.getInstance();
     expect(db).toBeDefined();
     dbModule.DatabaseManager.close();
@@ -86,7 +86,7 @@ describe('DatabaseManager & Utils', () => {
 
     // Cleanup after test
     fs.rmSync(tempHome, { recursive: true, force: true });
-    
+
     // Restore env
     delete process.env.HOME;
     delete process.env.USERPROFILE;

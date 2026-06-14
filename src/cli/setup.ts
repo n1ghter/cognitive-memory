@@ -5,7 +5,7 @@ import path from 'node:path';
 const MCP_SERVER_NAME = 'cognitive-memory';
 const MCP_SERVER_CONFIG = {
   command: 'npx',
-  args: ['-y', '@cemised/cognitive-memory']
+  args: ['-y', '@cemised/cognitive-memory'],
 };
 
 interface ConfigTarget {
@@ -29,16 +29,16 @@ export async function runSetup() {
       paths: [
         platform === 'win32'
           ? path.join(appData, 'Claude', 'claude_desktop_config.json')
-          : path.join(macAppSupport, 'Claude', 'claude_desktop_config.json')
-      ]
+          : path.join(macAppSupport, 'Claude', 'claude_desktop_config.json'),
+      ],
     },
     {
       name: 'Claude Code',
-      paths: [path.join(homedir, '.claude.json')]
+      paths: [path.join(homedir, '.claude.json')],
     },
     {
       name: 'Antigravity',
-      paths: [path.join(homedir, '.gemini', 'config', 'mcp_config.json')]
+      paths: [path.join(homedir, '.gemini', 'config', 'mcp_config.json')],
     },
     {
       name: 'Cursor',
@@ -46,27 +46,27 @@ export async function runSetup() {
         path.join(homedir, '.cursor', 'mcp.json'),
         platform === 'win32'
           ? path.join(appData, 'Cursor', 'User', 'globalStorage', 'cursor.mcp', 'mcp.json')
-          : path.join(macAppSupport, 'Cursor', 'User', 'globalStorage', 'cursor.mcp', 'mcp.json')
-      ]
+          : path.join(macAppSupport, 'Cursor', 'User', 'globalStorage', 'cursor.mcp', 'mcp.json'),
+      ],
     },
     {
       name: 'Copilot CLI',
-      paths: [path.join(homedir, '.copilot', 'mcp-config.json')]
+      paths: [path.join(homedir, '.copilot', 'mcp-config.json')],
     },
     {
       name: 'Windsurf',
-      paths: [path.join(homedir, '.codeium', 'windsurf', 'mcp_config.json')]
+      paths: [path.join(homedir, '.codeium', 'windsurf', 'mcp_config.json')],
     },
     {
       name: 'OpenCode',
       paths: [path.join(homedir, '.opencode', 'opencode.json')],
-      rootKey: 'mcp'
+      rootKey: 'mcp',
     },
     {
       name: 'Codex',
       paths: [path.join(homedir, '.codex', 'config.toml')],
-      format: 'toml'
-    }
+      format: 'toml',
+    },
   ];
 
   let configuredCount = 0;
@@ -87,30 +87,40 @@ export async function runSetup() {
             if (!json[rootKey]) json[rootKey] = {};
 
             if (json[rootKey][MCP_SERVER_NAME]) {
-              console.log(`ℹ️ [${target.name}] cognitive-memory is already configured at ${configPath}`);
+              console.log(
+                `ℹ️ [${target.name}] cognitive-memory is already configured at ${configPath}`
+              );
             } else {
               json[rootKey][MCP_SERVER_NAME] = MCP_SERVER_CONFIG;
               fs.writeFileSync(configPath, JSON.stringify(json, null, 2), 'utf-8');
-              console.log(`✅ [${target.name}] Successfully injected cognitive-memory into ${configPath}`);
+              console.log(
+                `✅ [${target.name}] Successfully injected cognitive-memory into ${configPath}`
+              );
               configuredCount++;
             }
           } else if (format === 'toml') {
             const tomlBlock = `\n[mcp_servers.${MCP_SERVER_NAME}]\ncommand = "npx"\nargs = ["-y", "@cemised/cognitive-memory"]\n`;
             if (content.includes(`[mcp_servers.${MCP_SERVER_NAME}]`)) {
-              console.log(`ℹ️ [${target.name}] cognitive-memory is already configured at ${configPath}`);
+              console.log(
+                `ℹ️ [${target.name}] cognitive-memory is already configured at ${configPath}`
+              );
             } else {
               fs.appendFileSync(configPath, tomlBlock, 'utf-8');
-              console.log(`✅ [${target.name}] Successfully appended cognitive-memory to ${configPath}`);
+              console.log(
+                `✅ [${target.name}] Successfully appended cognitive-memory to ${configPath}`
+              );
               configuredCount++;
             }
           }
         } catch (err: any) {
-          console.error(`❌ [${target.name}] Failed to parse or write to ${configPath}: ${err.message}`);
+          console.error(
+            `❌ [${target.name}] Failed to parse or write to ${configPath}: ${err.message}`
+          );
         }
         break; // Stop checking alternative paths for this target if we found one
       }
     }
-    
+
     if (!found) {
       console.log(`⏭️ [${target.name}] Config file not found, skipping.`);
     }
@@ -118,7 +128,9 @@ export async function runSetup() {
 
   console.log('\n🚀 Global MCP Setup Complete!');
   if (configuredCount > 0) {
-    console.log(`Successfully configured ${configuredCount} editor(s). Please restart them to apply the changes.`);
+    console.log(
+      `Successfully configured ${configuredCount} editor(s). Please restart them to apply the changes.`
+    );
   } else {
     console.log('No new configurations were applied.');
   }

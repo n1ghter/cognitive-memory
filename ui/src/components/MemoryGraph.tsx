@@ -371,6 +371,7 @@ export default function MemoryGraph() {
         }}
       >
         <button
+          type="button"
           onClick={() => {
             if (is3D) {
               fgRef.current?.cameraPosition({ x: 0, y: 0, z: 800 }, { x: 0, y: 0, z: 0 }, 1000);
@@ -392,6 +393,7 @@ export default function MemoryGraph() {
           <Maximize size={18} />
         </button>
         <button
+          type="button"
           onClick={() => {
             if (is3D) {
               const pos = fgRef.current?.cameraPosition();
@@ -418,6 +420,7 @@ export default function MemoryGraph() {
           <ZoomIn size={18} />
         </button>
         <button
+          type="button"
           onClick={() => {
             if (is3D) {
               const pos = fgRef.current?.cameraPosition();
@@ -444,6 +447,7 @@ export default function MemoryGraph() {
           <ZoomOut size={18} />
         </button>
         <button
+          type="button"
           onClick={() => setIs3D(!is3D)}
           style={{
             background: 'rgba(59, 130, 246, 0.2)',
@@ -459,6 +463,7 @@ export default function MemoryGraph() {
           <Layers size={18} />
         </button>
         <button
+          type="button"
           onClick={loadData}
           style={{
             background: 'rgba(16, 185, 129, 0.2)',
@@ -507,7 +512,15 @@ export default function MemoryGraph() {
                 const isHighlighted = node._highlighted || node.id === selectedNode?.id;
                 const radius = Math.cbrt(node.val) * 4;
                 const geometry = new THREE.SphereGeometry(radius, 32, 32);
-                const baseColor = node.sourceDb === 'global' ? '#f59e0b' : '#10b981';
+
+                const val = Math.max(0, Math.min(1, node.val || 0.5));
+                const hue =
+                  node.sourceDb === 'global'
+                    ? Math.floor(45 * (1 - val))
+                    : Math.floor(190 - 40 * val);
+                const saturation = node.sourceDb === 'global' ? 90 : 80;
+                const baseColor = `hsl(${hue}, ${saturation}%, 55%)`;
+
                 const material = new THREE.MeshPhysicalMaterial({
                   color: isHighlighted ? '#0ea5e9' : baseColor,
                   emissive: isHighlighted ? '#0ea5e9' : baseColor,
@@ -527,10 +540,13 @@ export default function MemoryGraph() {
           !is3D
             ? (node: any, ctx: any) => {
                 const opacity = !searchQuery || node._highlighted ? 1 : 0.15;
-                const isGlobal = node.sourceDb === 'global';
-                const colorStr = isGlobal
-                  ? `rgba(245, 158, 11, ${opacity})`
-                  : `rgba(16, 185, 129, ${opacity})`;
+                const val = Math.max(0, Math.min(1, node.val || 0.5));
+                const hue =
+                  node.sourceDb === 'global'
+                    ? Math.floor(45 * (1 - val))
+                    : Math.floor(190 - 40 * val);
+                const saturation = node.sourceDb === 'global' ? 90 : 80;
+                const colorStr = `hsla(${hue}, ${saturation}%, 55%, ${opacity})`;
 
                 const radius = Math.cbrt(node.val) * 6;
 

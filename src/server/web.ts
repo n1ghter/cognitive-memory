@@ -1,7 +1,7 @@
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import express from 'express';
 import cors from 'cors';
+import express from 'express';
 import { DatabaseManager } from '../db.js';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -12,21 +12,25 @@ export function startWebServer(port: number = 3000) {
   app.use(cors());
 
   // API Endpoint to fetch the graph
-  app.get('/api/graph', (req, res) => {
+  app.get('/api/graph', (_req, res) => {
     try {
       const db = DatabaseManager.getInstance();
-      
-      const nodes = db.prepare(`
+
+      const nodes = db
+        .prepare(`
         SELECT id, text, metadata, importance, is_active, 'local' as source_db FROM main.memory
         UNION ALL
         SELECT id, text, metadata, importance, is_active, 'global' as source_db FROM global.memory
-      `).all();
-      
-      const links = db.prepare(`
+      `)
+        .all();
+
+      const links = db
+        .prepare(`
         SELECT id, source_id as source, target_id as target, relation_type, metadata, 'local' as source_db FROM main.edges
         UNION ALL
         SELECT id, source_id as source, target_id as target, relation_type, metadata, 'global' as source_db FROM global.edges
-      `).all();
+      `)
+        .all();
 
       res.json({
         nodes: nodes.map((n: any) => ({
@@ -36,7 +40,7 @@ export function startWebServer(port: number = 3000) {
           val: Math.max(1, (n.importance || 0.5) * 10),
           metadata: n.metadata,
           isActive: n.is_active === 1,
-          sourceDb: n.source_db
+          sourceDb: n.source_db,
         })),
         links: links.map((l: any) => ({
           id: l.id,
@@ -44,8 +48,8 @@ export function startWebServer(port: number = 3000) {
           target: l.target,
           label: l.relation_type,
           metadata: l.metadata,
-          sourceDb: l.source_db
-        }))
+          sourceDb: l.source_db,
+        })),
       });
     } catch (err: any) {
       console.error('Error fetching graph:', err);
@@ -58,7 +62,7 @@ export function startWebServer(port: number = 3000) {
   app.use(express.static(uiDistPath));
 
   // Fallback for SPA
-  app.use((req, res) => {
+  app.use((_req, res) => {
     res.sendFile(path.join(uiDistPath, 'index.html'));
   });
 
@@ -66,12 +70,19 @@ export function startWebServer(port: number = 3000) {
     const url = `http://localhost:${port}`;
     if (process.env.NODE_ENV !== 'test') {
       console.log(`Web UI Dashboard is running at ${url}`);
-      
+
       // Auto-open browser
-      import('child_process').then(({ exec }) => {
-        const start = process.platform === 'darwin' ? 'open' : process.platform === 'win32' ? 'start' : 'xdg-open';
-        exec(`${start} ${url}`);
-      }).catch(err => console.error('Failed to open browser:', err));
+      import('node:child_process')
+        .then(({ exec }) => {
+          const start =
+            process.platform === 'darwin'
+              ? 'open'
+              : process.platform === 'win32'
+                ? 'start'
+                : 'xdg-open';
+          exec(`${start} ${url}`);
+        })
+        .catch((err) => console.error('Failed to open browser:', err));
     }
   });
 

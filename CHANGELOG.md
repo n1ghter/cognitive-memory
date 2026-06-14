@@ -4,6 +4,10 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+### Added
+- **Pre-commit Hooks**: Implemented `husky` and `lint-staged` with automated Biome format/lint, strict TypeScript `tsc --noEmit` checks, and `vitest` suite verification prior to commits.
+- **Dynamic Node Color Scaling**: Node colors in the UI graph (`MemoryGraph.tsx`) now dynamically scale hue based on their `val` (importance) using HSL gradients to intuitively display memory significance.
+
 ## [1.5.1] - 2026-06-14
 
 ### Added

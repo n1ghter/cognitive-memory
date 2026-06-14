@@ -107,7 +107,9 @@ describe('Memory Store & Search (Integration)', () => {
       throw new Error('Fake critical search error');
     });
 
-    await expect(executeMemorySearch({ query: 'Break' })).rejects.toThrow('Fake critical search error');
+    await expect(executeMemorySearch({ query: 'Break' })).rejects.toThrow(
+      'Fake critical search error'
+    );
 
     vi.restoreAllMocks();
   });

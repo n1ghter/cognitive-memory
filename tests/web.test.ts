@@ -1,7 +1,7 @@
-import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import request from 'supertest';
-import { startWebServer } from '../src/server/web.js';
+import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { DatabaseManager, generateId } from '../src/db.js';
+import { startWebServer } from '../src/server/web.js';
 
 describe('Web Server API', () => {
   let app: any;
@@ -16,7 +16,7 @@ describe('Web Server API', () => {
     // Seed some test data into the DB
     const db = DatabaseManager.getInstance();
     db.exec('BEGIN TRANSACTION');
-    
+
     const localId = generateId();
     const globalId = generateId();
 
@@ -56,23 +56,25 @@ describe('Web Server API', () => {
 
   it('should return 200 and valid JSON on /api/graph', async () => {
     const response = await request(app).get('/api/graph');
-    
+
     expect(response.status).toBe(200);
     expect(response.type).toMatch(/json/);
-    
+
     const body = response.body;
     expect(body).toHaveProperty('nodes');
     expect(body).toHaveProperty('links');
-    
+
     expect(Array.isArray(body.nodes)).toBe(true);
     expect(Array.isArray(body.links)).toBe(true);
-    
+
     // We expect at least the two nodes we seeded
     expect(body.nodes.length).toBeGreaterThanOrEqual(2);
     expect(body.links.length).toBeGreaterThanOrEqual(1);
 
     // Verify sourceDb property is returned
-    const localNode = body.nodes.find((n: any) => n.id === body.links[0].source || n.id === body.links[0].target);
+    const localNode = body.nodes.find(
+      (n: any) => n.id === body.links[0].source || n.id === body.links[0].target
+    );
     expect(localNode).toHaveProperty('sourceDb');
   });
 
