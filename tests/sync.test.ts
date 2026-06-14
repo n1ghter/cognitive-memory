@@ -81,4 +81,28 @@ importance: 0.5
     files = fs.readdirSync(tmpDir).filter(f => f.endsWith('.md'));
     expect(files.length).toBe(0);
   });
+  it('should propagate user deletions to sqlite', async () => {
+    // 1. Store a memory in DB
+    const resStore = await executeMemoryStore({ text: 'To be deleted by human' });
+    const id = resStore.record.id;
+
+    // 2. Sync to create the file on disk and write .sync_state.json
+    await executeMemorySync({ vaultPath: tmpDir });
+    
+    // Find the file that was created
+    const files = fs.readdirSync(tmpDir).filter(f => f.endsWith('.md'));
+    expect(files.length).toBe(1);
+    const mdFile = files[0];
+
+    // 3. Human deletes the file in Obsidian
+    fs.unlinkSync(path.join(tmpDir, mdFile));
+
+    // 4. Sync again. The memory should be marked as is_active = 0 in SQLite
+    await executeMemorySync({ vaultPath: tmpDir });
+
+    const db = DatabaseManager.getInstance();
+    const row = db.prepare('SELECT is_active FROM memory WHERE id = ?').get(id) as any;
+    expect(row).toBeDefined();
+    expect(row.is_active).toBe(0);
+  });
 });

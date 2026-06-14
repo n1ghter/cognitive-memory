@@ -1,12 +1,10 @@
-**Semantic Summary**
-=====================
+### Semantic Summary
+#### Why
 
-### Purpose
-This file tests the `executeMemorySync` function from the Obsidian app, ensuring bidirectional syncing of memories between the database and Obsidian vaults. It also verifies that agent deletions are propagated to disk.
+This file contains unit tests for the Memory Sync feature in Obsidian. The purpose of these tests is to verify that:
 
-### Tools Interacted With
+*   Memories are synced bidirectionally between Obsidian and the database.
+*   Agent deletions are propagated to disk.
+*   User deletions are propagated from disk to SQLite.
 
-* SQLite (`DatabaseManager`)
-* MCP tools: `executeMemoryStore`, `executeMemoryDelete`
-* `fs` (Node.js) for interacting with the file system
-* `path` (Node.js) for working with file paths
+The tests ensure that the memory sync functionality works correctly, handling different scenarios such as syncing memories, deleting agents and users, and updating database records.
