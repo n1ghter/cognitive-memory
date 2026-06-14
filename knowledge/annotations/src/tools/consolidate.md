@@ -1,18 +1,12 @@
 ```markdown
-# Consistency and Deduplication Tools
+# Memory Consolidation Tool
 
-This module provides tools for memory consolidation, which involves pruning inactive memories and merging similar ones into a single entry. It interacts with the SQLite database using `DatabaseManager` and utilizes an Ollama client to generate text.
+This file implements the memory consolidation tool, which prunes inactive memories,
+updates importance scores based on access times, and performs background deduplication.
+to merge similar memories into a single entry.
 
-### Why?
+## Database Interactions
 
-The purpose of this tool is to improve the efficiency and relevance of stored memories by removing inactive records and consolidating similar ones. This process is essential for maintaining a coherent and up-to-date memory database.
-
-### MCP Tools/Interactions
-
-- `DatabaseManager`: Retrieves data from the SQLite database.
-- `executeMemoryStore`: Executes store function to update related records.
-
-### Architectural Purpose
-
-This module serves as a central component in the memory consolidation process, responsible for pruning inactive memories and merging similar ones into a single entry. It interacts with other components, such as the Ollama client and database manager, to achieve this goal.
+- `executeMemoryConsolidate`: Retrieves active records from SQLite database using SQL queries.
+- `runBackgroundDeduplication`: Retrieves active records from SQLite database and calculates similarity scores between the current memory and other similar records. It then updates related records to reflect the consolidation process.
 ```

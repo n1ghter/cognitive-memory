@@ -1,12 +1,17 @@
-**Semantic Summary**
+**Store Store Logic**
 =====================
 
-This file implements a memory store function that allows users to cache and persist text data with associated metadata. The purpose of this function is to provide a caching layer for sensitive or high-importance data, ensuring it remains accessible even after application restarts.
+This file contains the implementation of a memory store function that interacts with SQLite tables using `DatabaseManager` and exposes MCP (Metadata Commons Profile) tools.
 
-### MCP Tools Used:
+The function takes in text metadata, optional metadata, and importance level as arguments. It executes a transaction to ensure atomicity between storing text metadata and vector table records.
 
-* SQLite tables: `memory`, `vec_memory`
+**Explicitly Exposed Tools/Tables**
+-----------------------------------
 
-### Architectural Purpose:
+* `DatabaseManager`
+* `SQLite tables: memory` and `vec_memory`
 
-The memory store function serves as a critical component in the caching mechanism, enabling users to cache and retrieve text data efficiently. By leveraging a database instance for storing metadata, this implementation ensures atomicity between different data storage layers, providing a reliable and fault-tolerant solution for sensitive or high-importance data.
+**Business Logic Purpose**
+---------------------------
+
+The purpose of this file is to provide a centralized store function for metadata, ensuring data consistency across the application.

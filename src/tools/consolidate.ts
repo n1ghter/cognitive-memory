@@ -198,7 +198,7 @@ async function runBackgroundDeduplication(memories: MemoryRecord[]): Promise<voi
           db.prepare(
             'INSERT INTO edges (id, source_id, target_id, relation_type) VALUES (?, ?, ?, ?)'
           ).run(generateId(), storeResult.record.id, memB.id, 'consolidated_from');
-        });
+        })();
 
         processedIds.add(memA.id).add(memB.id);
         mergedCount++;

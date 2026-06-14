@@ -1,11 +1,12 @@
-```markdown
-# Vitest Configuration File
+**vitest.config.ts Semantic Summary**
+=====================================
 
-This configuration file defines the test settings for a Vitest project, specifically setting up global variables and environment. The configuration includes setup files, coverage analysis, and global variable management.
+This file configures Vitest to support end-to-end testing for the application. It enables global variables, sets the environment to Node.js, and specifies a setup file to ensure tests are executed correctly.
 
-MCP tools used: None explicitly listed
+**Exposed Tools:**
 
-Interacts with SQLite tables: No
+* Vitest
 
-The purpose of this configuration is to enable test coverage analysis for the `src` directory, excluding the bootstrap index file, and sets up a global variable to be available in all tests. This allows for efficient testing of the project's functionality.
-```
+**Interactions:**
+
+* SQLite tables (not explicitly listed, but likely used by related tools)

@@ -1,12 +1,16 @@
-**Export Tools Annotation**
-================================
+### Why
 
-### Purpose
+This file implements the `executeMemoryExport` function, which is responsible for exporting memories from a database into Obsidian-compatible Markdown files. The purpose of this function is to convert the structured data in the database into a format that can be easily imported into an Obsidian vault.
 
-This file provides the `executeMemoryExport` function, which exports Obsidian-compatible Markdown files containing memories from a SQLite database. The function interacts with the `DatabaseManager` to fetch and process memory data.
+The export process involves:
 
-### Tools Used
+*   Fetching all memories and edges from the database
+*   Building edge lookup maps to generate links between memories
+*   Generating a Markdown file for each memory with frontmatter and content
+*   Writing the files to disk and updating their timestamps
 
-*   `fs`: File system module for creating directories and writing files
-*   `path`: Path manipulation module for resolving directory paths
-*   `DatabaseManager`: A custom database management system used to interact with the SQLite database
+This function is used to create an Obsidian vault by exporting the structured data in the database into a format that can be easily imported.
+
+### Exposed Tools/Functions
+
+The `executeMemoryExport` function interacts with SQLite tables using the `DatabaseManager` class.

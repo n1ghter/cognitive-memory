@@ -46,9 +46,9 @@ export async function executeMemoryExport(args: ExportArgs = {}): Promise<{
   // 1. Fetch all memories
   const memories = db
     .prepare(
-      'SELECT id, text, metadata, importance, created_at, last_accessed_at, accessed_count FROM memory WHERE is_active = 1'
+      'SELECT id, text, metadata, importance, created_at, updated_at, last_accessed_at, accessed_count FROM memory WHERE is_active = 1'
     )
-    .all() as MemoryRecord[];
+    .all() as (MemoryRecord & { updated_at: string })[];
 
   // 2. Fetch all edges
   const edges = db
@@ -68,21 +68,36 @@ export async function executeMemoryExport(args: ExportArgs = {}): Promise<{
 
   const exportedFiles: string[] = [];
   const syncTime = new Date().toISOString();
+  let exportedCount = 0;
 
   // 3. Generate a Markdown file for each memory
   for (const mem of memories) {
+    const shortId = String(mem.id).split(':')[1] || String(mem.id);
+    const fileName = `Memory_${shortId}.md`;
+    const filePath = path.join(exportDir, fileName);
+
+    // Incremental export check
+    if (fs.existsSync(filePath)) {
+      const stat = fs.statSync(filePath);
+      let dbUpdatedMs = 0;
+      if (mem.updated_at) {
+        dbUpdatedMs = new Date(mem.updated_at.replace(' ', 'T') + 'Z').getTime();
+      } // If the file on disk is newer or same as the database, skip overwrite
+      if (stat.mtimeMs >= dbUpdatedMs - 2000) {
+        continue;
+      }
+    }
+
     let meta: any = {};
     try {
       meta = typeof mem.metadata === 'string' ? JSON.parse(mem.metadata) : mem.metadata;
     } catch (_e) {}
 
     const category = meta?.type || 'semantic';
-    const shortId = String(mem.id).split(':')[1] || String(mem.id);
-    const fileName = `Memory_${shortId}.md`;
-    const filePath = path.join(exportDir, fileName);
 
     // Frontmatter
     let md = `---
+id: ${shortId}
 type: agent_memory
 category: ${category}
 importance: ${mem.importance.toFixed(3)}
@@ -134,14 +149,32 @@ ${metaStr}
 `;
 
     fs.writeFileSync(filePath, md, 'utf-8');
+
+    // Update the mtime of the file to match the syncTime so future imports don't re-import it
+    const syncTimeMs = new Date(syncTime).getTime();
+    fs.utimesSync(filePath, new Date(syncTimeMs), new Date(syncTimeMs));
+
     exportedFiles.push(filePath);
+    exportedCount++;
   }
+
+  // Write .sync_state.json for deletion tracking
+  const exportedIds = memories.map((m) => m.id);
+  const syncStatePath = path.join(exportDir, '.sync_state.json');
+  fs.writeFileSync(
+    syncStatePath,
+    JSON.stringify({
+      exported_ids: exportedIds,
+      sync_time: syncTime,
+    }),
+    'utf-8'
+  );
 
   return {
     success: true,
     vault_path: exportDir,
     exported_files: exportedFiles,
-    total_exported: memories.length,
+    total_exported: exportedCount,
     sync_time: syncTime,
   };
 }

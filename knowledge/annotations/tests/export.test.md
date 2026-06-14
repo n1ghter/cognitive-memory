@@ -1,9 +1,11 @@
-```markdown
-# Memory Export Test Suite
+### Semantic Summary
+#### Export Tool Test Suite
 
-This test suite verifies the functionality of the memory export tool, ensuring that it successfully exports memories to markdown files.
+This file contains a test suite for the memory export functionality. It tests that memories are correctly exported to markdown files and that the resulting directory structure is as expected.
 
-The test uses a temporary directory for storing exported files and interacts with the `DatabaseManager` and `executeMemoryExport`/`executeMemoryStore` tools.
-```
+It also verifies the inclusion of graph relations and categories in frontmatter.
 
-Note: I've kept the explanation concise while focusing on the "Why" (Business Logic, Architectural Purpose). The annotation explicitly mentions the purpose of the file and its interactions with other components.
+#### Exposed Tools
+
+* SQLite tools: `executeMemoryExport`, `executeMemoryStore`
+* MCP tool: `DatabaseManager`

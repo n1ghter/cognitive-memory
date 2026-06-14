@@ -1,9 +1,18 @@
 ```markdown
-# Consolidate Tool Test Suite
+# Memory Consolidation Tool Tests
 
-This test suite ensures the proper functioning of the `executeMemoryConsolidate` tool, which consolidates duplicate memories in the system.
+This file contains unit tests for the memory consolidation tool, which is responsible for deduplicating and pruning memories in the system.
 
-The consolidation process is triggered when at least three active memories exist with overlapping text. This process updates the database to remove duplicates and marks them as consolidated.
+## Purpose
 
-The tool interacts with the SQLite table "memory" and uses the OllamaClient mock.
+The purpose of this test suite is to ensure that the memory consolidation tool functions correctly under various scenarios, including:
+
+* Deduplication with less than 3 memories
+* Consolidation of active memories
+* Pruning of old memories whose importance decays below 0.25
+* Handling errors during generation
+
+## Tools and Interactions
+
+This file interacts with the SQLite database using the `DatabaseManager` class.
 ```

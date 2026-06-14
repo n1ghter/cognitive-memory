@@ -42,4 +42,64 @@ describe('Memory Store & Search (Integration)', () => {
     expect(searchResult.results.length).toBeGreaterThan(0);
     expect(searchResult.results[0].text).toBe('Hello test database');
   });
+
+  it('should throw an error if query is empty or invalid', async () => {
+    await expect(executeMemorySearch({ query: '' })).rejects.toThrow(
+      'Invalid input: "query" must be a non-empty string'
+    );
+    await expect(executeMemorySearch({ query: null as any })).rejects.toThrow(
+      'Invalid input: "query" must be a non-empty string'
+    );
+  });
+
+  it('should throw an error if store text is empty or invalid', async () => {
+    await expect(executeMemoryStore({ text: '' })).rejects.toThrow(
+      'Invalid input: "text" must be a non-empty string'
+    );
+    await expect(executeMemoryStore({ text: null as any })).rejects.toThrow(
+      'Invalid input: "text" must be a non-empty string'
+    );
+  });
+
+  it('should fallback to string metadata if JSON parse fails', async () => {
+    const db = DatabaseManager.getInstance();
+    // Directly insert invalid JSON metadata
+    db.prepare(`
+      INSERT INTO memory (id, text, metadata, importance, is_active, created_at, last_accessed_at, accessed_count)
+      VALUES ('mem-bad-json', 'Search me bad JSON', '{bad json}', 0.8, 1, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 0)
+    `).run();
+    db.prepare(`
+      INSERT INTO vec_memory (rowid, embedding)
+      VALUES (last_insert_rowid(), ?)
+    `).run(new Float32Array(4096).fill(0.1));
+
+    const res = await executeMemorySearch({ query: 'bad json search', threshold: 0.0, limit: 10 });
+    expect(res.results.some((r) => r.metadata === '{bad json}')).toBe(true);
+  });
+
+  it('should log error if updating access stats fails', async () => {
+    const db = DatabaseManager.getInstance();
+    await executeMemoryStore({ text: 'Stats error test' });
+
+    // Mock db.prepare to throw ONLY on the UPDATE statement inside search
+    const originalPrepare = db.prepare.bind(db);
+    const spy = vi.spyOn(db, 'prepare').mockImplementation((sql: string) => {
+      if (sql.includes('UPDATE memory') && sql.includes('last_accessed_at')) {
+        throw new Error('Stats update failed');
+      }
+      return originalPrepare(sql);
+    });
+
+    const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+
+    await executeMemorySearch({ query: 'Stats error test' });
+
+    expect(consoleSpy).toHaveBeenCalledWith(
+      '[Search] Failed to update access stats:',
+      expect.any(Error)
+    );
+
+    spy.mockRestore();
+    consoleSpy.mockRestore();
+  });
 });

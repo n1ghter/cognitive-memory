@@ -1,8 +1,19 @@
-### Semantic Summary
-#### EmbeddingCache Test Suite
+```markdown
+**Semantic Summary**
 
-This test suite verifies the correctness of the `EmbeddingCache` class, specifically its ability to compute and compare SHA-256 hashes. It exercises the cache's handling of different input cases, including case insensitivity and trimming. The tests ensure that the computed hash is consistent across these variations and meets the expected length.
+This test file validates the behavior of `EmbeddingCache` in various scenarios, including:
 
-#### Exposes: MCP tools (None specified)
+* Computing valid SHA-256 hashes for different input texts
+* Handling errors when computing embeddings (e.g., empty text, SQLite read/write failures)
+* Caching embeddings in L1 and L2 storage layers
 
-#### Interacts with: SQLite tables (None specified)
+Specifically, it tests that:
+* Valid hashes are computed correctly regardless of case and whitespace trimming
+* An error is thrown when attempting to compute an embedding for empty text
+* Embeddings are cached in both L1 and L2 layers and retrieved accordingly
+* The cache handles errors during read and write operations to SQLite
+
+**Exposed Tools/Interactions**
+
+* MCP tools: `DatabaseManager` (close, getInstance), SQLite (prepare)
+```

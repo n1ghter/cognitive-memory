@@ -10,6 +10,7 @@ import { executeMemoryExport } from './tools/export.js';
 import { executeMemoryRelate } from './tools/graph.js';
 import { executeMemorySearch } from './tools/search.js';
 import { executeMemoryStore } from './tools/store.js';
+import { executeMemorySync } from './tools/sync.js';
 
 /**
  * Critical Performance Enhancement: Stdio Safeguard
@@ -334,6 +335,46 @@ server.tool(
       };
     } catch (error: any) {
       console.error('[MCP Error] memory_export failed:', error);
+      return {
+        isError: true,
+        content: [{ type: 'text', text: error.message || String(error) }],
+      };
+    }
+  }
+);
+
+/**
+ * Define a tool that performs a bidirectional synchronization between Obsidian and SQLite.
+ */
+server.tool(
+  /**
+   * Tool ID
+   */
+  'memory_sync',
+  /**
+   * Tool description
+   */
+  'Perform a bidirectional synchronization between local Obsidian Markdown files and the SQLite database',
+  {
+    /**
+     * Optional input parameter for custom path to the Obsidian vault directory.
+     */
+    vaultPath: z
+      .string()
+      .optional()
+      .describe('Optional custom path to the Obsidian vault directory'),
+  },
+  /**
+   * Asynchronous function that executes the tool's logic.
+   */
+  async ({ vaultPath }) => {
+    try {
+      const result = await executeMemorySync({ vaultPath });
+      return {
+        content: [{ type: 'text', text: JSON.stringify(result, null, 2) }],
+      };
+    } catch (error: any) {
+      console.error('[MCP Error] memory_sync failed:', error);
       return {
         isError: true,
         content: [{ type: 'text', text: error.message || String(error) }],
