@@ -101,4 +101,57 @@ describe('Memory Export', () => {
     const content = fs.readFileSync(path.join(tmpDir, files[files.length - 1]), 'utf-8');
     expect(content).toContain('category: project');
   });
+
+  it('should use default vaultPath if not provided', async () => {
+    const cwdSpy = vi.spyOn(process, 'cwd').mockReturnValue(tmpDir);
+    // It should create 'memories_export' in tmpDir
+    const expRes = await executeMemoryExport();
+    expect(expRes.success).toBe(true);
+    expect(fs.existsSync(path.join(tmpDir, 'memories_export'))).toBe(true);
+    cwdSpy.mockRestore();
+  });
+
+  it('should handle multiple edges for the same source and target to hit map caching branches', async () => {
+    const db = DatabaseManager.getInstance();
+    const res1 = await executeMemoryStore({ text: 'Node A' });
+    const res2 = await executeMemoryStore({ text: 'Node B' });
+    const res3 = await executeMemoryStore({ text: 'Node C' });
+    
+    const { generateId } = await import('../src/db.js');
+    const insertEdge = db.prepare('INSERT INTO edges (id, source_id, target_id, relation_type) VALUES (?, ?, ?, ?)');
+    
+    // Node A has 2 outgoing edges
+    insertEdge.run(generateId(), res1.record.id, res2.record.id, 'ref1');
+    insertEdge.run(generateId(), res1.record.id, res3.record.id, 'ref2');
+    
+    // Node C has 2 incoming edges
+    insertEdge.run(generateId(), res2.record.id, res3.record.id, 'ref3');
+
+    const expRes = await executeMemoryExport({ vaultPath: tmpDir });
+    expect(expRes.success).toBe(true);
+  });
+
+  it('should skip overwrite if file on disk is newer', async () => {
+    const res1 = await executeMemoryStore({ text: 'Node to skip' });
+    
+    const db = DatabaseManager.getInstance();
+    db.prepare('UPDATE memory SET updated_at = ? WHERE id = ?').run('2026-06-14 10:00:00', res1.record.id);
+
+    const expRes1 = await executeMemoryExport({ vaultPath: tmpDir });
+    
+    const shortId = (res1.record.id as string).split(':')[1] || res1.record.id;
+    const filePath = path.join(tmpDir, `Memory_${shortId}.md`);
+    
+    // Write a manual edit
+    fs.writeFileSync(filePath, 'Human edited', 'utf-8');
+    const futureTime = new Date(Date.now() + 100000);
+    fs.utimesSync(filePath, futureTime, futureTime);
+
+    // Export again
+    const expRes2 = await executeMemoryExport({ vaultPath: tmpDir });
+    
+    // The file should still contain human edit
+    const content = fs.readFileSync(filePath, 'utf-8');
+    expect(content).toBe('Human edited');
+  });
 });

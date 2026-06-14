@@ -86,4 +86,18 @@ describe('Memory Consolidate', () => {
 
     consoleSpy.mockRestore();
   });
+
+  it('should skip already processed memories to hit line 157 and 170', async () => {
+    // We need 4 identical memories so that:
+    // memA (0) merges with memB (1) -> processedIds = {0, 1}
+    // next iteration: memC (2) is memA. similarMemories includes memB (1) which is processed, hitting line 170.
+    // next iteration: memA is (1) which is processed, hitting line 157.
+    await executeMemoryStore({ text: 'Duplicate text for merge 1' });
+    await executeMemoryStore({ text: 'Duplicate text for merge 1' });
+    await executeMemoryStore({ text: 'Duplicate text for merge 1' });
+    await executeMemoryStore({ text: 'Duplicate text for merge 1' });
+
+    const res = await executeMemoryConsolidate();
+    expect(res.success).toBe(true);
+  });
 });

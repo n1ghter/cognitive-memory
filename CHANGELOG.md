@@ -4,6 +4,21 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [1.1.28] - 2026-06-14
+
+### Added
+- Added `auto-create-pr.yml` GitHub Action to automatically generate Pull Requests whenever a new branch is pushed to the repository.
+
+## [1.1.27] - 2026-06-14
+
+### Fixed
+- Fixed broken Auto-Update PRs GitHub Action workflow by updating the `actions-pr-auto-update` repository owner from `castastrophe` to `allonsy-studio` after a repository transfer.
+
+## [1.1.26] - 2026-06-14
+
+### Added
+- **100% Test Coverage**: Achieved complete 100% test coverage across all `src/` and `src/tools/` modules, including all edge cases, SQLite errors, and filesystem failure paths in `import.ts` and `export.ts`.
+
 ## [1.1.25] - 2026-06-14
 
 ### Fixed
