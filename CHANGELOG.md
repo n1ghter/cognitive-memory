@@ -4,6 +4,8 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [1.5.5] - 2026-06-14
+
 ### Fixed
 - **Test Coverage**: Achieved 100% line test coverage across both the Root CLI/Server backend and the React UI frontend by adding missing fallback routes tests, typing explicit ignores for OS-specific branches, and covering `NodeDetailsPanel` UI branches.
 - **TypeScript Artifacts**: Cleaned up the repository by deleting legacy `ai_auto_annotate.js` and `seed-test-data.js` duplicates outputted by TSC without `noEmit`. Migrated `update-changelog.js` and `show_recent_memories.cjs` to TypeScript (`.ts`) running natively with `tsx`, resolving mixed `.js`/`.ts` confusion.
