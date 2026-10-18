@@ -4,6 +4,9 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+### Fixed
+- **UI Tests**: Load jest-dom matchers through `@testing-library/jest-dom/vitest` so `ui` typechecks under Vitest 5 (unblocks the Vitest 5 upgrade in #85).
+
 ## [1.5.6] - 2026-06-15
 
 ### Added
