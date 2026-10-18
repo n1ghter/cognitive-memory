@@ -1,0 +1,247 @@
+{
+  "description": "Golden dataset for cognitive-memory retrieval and deduplication evals. Memories are stored, then each query is graded against the keys of the memories that should come back.",
+  "memories": [
+    {
+      "key": "pref-pnpm",
+      "text": "The user prefers pnpm over npm for installing JavaScript dependencies."
+    },
+    {
+      "key": "pref-tabs",
+      "text": "Code in this repository is formatted with two-space indentation and single quotes by Biome."
+    },
+    {
+      "key": "pref-russian",
+      "text": "The project owner writes in Russian and wants replies in Russian."
+    },
+    {
+      "key": "pref-draft-prs",
+      "text": "Pull requests must stay as drafts with auto-merge disabled until the owner reviews them."
+    },
+    { "key": "pref-dark-theme", "text": "The user likes dark mode in every editor and dashboard." },
+    {
+      "key": "fact-sqlite-vec",
+      "text": "Vector search is implemented with the sqlite-vec extension loaded into better-sqlite3."
+    },
+    {
+      "key": "fact-embed-model",
+      "text": "Embeddings are generated locally by Ollama with the qwen3-embedding:8b model, which outputs 4096 dimensions."
+    },
+    {
+      "key": "fact-global-db",
+      "text": "Global memories shared across projects live in ~/.cognitive-memory/global-memory.sqlite."
+    },
+    {
+      "key": "fact-ci-node",
+      "text": "Continuous integration runs on GitHub Actions with Node.js 24 and pnpm 9."
+    },
+    {
+      "key": "fact-ui-stack",
+      "text": "The dashboard UI is a React app built with Vite and rendered as a force-directed graph."
+    },
+    {
+      "key": "fact-decay",
+      "text": "Consolidation decays importance exponentially with lambda 0.004 per hour and deactivates memories below 0.25."
+    },
+    {
+      "key": "fact-dedup",
+      "text": "Memories whose cosine distance is at most 0.08 are merged by the local LLM during consolidation."
+    },
+    {
+      "key": "fact-obsidian",
+      "text": "Memories can be exported to an Obsidian vault as Markdown notes with wikilinks."
+    },
+    { "key": "fact-license", "text": "The project is released under the Apache 2.0 license." },
+    {
+      "key": "decision-no-cloud",
+      "text": "We decided never to send memory contents to a cloud API, to keep data private and costs at zero."
+    },
+    {
+      "key": "decision-wal",
+      "text": "SQLite runs in WAL journal mode so the web dashboard can read while the MCP server writes."
+    },
+    {
+      "key": "decision-biome",
+      "text": "We replaced ESLint and Prettier with Biome to have a single fast linter and formatter."
+    },
+    {
+      "key": "bug-tsbuildinfo",
+      "text": "Running tsc -b rewrites tsconfig.tsbuildinfo, so revert that file before committing."
+    },
+    {
+      "key": "bug-npm-ci",
+      "text": "npm ci fails with an ERESOLVE peer dependency conflict; install with pnpm instead."
+    },
+    {
+      "key": "bug-global-tests",
+      "text": "Tests used to write into the real global memory database in the home directory."
+    },
+    {
+      "key": "person-ed",
+      "text": "Eduards is the maintainer of cognitive-memory and publishes it to npm as @cemised/cognitive-memory."
+    },
+    {
+      "key": "event-v156",
+      "text": "Version 1.5.6 was released on 15 June 2026 with graph UX improvements."
+    },
+    { "key": "misc-coffee", "text": "The maintainer drinks espresso every morning before coding." },
+    { "key": "misc-berlin", "text": "The team meetup next spring will take place in Berlin." },
+    { "key": "ru-backup", "text": "Резервную копию базы памяти нужно делать каждую пятницу." },
+    { "key": "ru-ollama-port", "text": "Ollama слушает на порту 11434 на локальной машине." }
+  ],
+  "queries": [
+    {
+      "query": "Which package manager should I use to install dependencies?",
+      "relevant": ["pref-pnpm", "bug-npm-ci"],
+      "category": "lexical"
+    },
+    {
+      "query": "How is the code formatted?",
+      "relevant": ["pref-tabs", "decision-biome"],
+      "category": "lexical"
+    },
+    {
+      "query": "What language should I answer the owner in?",
+      "relevant": ["pref-russian"],
+      "category": "lexical"
+    },
+    {
+      "query": "Should pull requests be merged automatically?",
+      "relevant": ["pref-draft-prs"],
+      "category": "lexical"
+    },
+    {
+      "query": "Which extension provides vector search in SQLite?",
+      "relevant": ["fact-sqlite-vec"],
+      "category": "lexical"
+    },
+    {
+      "query": "Which embedding model and how many dimensions?",
+      "relevant": ["fact-embed-model"],
+      "category": "lexical"
+    },
+    {
+      "query": "Where are global memories stored?",
+      "relevant": ["fact-global-db", "bug-global-tests"],
+      "category": "lexical"
+    },
+    {
+      "query": "What Node.js version does CI use?",
+      "relevant": ["fact-ci-node"],
+      "category": "lexical"
+    },
+    {
+      "query": "What license is the project under?",
+      "relevant": ["fact-license"],
+      "category": "lexical"
+    },
+    {
+      "query": "When was version 1.5.6 released?",
+      "relevant": ["event-v156"],
+      "category": "lexical"
+    },
+    {
+      "query": "What happens to tsconfig.tsbuildinfo after tsc -b?",
+      "relevant": ["bug-tsbuildinfo"],
+      "category": "lexical"
+    },
+    {
+      "query": "Can notes be exported to Obsidian?",
+      "relevant": ["fact-obsidian"],
+      "category": "lexical"
+    },
+    {
+      "query": "What colour scheme does the user want in their tools?",
+      "relevant": ["pref-dark-theme"],
+      "category": "paraphrase"
+    },
+    {
+      "query": "Is it OK to call OpenAI to summarise stored notes?",
+      "relevant": ["decision-no-cloud"],
+      "category": "paraphrase"
+    },
+    {
+      "query": "How do old, unused memories fade away over time?",
+      "relevant": ["fact-decay"],
+      "category": "paraphrase"
+    },
+    {
+      "query": "How are near-duplicate memories combined?",
+      "relevant": ["fact-dedup"],
+      "category": "paraphrase"
+    },
+    {
+      "query": "Why can the dashboard read the database while the server is writing?",
+      "relevant": ["decision-wal"],
+      "category": "paraphrase"
+    },
+    {
+      "query": "What frontend framework renders the memory graph?",
+      "relevant": ["fact-ui-stack"],
+      "category": "paraphrase"
+    },
+    { "query": "Who maintains this package?", "relevant": ["person-ed"], "category": "paraphrase" },
+    {
+      "query": "Where is the next team gathering?",
+      "relevant": ["misc-berlin"],
+      "category": "paraphrase"
+    },
+    {
+      "query": "What does the maintainer drink in the morning?",
+      "relevant": ["misc-coffee"],
+      "category": "paraphrase"
+    },
+    {
+      "query": "How often should the memory database be backed up?",
+      "relevant": ["ru-backup"],
+      "category": "cross-lingual"
+    },
+    {
+      "query": "Which port does Ollama listen on?",
+      "relevant": ["ru-ollama-port"],
+      "category": "cross-lingual"
+    },
+    {
+      "query": "На каком языке отвечать владельцу проекта?",
+      "relevant": ["pref-russian"],
+      "category": "cross-lingual"
+    },
+    { "query": "What is the capital of Australia?", "relevant": [], "category": "negative" },
+    { "query": "Recipe for chocolate chip cookies", "relevant": [], "category": "negative" },
+    { "query": "Kubernetes pod autoscaling configuration", "relevant": [], "category": "negative" },
+    { "query": "Who won the football world cup in 2010?", "relevant": [], "category": "negative" }
+  ],
+  "dedupPairs": [
+    {
+      "a": "The user prefers pnpm over npm.",
+      "b": "The user would rather use pnpm than npm.",
+      "duplicate": true
+    },
+    {
+      "a": "CI runs on Node.js 24.",
+      "b": "Continuous integration uses Node.js version 24.",
+      "duplicate": true
+    },
+    {
+      "a": "The project is licensed under Apache 2.0.",
+      "b": "The project uses the Apache 2.0 license.",
+      "duplicate": true
+    },
+    {
+      "a": "Replies to the owner must be in Russian.",
+      "b": "Always reply to the owner in Russian.",
+      "duplicate": true
+    },
+    {
+      "a": "The database uses PostgreSQL 15.",
+      "b": "The database uses PostgreSQL 16.",
+      "duplicate": false
+    },
+    { "a": "The user likes dark mode.", "b": "The user dislikes dark mode.", "duplicate": false },
+    { "a": "The meetup is in Berlin.", "b": "The meetup is in Lisbon.", "duplicate": false },
+    {
+      "a": "Embeddings come from Ollama.",
+      "b": "Text generation uses llama3.2 in Ollama.",
+      "duplicate": false
+    }
+  ]
+}

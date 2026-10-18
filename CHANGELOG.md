@@ -4,6 +4,15 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [1.6.0] - 2026-10-18
+
+### Added
+- **Evals**: Added a retrieval eval suite (`evals/`) with a golden dataset of memories, graded queries (lexical, paraphrase, cross-lingual, negative) and near-duplicate pairs. `pnpm eval` prints a scorecard with Recall@k, Hit@1, MRR, nDCG@k, threshold precision, negative-query abstention and consolidation dedup precision/recall, using local Ollama or a deterministic `--embedder hash` mode.
+- **CI**: `tests/evals.test.ts` runs the deterministic eval in `pnpm test` and fails if scores drop below the recorded baseline.
+
+### Fixed
+- **Tests**: Cast the `readFileSync` mock in `tests/import.test.ts` so `tsc -b` (and the pre-commit hook) passes again.
+
 ## [1.5.6] - 2026-06-15
 
 ### Added
