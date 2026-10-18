@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+import { createRequire } from 'node:module';
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import { z } from 'zod';
@@ -11,6 +12,8 @@ import { executeMemoryRelate } from './tools/graph.js';
 import { executeMemorySearch } from './tools/search.js';
 import { executeMemoryStore } from './tools/store.js';
 import { executeMemorySync } from './tools/sync.js';
+
+const { version } = createRequire(import.meta.url)('../package.json') as { version: string };
 
 /**
  * Critical Performance Enhancement: Stdio Safeguard
@@ -31,7 +34,7 @@ const server = new McpServer({
   /**
    * Version of the server application
    */
-  version: '1.0.0',
+  version,
 });
 /**
  * Define a tool that performs optimized vector similarity cosine searches on stored memories.
@@ -92,7 +95,7 @@ server.tool(
 );
 
 /**
- * Define a tool that encrypts, hashes, vectorizes, and persists semantic memories into a local SQLite database.
+ * Define a tool that vectorizes and persists semantic memories into a local SQLite database.
  */
 server.tool(
   /**
@@ -102,7 +105,7 @@ server.tool(
   /**
    * Tool description
    */
-  'Encrypt/Hash, vectorize, and persist a semantic memory into a local SQLite database',
+  'Vectorize and persist a semantic memory into a local SQLite database',
   {
     /**
      * Input parameter for the core text content of the memory to store.
