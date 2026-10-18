@@ -8,8 +8,9 @@ import * as sqliteVec from 'sqlite-vec';
 // In-process database file path
 const DB_PATH = process.env.MEMORY_DB_PATH || path.join(process.cwd(), 'memory.sqlite');
 
-// Global database path
-const GLOBAL_DB_DIR = path.join(os.homedir(), '.cognitive-memory');
+// Global database path — overridable via env var to prevent test pollution
+const GLOBAL_DB_DIR =
+  process.env.GLOBAL_MEMORY_DB_DIR || path.join(os.homedir(), '.cognitive-memory');
 const GLOBAL_DB_PATH = path.join(GLOBAL_DB_DIR, 'global-memory.sqlite');
 
 /**
