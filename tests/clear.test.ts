@@ -33,7 +33,7 @@ describe('Memory Clear All', () => {
 
     const db = DatabaseManager.getInstance();
     expect(db.prepare('SELECT COUNT(*) as c FROM memory').get() as any).toEqual({ c: 0 });
-    expect(db.prepare('SELECT COUNT(*) as c FROM vec_memory').get() as any).toEqual({ c: 0 });
+    expect(DatabaseManager.getVectorDimension()).toBeNull();
     expect(db.prepare('SELECT COUNT(*) as c FROM edges').get() as any).toEqual({ c: 0 });
     expect(db.prepare('SELECT COUNT(*) as c FROM embedding_cache').get() as any).toEqual({ c: 0 });
   });

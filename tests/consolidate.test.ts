@@ -51,6 +51,7 @@ describe('Memory Consolidate', () => {
   it('should prune old memories whose importance decays below 0.25', async () => {
     // Manually insert an old memory with importance 1.0 but accessed 400 hours ago
     const db = DatabaseManager.getInstance();
+    DatabaseManager.ensureVectorTable(4096);
     const oldTime = new Date(Date.now() - 400 * 3600000).toISOString();
     db.prepare(`
       INSERT INTO memory (id, text, metadata, importance, is_active, created_at, last_accessed_at, accessed_count)

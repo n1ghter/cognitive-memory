@@ -50,6 +50,13 @@ export class DatabaseManager {
   private static instance: Database.Database | null = null;
 
   /**
+   * Embedding dimension already verified against the vector table, so repeat checks stay cheap.
+   *
+   * @private
+   */
+  private static verifiedDimension: number | null = null;
+
+  /**
    * Gets the singleton instance of the database.
    *
    * Creates a new database if it doesn't exist, and loads the sqlite-vec extension and enables WAL mode.
@@ -81,6 +88,10 @@ export class DatabaseManager {
       // Setup schema for global DB
       DatabaseManager.initSchema(db, 'global');
 
+      // Older versions also created a vector table in the global DB that nothing ever wrote to.
+      // Drop it so unqualified vec_memory queries can't fall through to it before main's table exists.
+      db.exec('DROP TABLE IF EXISTS global.vec_memory');
+
       DatabaseManager.instance = db;
     }
     return DatabaseManager.instance;
@@ -107,11 +118,6 @@ export class DatabaseManager {
         last_accessed_at DATETIME DEFAULT CURRENT_TIMESTAMP,
         accessed_count INTEGER DEFAULT 0
       );
-
-      CREATE VIRTUAL TABLE IF NOT EXISTS ${schemaName}.vec_memory USING vec0(
-        embedding float[4096]
-      );
-
 
       CREATE TABLE IF NOT EXISTS ${schemaName}.edges (
         id TEXT PRIMARY KEY,
@@ -148,6 +154,66 @@ export class DatabaseManager {
   }
 
   /**
+   * Reads the embedding dimension the vector table was created with.
+   *
+   * @returns The dimension, or null if the vector table does not exist yet.
+   */
+  public static getVectorDimension(): number | null {
+    const row = DatabaseManager.getInstance()
+      .prepare("SELECT sql FROM main.sqlite_master WHERE name = 'vec_memory'")
+      .get() as { sql: string } | undefined;
+    if (!row) {
+      return null;
+    }
+    const match = /float\[(\d+)\]/.exec(row.sql);
+    if (!match) {
+      throw new Error(`Unrecognized vec_memory schema: ${row.sql}`);
+    }
+    return Number(match[1]);
+  }
+
+  /**
+   * Ensures the vector table matches the dimension of the configured embedding model.
+   *
+   * The table is created on first use, sized to the first embedding the model returns.
+   * An existing table with a different size is never altered, since its vectors would be lost.
+   *
+   * @param dimension Length of an embedding returned by the configured model.
+   * @throws If the existing vector table was created for a different dimension.
+   */
+  public static ensureVectorTable(dimension: number): void {
+    if (DatabaseManager.verifiedDimension === dimension) {
+      return;
+    }
+    if (!Number.isInteger(dimension) || dimension <= 0) {
+      throw new Error(`Invalid embedding dimension: ${dimension}`);
+    }
+
+    const existing = DatabaseManager.getVectorDimension();
+    if (existing === null) {
+      DatabaseManager.getInstance().exec(
+        `CREATE VIRTUAL TABLE main.vec_memory USING vec0(embedding float[${dimension}])`
+      );
+    } else if (existing !== dimension) {
+      throw new Error(
+        `Embedding dimension mismatch: this database stores ${existing}-dimensional vectors, ` +
+          `but the embedding model (EMBEDDING_MODEL) returned ${dimension} dimensions. ` +
+          'Switch EMBEDDING_MODEL back to the model this database was built with, or re-embed your memories: ' +
+          'run memory_export, then memory_clear_all, then memory_sync with the new model.'
+      );
+    }
+    DatabaseManager.verifiedDimension = dimension;
+  }
+
+  /**
+   * Drops the vector table so the next embedding recreates it at the current model's dimension.
+   */
+  public static dropVectorTable(): void {
+    DatabaseManager.getInstance().exec('DROP TABLE IF EXISTS main.vec_memory');
+    DatabaseManager.verifiedDimension = null;
+  }
+
+  /**
    * Closes the database and releases any system resources.
    *
    * @returns No value, but returns undefined if successful.
@@ -157,5 +223,6 @@ export class DatabaseManager {
       DatabaseManager.instance.close();
       DatabaseManager.instance = null;
     }
+    DatabaseManager.verifiedDimension = null;
   }
 }
