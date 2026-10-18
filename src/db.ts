@@ -9,8 +9,34 @@ import * as sqliteVec from 'sqlite-vec';
 const DB_PATH = process.env.MEMORY_DB_PATH || path.join(process.cwd(), 'memory.sqlite');
 
 // Global database path
-const GLOBAL_DB_DIR = path.join(os.homedir(), '.cognitive-memory');
-const GLOBAL_DB_PATH = path.join(GLOBAL_DB_DIR, 'global-memory.sqlite');
+const GLOBAL_DB_PATH =
+  process.env.MEMORY_GLOBAL_DB_PATH ||
+  path.join(os.homedir(), '.cognitive-memory', 'global-memory.sqlite');
+
+/**
+ * Which memory database a tool reads from or writes to:
+ * `local` is the project DB, `global` the attached user-wide DB, `all` both.
+ */
+export type MemoryScope = 'local' | 'global' | 'all';
+
+/**
+ * Maps a memory scope to the SQLite schema names it covers.
+ *
+ * @param scope The requested scope. Defaults to `local`.
+ * @returns The schema names (`main` for local, `global` for global).
+ */
+export function scopeToSchemas(scope: MemoryScope = 'local'): ('main' | 'global')[] {
+  switch (scope) {
+    case 'local':
+      return ['main'];
+    case 'global':
+      return ['global'];
+    case 'all':
+      return ['main', 'global'];
+    default:
+      throw new Error('Invalid input: "scope" must be one of "local", "global", "all"');
+  }
+}
 
 /**
  * Generates a random UUID.
@@ -58,8 +84,9 @@ export class DatabaseManager {
    */
   public static getInstance(): Database.Database {
     if (!DatabaseManager.instance) {
-      if (!fs.existsSync(GLOBAL_DB_DIR)) {
-        fs.mkdirSync(GLOBAL_DB_DIR, { recursive: true });
+      const globalDbDir = path.dirname(GLOBAL_DB_PATH);
+      if (GLOBAL_DB_PATH !== ':memory:' && !fs.existsSync(globalDbDir)) {
+        fs.mkdirSync(globalDbDir, { recursive: true });
       }
 
       const db = new Database(DB_PATH);
