@@ -29,5 +29,11 @@ jobs:
     - name: Rebuild native dependencies
       run: pnpm rebuild
       
+    - name: Lint
+      run: pnpm exec biome ci .
+
+    - name: Build
+      run: pnpm build && test -f dist/index.js
+
     - name: Run tests
       run: pnpm test
