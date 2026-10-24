@@ -136,6 +136,17 @@ Once connected, the server exposes 8 powerful tools to your AI agent:
 - `memory_delete`: Delete a specific semantic memory record by its identifier.
 - `memory_clear_all`: NUCLEAR OPTION: Completely wipe all memories, vectors, and graph edges from the database. Cannot be undone.
 
+### Evals
+Retrieval quality is measured with an eval suite in `evals/`: a golden dataset of memories, graded queries (lexical, paraphrase, cross-lingual, and negative queries that should return nothing) and near-duplicate pairs for consolidation. The runner stores the dataset into a throwaway database, runs every query through `memory_search` and prints a scorecard with Recall@k, Hit@1, MRR and nDCG@k per category, precision and negative-query abstention at the default threshold, and dedup precision/recall at the consolidation threshold.
+
+```bash
+pnpm eval                      # real embeddings from your local Ollama
+pnpm eval --embedder hash      # deterministic bag-of-words embedder, no model needed
+pnpm eval --k 3 --json report.json
+```
+
+The hash run also executes in `pnpm test` (`tests/evals.test.ts`) and fails CI if scores drop below the recorded baseline. To extend the suite, add memories and queries to `evals/dataset.json`; misses are listed under the scorecard.
+
 ## 🏗️ Architecture
 
 The project adheres to a clean modular architecture:
