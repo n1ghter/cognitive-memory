@@ -71,13 +71,21 @@ server.tool(
       .optional()
       .default(0.6)
       .describe('Minimum cosine similarity match threshold (0.0 to 1.0)'),
+    /**
+     * Optional input parameter for which memory database to search.
+     */
+    scope: z
+      .enum(['local', 'global', 'all'])
+      .optional()
+      .default('local')
+      .describe('Which memories to search: local project, global user-wide, or all'),
   },
   /**
    * Asynchronous function that executes the tool's logic.
    */
-  async ({ query, limit, threshold }) => {
+  async ({ query, limit, threshold, scope }) => {
     try {
-      const result = await executeMemorySearch({ query, limit, threshold });
+      const result = await executeMemorySearch({ query, limit, threshold, scope });
       return {
         content: [{ type: 'text', text: JSON.stringify(result, null, 2) }],
       };
@@ -125,13 +133,21 @@ server.tool(
       .optional()
       .default(0.5)
       .describe('The importance score of the memory (0.0 to 1.0)'),
+    /**
+     * Optional input parameter for which memory database to store into.
+     */
+    scope: z
+      .enum(['local', 'global'])
+      .optional()
+      .default('local')
+      .describe('Where to store the memory: local project or global user-wide'),
   },
   /**
    * Asynchronous function that executes the tool's logic.
    */
-  async ({ text, metadata, importance }) => {
+  async ({ text, metadata, importance, scope }) => {
     try {
-      const result = await executeMemoryStore({ text, metadata, importance });
+      const result = await executeMemoryStore({ text, metadata, importance, scope });
       return {
         content: [{ type: 'text', text: JSON.stringify(result, null, 2) }],
       };

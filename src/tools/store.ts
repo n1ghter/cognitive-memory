@@ -1,5 +1,5 @@
 import { EmbeddingCache } from '../cache.js';
-import { DatabaseManager, generateId } from '../db.js';
+import { DatabaseManager, generateId, type MemoryScope, scopeToSchemas } from '../db.js';
 
 /**
  * Arguments for the memory store function.
@@ -17,6 +17,10 @@ interface StoreArgs {
    * Importance level of the text (default is 0.5).
    */
   importance?: number;
+  /**
+   * Database to store into: `local` (default) or `global`.
+   */
+  scope?: Exclude<MemoryScope, 'all'>;
 }
 
 /**
@@ -26,11 +30,15 @@ interface StoreArgs {
  * @returns A promise that resolves with an object containing a success flag and a stored record.
  */
 export async function executeMemoryStore(args: StoreArgs) {
-  const { text, metadata = {}, importance = 0.5 } = args;
+  const { text, metadata = {}, importance = 0.5, scope = 'local' } = args;
 
   if (!text || typeof text !== 'string') {
     throw new Error('Invalid input: "text" must be a non-empty string');
   }
+  if (scope !== 'local' && scope !== 'global') {
+    throw new Error('Invalid input: "scope" must be "local" or "global"');
+  }
+  const [schema] = scopeToSchemas(scope);
 
   // 1. Retrieve the vector embedding
   const embedding = await EmbeddingCache.getEmbedding(text);
@@ -44,7 +52,7 @@ export async function executeMemoryStore(args: StoreArgs) {
   // 4. Run transaction to ensure atomicity between metadata and vector tables
   const storeTx = db.transaction(() => {
     const stmt = db.prepare(`
-      INSERT INTO memory (id, text, metadata, importance, is_active, created_at, updated_at, last_accessed_at, accessed_count)
+      INSERT INTO ${schema}.memory (id, text, metadata, importance, is_active, created_at, updated_at, last_accessed_at, accessed_count)
       VALUES (?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 0)
     `);
     const info = stmt.run(id, text, JSON.stringify(metadata), importance, 1);
@@ -54,7 +62,7 @@ export async function executeMemoryStore(args: StoreArgs) {
     const rowid = BigInt(info.lastInsertRowid);
 
     const vecStmt = db.prepare(`
-      INSERT INTO vec_memory (rowid, embedding)
+      INSERT INTO ${schema}.vec_memory (rowid, embedding)
       VALUES (?, ?)
     `);
 
@@ -76,6 +84,7 @@ export async function executeMemoryStore(args: StoreArgs) {
       metadata: metadata,
       importance: importance,
       is_active: true,
+      scope: scope,
     },
   };
 }
