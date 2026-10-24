@@ -4,6 +4,15 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [1.6.0] - 2026-10-18
+
+### Added
+- **Any Embedding Model**: The vector table is now sized from the configured `EMBEDDING_MODEL`'s output instead of being hardcoded to 4096 dimensions, so smaller models such as `nomic-embed-text` (768) work.
+
+### Changed
+- **Dimension Safety**: Existing databases keep their vector size; using a model with a different size now fails with a clear error explaining how to re-embed (`memory_export` → `memory_clear_all` → `memory_sync`). `memory_clear_all` drops the vector table so it is recreated at the current model's size, and also empties the in-memory embedding cache.
+- **Global DB**: Removed the unused `vec_memory` table from the global database.
+
 ## [1.5.6] - 2026-06-15
 
 ### Added

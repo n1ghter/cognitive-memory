@@ -76,6 +76,16 @@ export async function executeMemoryConsolidate(): Promise<{
   // Get an instance of the database manager
   const db = DatabaseManager.getInstance();
 
+  // Nothing has been embedded yet, so there is nothing to consolidate
+  if (DatabaseManager.getVectorDimension() === null) {
+    return {
+      success: true,
+      decayed_or_updated: 0,
+      pruned: 0,
+      status: 'No memories to consolidate',
+    };
+  }
+
   // Retrieve active records from the database
   const activeRecords = db
     .prepare(
