@@ -10,7 +10,7 @@ importers:
     dependencies:
       '@modelcontextprotocol/sdk':
         specifier: ^1.0.1
-        version: 1.32.1(supports-color@7.2.0)(zod@4.5.4)
+        version: 1.32.1(supports-color@7.2.0)(zod@4.6.7)
       better-sqlite3:
         specifier: ^13.0.2
         version: 13.0.3
@@ -25,7 +25,7 @@ importers:
         version: 0.1.9
       zod:
         specifier: ^4.4.3
-        version: 4.5.4
+        version: 4.6.7
     devDependencies:
       '@biomejs/biome':
         specifier: 2.5.14
@@ -50,7 +50,7 @@ importers:
         version: 4.1.8(vitest@5.0.2)
       gitnexus:
         specifier: ^1.6.5
-        version: 1.6.12(graphology-types@0.24.8)(supports-color@7.2.0)(zod@4.5.4)
+        version: 1.6.12(graphology-types@0.24.8)(supports-color@7.2.0)(zod@4.6.7)
       husky:
         specifier: ^9.1.7
         version: 9.1.7
@@ -3319,8 +3319,8 @@ packages:
     peerDependencies:
       zod: ^3.25.0 || ^4.0.0
 
-  zod@4.5.4:
-    resolution: {integrity: sha512-sC95tT5iHHH9gtpj6A81kh+NEaRAUFN+qlUPDUbRfOMvNf5QCBqsb3WgvnpVtK5Y+4UfA6KqufotuTvMGiTlsA==}
+  zod@4.6.7:
+    resolution: {integrity: sha512-g8W2D2kU6a8untc053fX1uVBKzM7yqAxW/3zwk83+6RyF2+SKOuV+c0wBDhUwzV1PaGapmZH+rmcUzPf+3CGwg==}
 
 snapshots:
 
@@ -3792,7 +3792,7 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
-  '@modelcontextprotocol/sdk@1.32.1(supports-color@7.2.0)(zod@4.5.4)':
+  '@modelcontextprotocol/sdk@1.32.1(supports-color@7.2.0)(zod@4.6.7)':
     dependencies:
       '@hono/node-server': 2.0.12(hono@4.13.13)
       ajv: 8.20.0
@@ -3809,8 +3809,8 @@ snapshots:
       json-schema-typed: 8.0.2
       pkce-challenge: 5.0.1
       raw-body: 3.0.2
-      zod: 4.5.4
-      zod-to-json-schema: 3.25.2(zod@4.5.4)
+      zod: 4.6.7
+      zod-to-json-schema: 3.25.2(zod@4.6.7)
     transitivePeerDependencies:
       - supports-color
 
@@ -4724,8 +4724,8 @@ snapshots:
       '@babel/parser': 7.29.7
       eslint: 10.13.0(supports-color@7.2.0)
       hermes-parser: 0.25.1
-      zod: 4.5.4
-      zod-validation-error: 4.0.2(zod@4.5.4)
+      zod: 4.6.7
+      zod-validation-error: 4.0.2(zod@4.6.7)
     transitivePeerDependencies:
       - supports-color
 
@@ -4995,10 +4995,10 @@ snapshots:
       dunder-proto: 1.0.1
       es-object-atoms: 1.1.2
 
-  gitnexus@1.6.12(graphology-types@0.24.8)(supports-color@7.2.0)(zod@4.5.4):
+  gitnexus@1.6.12(graphology-types@0.24.8)(supports-color@7.2.0)(zod@4.6.7):
     dependencies:
       '@ladybugdb/core': 0.18.3(supports-color@7.2.0)
-      '@modelcontextprotocol/sdk': 1.32.1(supports-color@7.2.0)(zod@4.5.4)
+      '@modelcontextprotocol/sdk': 1.32.1(supports-color@7.2.0)(zod@4.6.7)
       '@scarf/scarf': 1.4.0
       busboy: 1.6.0
       chokidar: 5.0.0
@@ -6431,12 +6431,12 @@ snapshots:
 
   yocto-queue@0.1.0: {}
 
-  zod-to-json-schema@3.25.2(zod@4.5.4):
+  zod-to-json-schema@3.25.2(zod@4.6.7):
     dependencies:
-      zod: 4.5.4
+      zod: 4.6.7
 
-  zod-validation-error@4.0.2(zod@4.5.4):
+  zod-validation-error@4.0.2(zod@4.6.7):
     dependencies:
-      zod: 4.5.4
+      zod: 4.6.7
 
-  zod@4.5.4: {}
+  zod@4.6.7: {}
