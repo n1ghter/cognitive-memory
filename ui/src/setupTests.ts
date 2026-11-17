@@ -1,4 +1,4 @@
-import '@testing-library/jest-dom';
+import '@testing-library/jest-dom/vitest';
 
 // Mock matchMedia if needed by Recharts or others
 Object.defineProperty(window, 'matchMedia', {
