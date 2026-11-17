@@ -63,6 +63,7 @@ describe('Memory Store & Search (Integration)', () => {
 
   it('should fallback to string metadata if JSON parse fails', async () => {
     const db = DatabaseManager.getInstance();
+    DatabaseManager.ensureVectorTable(4096);
     // Directly insert invalid JSON metadata
     db.prepare(`
       INSERT INTO memory (id, text, metadata, importance, is_active, created_at, last_accessed_at, accessed_count)

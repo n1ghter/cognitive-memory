@@ -47,7 +47,7 @@ We bridge the gap between an AI's Long-Term Memory and a human's Second Brain.
 ## ✨ Features
 
 - **Semantic LTM**: Stores and retrieves long-term declarative memories using Cosine Similarity vector search.
-- **Local Vectors & Embeddings**: Uses `sqlite-vec` and integrates directly with Ollama (`qwen3-embedding:8b`) to generate 4096-dimensional embeddings locally without hitting external APIs.
+- **Local Vectors & Embeddings**: Uses `sqlite-vec` and integrates directly with Ollama to generate embeddings locally without hitting external APIs. Defaults to `qwen3-embedding:8b`; set `EMBEDDING_MODEL` to use any Ollama embedding model, and the vector table is sized to whatever dimension it returns.
 - **Hybrid Graph Relations**: Connects memories together to form an explicit, interconnected knowledge graph.
 - **Code Intelligence**: Integrates **GitNexus** via a Git `post-commit` hook to asynchronously update the AST knowledge graph for deep codebase intelligence.
 
@@ -63,6 +63,7 @@ We recommend a simple 2-step process to get Cognitive Memory fully integrated in
   ollama pull qwen3-embedding:8b
   ollama pull llama3.2
   ```
+  A database keeps the embedding size of the model it was first used with. To switch to a model with a different size, run `memory_export`, then `memory_clear_all`, then `memory_sync` with the new `EMBEDDING_MODEL` to re-embed your memories.
 
 ### Step 1: Global Editor Setup (The "Hands")
 To give your AI Assistant access to the database tools, run the global setup script. This auto-detects your installed AI Editors (Antigravity, Cursor, Claude Desktop, Claude Code, Copilot, Windsurf, OpenCode) and injects the MCP server directly into their global JSON/TOML configuration files:
@@ -128,13 +129,24 @@ Then configure your MCP client to point to the local build instead:
 ### Exposed AI Tools
 Once connected, the server exposes 8 powerful tools to your AI agent:
 - `memory_search`: Perform optimized vector similarity cosine searches on stored memories.
-- `memory_store`: Encrypt/Hash, vectorize, and persist a semantic memory into a local SQLite database.
+- `memory_store`: Vectorize and persist a semantic memory into a local SQLite database.
 - `memory_relate`: Establish a graph relationship between two memory nodes.
 - `memory_sync`: Perform a bidirectional synchronization between local Obsidian Markdown files and the SQLite database.
 - `memory_export`: Export active database memories into Markdown notes for Obsidian integration.
 - `memory_consolidate`: Perform time decay and semantic LLM merging/deduplication on active memories using Ollama.
 - `memory_delete`: Delete a specific semantic memory record by its identifier.
 - `memory_clear_all`: NUCLEAR OPTION: Completely wipe all memories, vectors, and graph edges from the database. Cannot be undone.
+
+### Evals
+Retrieval quality is measured with an eval suite in `evals/`: a golden dataset of memories, graded queries (lexical, paraphrase, cross-lingual, and negative queries that should return nothing) and near-duplicate pairs for consolidation. The runner stores the dataset into a throwaway database, runs every query through `memory_search` and prints a scorecard with Recall@k, Hit@1, MRR and nDCG@k per category, precision and negative-query abstention at the default threshold, and dedup precision/recall at the consolidation threshold.
+
+```bash
+pnpm eval                      # real embeddings from your local Ollama
+pnpm eval --embedder hash      # deterministic bag-of-words embedder, no model needed
+pnpm eval --k 3 --json report.json
+```
+
+The hash run also executes in `pnpm test` (`tests/evals.test.ts`) and fails CI if scores drop below the recorded baseline. To extend the suite, add memories and queries to `evals/dataset.json`; misses are listed under the scorecard.
 
 ## 🏗️ Architecture
 

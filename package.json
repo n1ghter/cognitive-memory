@@ -31,6 +31,7 @@
     "ui": "node dist/index.js ui",
     "dev": "ts-node-esm src/index.ts",
     "seed": "npx tsx scripts/seed-test-data.ts",
+    "eval": "npx tsx evals/run.ts",
     "gitnexus": "gitnexus analyze --skip-skills --skip-agents-md",
     "test": "vitest run",
     "test:coverage": "vitest run --coverage",

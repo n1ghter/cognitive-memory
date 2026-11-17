@@ -39,6 +39,7 @@ export class EmbeddingCache {
     // L1: Check high-speed in-memory cache
     const l1Match = EmbeddingCache.l1Cache.get(hash);
     if (l1Match) {
+      DatabaseManager.ensureVectorTable(l1Match.length);
       return l1Match;
     }
 
@@ -56,6 +57,7 @@ export class EmbeddingCache {
           row.embedding.byteLength / Float32Array.BYTES_PER_ELEMENT
         );
         const embeddingArray = Array.from(floatArray);
+        DatabaseManager.ensureVectorTable(embeddingArray.length);
         EmbeddingCache.l1Cache.set(hash, embeddingArray);
         return embeddingArray;
       }
@@ -66,6 +68,9 @@ export class EmbeddingCache {
     // L3: Cache Miss - Run Ollama Embedding Generator
     console.error(`[Cache] Cache miss for hash: ${hash}. Invoking local Ollama...`);
     const embedding = await OllamaClient.getEmbedding(cleanText);
+
+    // Reject a dimension change before caching, so a mismatched vector never lingers
+    DatabaseManager.ensureVectorTable(embedding.length);
 
     // Hydrate L1 Memory Cache
     EmbeddingCache.l1Cache.set(hash, embedding);
@@ -83,5 +88,12 @@ export class EmbeddingCache {
     }
 
     return embedding;
+  }
+
+  /**
+   * Empties the in-memory cache, e.g. after the persistent cache table is wiped.
+   */
+  public static clear(): void {
+    EmbeddingCache.l1Cache.clear();
   }
 }

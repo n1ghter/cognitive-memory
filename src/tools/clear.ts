@@ -1,3 +1,4 @@
+import { EmbeddingCache } from '../cache.js';
 import { DatabaseManager } from '../db.js';
 
 export interface MemoryClearAllArgs {
@@ -17,8 +18,8 @@ export async function executeMemoryClearAll(args: MemoryClearAllArgs) {
     // Clear edges first to maintain referential integrity (if pragmas enforced)
     db.prepare('DELETE FROM edges').run();
 
-    // Clear semantic vectors
-    db.prepare('DELETE FROM vec_memory').run();
+    // Drop semantic vectors; the next embedding recreates the table at the current model's dimension
+    DatabaseManager.dropVectorTable();
 
     // Clear core memory records
     db.prepare('DELETE FROM memory').run();
@@ -27,6 +28,7 @@ export async function executeMemoryClearAll(args: MemoryClearAllArgs) {
     db.prepare('DELETE FROM embedding_cache').run();
 
     db.exec('COMMIT');
+    EmbeddingCache.clear();
 
     return {
       status: 'success',
