@@ -4,15 +4,24 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
-### Fixed
-- **MCP Server**: `serverInfo.version` now reports the version from `package.json` instead of a hardcoded `1.0.0`.
-- **MCP Tools**: `memory_store` no longer claims to encrypt or hash memories, which it never did.
-- **Build**: `pnpm build` now emits `dist/`; `tsconfig.build.json` inherited `noEmit: true`, so builds silently produced nothing.
-- **Lint**: Resolved the 3 Biome errors in UI files (SVG titles, CSS formatting).
-- **Tests**: Fixed a `tsc` error in `tests/import.test.ts` (Buffer typing after the `@types/node` bump) that blocked the pre-commit hook.
+### Added
+- **Any Embedding Model**: The vector table is now sized from the configured `EMBEDDING_MODEL`'s output instead of being hardcoded to 4096 dimensions, so smaller models such as `nomic-embed-text` (768) work. (#101)
+- **Evals**: Added a retrieval eval suite (`evals/`) with a golden dataset of memories, graded queries (lexical, paraphrase, cross-lingual, negative) and near-duplicate pairs. `pnpm eval` prints a scorecard with Recall@k, Hit@1, MRR, nDCG@k, threshold precision, negative-query abstention and consolidation dedup precision/recall, using local Ollama or a deterministic `--embedder hash` mode. (#103)
+- **CI**: `tests/evals.test.ts` runs the deterministic eval in `pnpm test` and fails if scores drop below the recorded baseline. (#103)
 
 ### Changed
-- **CI Pipeline**: Added Biome lint and build steps to the CI workflow.
+- **CI Pipeline**: Added Biome lint and build steps to the CI workflow. (#100)
+- **Dimension Safety**: Existing databases keep their vector size; using a model with a different size now fails with a clear error explaining how to re-embed (`memory_export` → `memory_clear_all` → `memory_sync`). `memory_clear_all` drops the vector table so it is recreated at the current model's size, and also empties the in-memory embedding cache. (#101)
+- **Global DB**: Removed the unused `vec_memory` table from the global database. (#101)
+- **Repository Hygiene**: `pnpm-lock.yaml` is the only lockfile (CI and releases use pnpm; the stale `package-lock.json` caused conflicts in every PR); `*.tsbuildinfo` and `scratch/` are ignored and `tsconfig.tsbuildinfo` is no longer tracked.
+
+### Fixed
+- **MCP Server**: `serverInfo.version` now reports the version from `package.json` instead of a hardcoded `1.0.0`. (#100)
+- **MCP Tools**: `memory_store` no longer claims to encrypt or hash memories, which it never did. (#100)
+- **Build**: `pnpm build` now emits `dist/`; `tsconfig.build.json` inherited `noEmit: true`, so builds silently produced nothing. (#100)
+- **Lint**: Resolved the 3 Biome errors in UI files (SVG titles, CSS formatting). (#100)
+- **Tests**: Fixed a `tsc` error in `tests/import.test.ts` (`readFileSync` mock typing after the `@types/node` bump) that blocked the pre-commit hook. (#100, #103)
+- **UI Tests**: Load jest-dom matchers through `@testing-library/jest-dom/vitest` so `ui` typechecks under Vitest 5 (unblocks the Vitest 5 upgrade in #85). (#102)
 
 ## [1.5.6] - 2026-06-15
 
