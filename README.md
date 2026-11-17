@@ -127,8 +127,8 @@ Then configure your MCP client to point to the local build instead:
 
 ### Exposed AI Tools
 Once connected, the server exposes 8 powerful tools to your AI agent:
-- `memory_search`: Perform optimized vector similarity cosine searches on stored memories.
-- `memory_store`: Encrypt/Hash, vectorize, and persist a semantic memory into a local SQLite database.
+- `memory_search`: Perform optimized vector similarity cosine searches on stored memories. Optional `scope`: `local` (default, project DB), `global` (user-wide DB in `~/.cognitive-memory`), or `all` (both, merged by similarity).
+- `memory_store`: Encrypt/Hash, vectorize, and persist a semantic memory into a local SQLite database. Optional `scope`: `local` (default) or `global`.
 - `memory_relate`: Establish a graph relationship between two memory nodes.
 - `memory_sync`: Perform a bidirectional synchronization between local Obsidian Markdown files and the SQLite database.
 - `memory_export`: Export active database memories into Markdown notes for Obsidian integration.

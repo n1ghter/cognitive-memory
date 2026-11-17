@@ -4,6 +4,12 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [1.6.0] - 2026-10-18
+
+### Added
+- **Federated Memory**: `memory_search` accepts a `scope` of `local` (default), `global`, or `all`, merging local and global results by similarity; `memory_store` accepts `scope` `local` (default) or `global`. Each result and stored record reports its `scope`.
+- **Configuration**: `MEMORY_GLOBAL_DB_PATH` overrides the global DB location (tests use it to keep the real `~/.cognitive-memory` DB untouched).
+
 ## [1.5.6] - 2026-06-15
 
 ### Added

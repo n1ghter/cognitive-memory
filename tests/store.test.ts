@@ -86,7 +86,7 @@ describe('Memory Store & Search (Integration)', () => {
     // Mock db.prepare to throw error only for the update statment
     const originalPrepare = db.prepare.bind(db);
     vi.spyOn(db, 'prepare').mockImplementation((sql: string) => {
-      if (/UPDATE\s+memory\s+SET\s+last_accessed_at/i.test(sql)) {
+      if (/UPDATE\s+\S*memory\s+SET\s+last_accessed_at/i.test(sql)) {
         throw new Error('Fake DB update error');
       }
       return originalPrepare(sql);

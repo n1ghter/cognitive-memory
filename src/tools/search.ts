@@ -1,5 +1,5 @@
 import { EmbeddingCache } from '../cache.js';
-import { DatabaseManager } from '../db.js';
+import { DatabaseManager, type MemoryScope, scopeToSchemas } from '../db.js';
 
 /**
  * Search arguments.
@@ -17,6 +17,10 @@ interface SearchArgs {
    * Optional threshold for similarity. Defaults to 0.6 (distance <= 0.4).
    */
   threshold?: number;
+  /**
+   * Optional database scope to search: `local` (default), `global`, or `all`.
+   */
+  scope?: MemoryScope;
 }
 
 /**
@@ -26,11 +30,12 @@ interface SearchArgs {
  * @returns An object containing the result status and the searched items.
  */
 export async function executeMemorySearch(args: SearchArgs) {
-  const { query, limit = 5, threshold = 0.6 } = args;
+  const { query, limit = 5, threshold = 0.6, scope = 'local' } = args;
 
   if (!query || typeof query !== 'string') {
     throw new Error('Invalid input: "query" must be a non-empty string');
   }
+  const schemas = scopeToSchemas(scope);
 
   // 1. Convert the query text into its vector embedding
   const queryEmbedding = await EmbeddingCache.getEmbedding(query);
@@ -42,38 +47,46 @@ export async function executeMemorySearch(args: SearchArgs) {
   // Threshold of 0.6 similarity means distance <= 0.4
   const maxDistance = 1.0 - threshold;
 
+  const floatArray = new Float32Array(queryEmbedding);
+
   // We use a brute-force approach across `is_active = 1` to ensure perfect recall (pre-filtering),
   // which is extremely fast in sqlite-vec for < 100k records.
-  const stmt = db.prepare(`
-    SELECT 
-      m.rowid,
-      m.id, 
-      m.text, 
-      m.metadata, 
-      m.created_at, 
-      m.importance,
-      m.last_accessed_at,
-      m.accessed_count,
-      (1.0 - vec_distance_cosine(v.embedding, ?)) AS similarity 
-    FROM memory m
-    JOIN vec_memory v ON m.rowid = v.rowid
-    WHERE m.is_active = 1 
-      AND vec_distance_cosine(v.embedding, ?) <= ?
-    ORDER BY vec_distance_cosine(v.embedding, ?) ASC
-    LIMIT ?
-  `);
-
-  const floatArray = new Float32Array(queryEmbedding);
-  // Pass the float array for each parameter placeholder (?)
-  const results = stmt.all(floatArray, floatArray, maxDistance, floatArray, limit) as any[];
+  // Each schema is queried separately, then merged by similarity so `all` returns the best overall matches.
+  const results = schemas
+    .flatMap((schema) => {
+      const stmt = db.prepare(`
+        SELECT 
+          m.rowid,
+          m.id, 
+          m.text, 
+          m.metadata, 
+          m.created_at, 
+          m.importance,
+          m.last_accessed_at,
+          m.accessed_count,
+          (1.0 - vec_distance_cosine(v.embedding, ?)) AS similarity 
+        FROM ${schema}.memory m
+        JOIN ${schema}.vec_memory v ON m.rowid = v.rowid
+        WHERE m.is_active = 1 
+          AND vec_distance_cosine(v.embedding, ?) <= ?
+        ORDER BY vec_distance_cosine(v.embedding, ?) ASC
+        LIMIT ?
+      `);
+      // Pass the float array for each parameter placeholder (?)
+      const rows = stmt.all(floatArray, floatArray, maxDistance, floatArray, limit) as any[];
+      return rows.map((r) => ({ ...r, schema }));
+    })
+    .sort((a, b) => b.similarity - a.similarity)
+    .slice(0, limit);
 
   // Update last_accessed_at and increment accessed_count
-  if (results.length > 0) {
-    const rowids = results.map((r) => r.rowid);
+  for (const schema of schemas) {
+    const rowids = results.filter((r) => r.schema === schema).map((r) => r.rowid);
+    if (rowids.length === 0) continue;
     const placeholders = rowids.map(() => '?').join(',');
     try {
       db.prepare(`
-        UPDATE memory 
+        UPDATE ${schema}.memory 
         SET last_accessed_at = CURRENT_TIMESTAMP, 
             accessed_count = accessed_count + 1 
         WHERE rowid IN (${placeholders})
@@ -109,6 +122,7 @@ export async function executeMemorySearch(args: SearchArgs) {
         created_at: r.created_at,
         last_accessed_at: r.last_accessed_at,
         accessed_count: r.accessed_count,
+        scope: r.schema === 'global' ? 'global' : 'local',
       };
     }),
   };
