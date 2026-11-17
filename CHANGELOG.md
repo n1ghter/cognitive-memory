@@ -4,6 +4,16 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+### Fixed
+- **MCP Server**: `serverInfo.version` now reports the version from `package.json` instead of a hardcoded `1.0.0`.
+- **MCP Tools**: `memory_store` no longer claims to encrypt or hash memories, which it never did.
+- **Build**: `pnpm build` now emits `dist/`; `tsconfig.build.json` inherited `noEmit: true`, so builds silently produced nothing.
+- **Lint**: Resolved the 3 Biome errors in UI files (SVG titles, CSS formatting).
+- **Tests**: Fixed a `tsc` error in `tests/import.test.ts` (Buffer typing after the `@types/node` bump) that blocked the pre-commit hook.
+
+### Changed
+- **CI Pipeline**: Added Biome lint and build steps to the CI workflow.
+
 ## [1.5.6] - 2026-06-15
 
 ### Added

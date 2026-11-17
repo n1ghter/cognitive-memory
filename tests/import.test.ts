@@ -262,7 +262,7 @@ id: db-error
       if (typeof file === 'string' && file.includes('Memory_db-error.md')) {
         throw new Error('Fake FS error for node loop');
       }
-      return originalRead(file, options);
+      return originalRead(file, options) as any;
     });
 
     const res1 = await executeMemoryImport({ vaultPath: tmpDir });
