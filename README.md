@@ -47,7 +47,7 @@ We bridge the gap between an AI's Long-Term Memory and a human's Second Brain.
 ## ✨ Features
 
 - **Semantic LTM**: Stores and retrieves long-term declarative memories using Cosine Similarity vector search.
-- **Local Vectors & Embeddings**: Uses `sqlite-vec` and integrates directly with Ollama (`qwen3-embedding:8b`) to generate 4096-dimensional embeddings locally without hitting external APIs.
+- **Local Vectors & Embeddings**: Uses `sqlite-vec` and integrates directly with Ollama to generate embeddings locally without hitting external APIs. Defaults to `qwen3-embedding:8b`; set `EMBEDDING_MODEL` to use any Ollama embedding model, and the vector table is sized to whatever dimension it returns.
 - **Hybrid Graph Relations**: Connects memories together to form an explicit, interconnected knowledge graph.
 - **Code Intelligence**: Integrates **GitNexus** via a Git `post-commit` hook to asynchronously update the AST knowledge graph for deep codebase intelligence.
 
@@ -63,6 +63,7 @@ We recommend a simple 2-step process to get Cognitive Memory fully integrated in
   ollama pull qwen3-embedding:8b
   ollama pull llama3.2
   ```
+  A database keeps the embedding size of the model it was first used with. To switch to a model with a different size, run `memory_export`, then `memory_clear_all`, then `memory_sync` with the new `EMBEDDING_MODEL` to re-embed your memories.
 
 ### Step 1: Global Editor Setup (The "Hands")
 To give your AI Assistant access to the database tools, run the global setup script. This auto-detects your installed AI Editors (Antigravity, Cursor, Claude Desktop, Claude Code, Copilot, Windsurf, OpenCode) and injects the MCP server directly into their global JSON/TOML configuration files:
