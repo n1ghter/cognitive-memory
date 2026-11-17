@@ -255,15 +255,15 @@ id: db-error
 
     // Mock fs.readFileSync to throw on .sync_state.json and Memory_db-error.md during the loop
     const originalRead = fs.readFileSync;
-    const fsSpy = vi.spyOn(fs, 'readFileSync').mockImplementation((file: any, options: any) => {
+    const fsSpy = vi.spyOn(fs, 'readFileSync').mockImplementation(((file: any, options: any) => {
       if (typeof file === 'string' && file.includes('.sync_state.json')) {
         throw new Error('Fake FS error for sync_state');
       }
       if (typeof file === 'string' && file.includes('Memory_db-error.md')) {
         throw new Error('Fake FS error for node loop');
       }
-      return originalRead(file, options) as any;
-    });
+      return originalRead(file, options);
+    }) as any);
 
     const res1 = await executeMemoryImport({ vaultPath: tmpDir });
     expect(res1.errors.length).toBeGreaterThan(0);
