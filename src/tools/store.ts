@@ -42,6 +42,7 @@ export async function executeMemoryStore(args: StoreArgs) {
 
   // 1. Retrieve the vector embedding
   const embedding = await EmbeddingCache.getEmbedding(text);
+  DatabaseManager.ensureVectorTable(embedding.length, schema);
 
   // 2. Obtain database instance
   const db = DatabaseManager.getInstance();

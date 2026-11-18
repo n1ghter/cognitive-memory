@@ -5,6 +5,8 @@ All notable changes to this project will be documented in this file.
 ## [Unreleased]
 
 ### Added
+- **Federated Memory**: `memory_search` accepts a `scope` of `local` (default), `global`, or `all`, merging local and global results by similarity; `memory_store` accepts `scope` `local` (default) or `global`. Each result and stored record reports its `scope`. (#99)
+- **Configuration**: `MEMORY_GLOBAL_DB_PATH` overrides the global DB location (tests use it to keep the real `~/.cognitive-memory` DB untouched). (#99)
 - **Any Embedding Model**: The vector table is now sized from the configured `EMBEDDING_MODEL`'s output instead of being hardcoded to 4096 dimensions, so smaller models such as `nomic-embed-text` (768) work. (#101)
 - **Evals**: Added a retrieval eval suite (`evals/`) with a golden dataset of memories, graded queries (lexical, paraphrase, cross-lingual, negative) and near-duplicate pairs. `pnpm eval` prints a scorecard with Recall@k, Hit@1, MRR, nDCG@k, threshold precision, negative-query abstention and consolidation dedup precision/recall, using local Ollama or a deterministic `--embedder hash` mode. (#103)
 - **CI**: `tests/evals.test.ts` runs the deterministic eval in `pnpm test` and fails if scores drop below the recorded baseline. (#103)
@@ -12,7 +14,7 @@ All notable changes to this project will be documented in this file.
 ### Changed
 - **CI Pipeline**: Added Biome lint and build steps to the CI workflow. (#100)
 - **Dimension Safety**: Existing databases keep their vector size; using a model with a different size now fails with a clear error explaining how to re-embed (`memory_export` → `memory_clear_all` → `memory_sync`). `memory_clear_all` drops the vector table so it is recreated at the current model's size, and also empties the in-memory embedding cache. (#101)
-- **Global DB**: Removed the unused `vec_memory` table from the global database. (#101)
+- **Global Vectors**: The global database's vector table is created at the embedding model's dimension on the first global store, the same way as the local one, and is kept across restarts. Only an empty fixed-size table left by older versions is dropped at startup. Every `vec_memory` query names its schema, so local queries can never read the global table. (#99 on top of #101)
 - **Repository Hygiene**: `pnpm-lock.yaml` is the only lockfile (CI and releases use pnpm; the stale `package-lock.json` caused conflicts in every PR); `*.tsbuildinfo` and `scratch/` are ignored and `tsconfig.tsbuildinfo` is no longer tracked.
 
 ### Fixed

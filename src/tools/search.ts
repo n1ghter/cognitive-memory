@@ -54,6 +54,11 @@ export async function executeMemorySearch(args: SearchArgs) {
   // Each schema is queried separately, then merged by similarity so `all` returns the best overall matches.
   const results = schemas
     .flatMap((schema) => {
+      // A schema that has never stored a memory has no vector table yet, so it has nothing to return.
+      if (DatabaseManager.getVectorDimension(schema) === null) {
+        return [];
+      }
+      DatabaseManager.ensureVectorTable(queryEmbedding.length, schema);
       const stmt = db.prepare(`
         SELECT 
           m.rowid,
