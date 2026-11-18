@@ -151,8 +151,8 @@ export async function executeMemoryImport(args: ImportArgs = {}): Promise<{
           const rowid = BigInt(rowidRow.rowid);
           const floatArray = new Float32Array(embedding);
           const vecTx = db.transaction(() => {
-            db.prepare('DELETE FROM vec_memory WHERE rowid = ?').run(rowid);
-            db.prepare('INSERT INTO vec_memory (rowid, embedding) VALUES (?, ?)').run(
+            db.prepare('DELETE FROM main.vec_memory WHERE rowid = ?').run(rowid);
+            db.prepare('INSERT INTO main.vec_memory (rowid, embedding) VALUES (?, ?)').run(
               rowid,
               floatArray
             );

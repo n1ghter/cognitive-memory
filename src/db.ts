@@ -9,8 +9,37 @@ import * as sqliteVec from 'sqlite-vec';
 const DB_PATH = process.env.MEMORY_DB_PATH || path.join(process.cwd(), 'memory.sqlite');
 
 // Global database path
-const GLOBAL_DB_DIR = path.join(os.homedir(), '.cognitive-memory');
-const GLOBAL_DB_PATH = path.join(GLOBAL_DB_DIR, 'global-memory.sqlite');
+const GLOBAL_DB_PATH =
+  process.env.MEMORY_GLOBAL_DB_PATH ||
+  path.join(os.homedir(), '.cognitive-memory', 'global-memory.sqlite');
+
+/**
+ * Which memory database a tool reads from or writes to:
+ * `local` is the project DB, `global` the attached user-wide DB, `all` both.
+ */
+export type MemoryScope = 'local' | 'global' | 'all';
+
+/** Schema of an attached database: `main` is the project DB, `global` the user-wide DB. */
+export type VectorSchema = 'main' | 'global';
+
+/**
+ * Maps a memory scope to the SQLite schema names it covers.
+ *
+ * @param scope The requested scope. Defaults to `local`.
+ * @returns The schema names (`main` for local, `global` for global).
+ */
+export function scopeToSchemas(scope: MemoryScope = 'local'): VectorSchema[] {
+  switch (scope) {
+    case 'local':
+      return ['main'];
+    case 'global':
+      return ['global'];
+    case 'all':
+      return ['main', 'global'];
+    default:
+      throw new Error('Invalid input: "scope" must be one of "local", "global", "all"');
+  }
+}
 
 /**
  * Generates a random UUID.
@@ -50,11 +79,11 @@ export class DatabaseManager {
   private static instance: Database.Database | null = null;
 
   /**
-   * Embedding dimension already verified against the vector table, so repeat checks stay cheap.
+   * Embedding dimension already verified against each schema's vector table, so repeat checks stay cheap.
    *
    * @private
    */
-  private static verifiedDimension: number | null = null;
+  private static verifiedDimensions = new Map<VectorSchema, number>();
 
   /**
    * Gets the singleton instance of the database.
@@ -65,8 +94,9 @@ export class DatabaseManager {
    */
   public static getInstance(): Database.Database {
     if (!DatabaseManager.instance) {
-      if (!fs.existsSync(GLOBAL_DB_DIR)) {
-        fs.mkdirSync(GLOBAL_DB_DIR, { recursive: true });
+      const globalDbDir = path.dirname(GLOBAL_DB_PATH);
+      if (GLOBAL_DB_PATH !== ':memory:' && !fs.existsSync(globalDbDir)) {
+        fs.mkdirSync(globalDbDir, { recursive: true });
       }
 
       const db = new Database(DB_PATH);
@@ -88,9 +118,9 @@ export class DatabaseManager {
       // Setup schema for global DB
       DatabaseManager.initSchema(db, 'global');
 
-      // Older versions also created a vector table in the global DB that nothing ever wrote to.
-      // Drop it so unqualified vec_memory queries can't fall through to it before main's table exists.
-      db.exec('DROP TABLE IF EXISTS global.vec_memory');
+      // Older versions created a fixed-size vector table in the global DB that nothing ever wrote to.
+      // Drop it while it is empty, so the first global store recreates it at the model's dimension.
+      DatabaseManager.dropEmptyLegacyGlobalVectorTable(db);
 
       DatabaseManager.instance = db;
     }
@@ -154,13 +184,14 @@ export class DatabaseManager {
   }
 
   /**
-   * Reads the embedding dimension the vector table was created with.
+   * Reads the embedding dimension a schema's vector table was created with.
    *
+   * @param schema `main` for the project DB, `global` for the user-wide DB.
    * @returns The dimension, or null if the vector table does not exist yet.
    */
-  public static getVectorDimension(): number | null {
+  public static getVectorDimension(schema: VectorSchema = 'main'): number | null {
     const row = DatabaseManager.getInstance()
-      .prepare("SELECT sql FROM main.sqlite_master WHERE name = 'vec_memory'")
+      .prepare(`SELECT sql FROM ${schema}.sqlite_master WHERE name = 'vec_memory'`)
       .get() as { sql: string } | undefined;
     if (!row) {
       return null;
@@ -179,38 +210,58 @@ export class DatabaseManager {
    * An existing table with a different size is never altered, since its vectors would be lost.
    *
    * @param dimension Length of an embedding returned by the configured model.
+   * @param schema `main` for the project DB, `global` for the user-wide DB.
    * @throws If the existing vector table was created for a different dimension.
    */
-  public static ensureVectorTable(dimension: number): void {
-    if (DatabaseManager.verifiedDimension === dimension) {
+  public static ensureVectorTable(dimension: number, schema: VectorSchema = 'main'): void {
+    if (DatabaseManager.verifiedDimensions.get(schema) === dimension) {
       return;
     }
     if (!Number.isInteger(dimension) || dimension <= 0) {
       throw new Error(`Invalid embedding dimension: ${dimension}`);
     }
 
-    const existing = DatabaseManager.getVectorDimension();
+    const existing = DatabaseManager.getVectorDimension(schema);
     if (existing === null) {
       DatabaseManager.getInstance().exec(
-        `CREATE VIRTUAL TABLE main.vec_memory USING vec0(embedding float[${dimension}])`
+        `CREATE VIRTUAL TABLE ${schema}.vec_memory USING vec0(embedding float[${dimension}])`
       );
     } else if (existing !== dimension) {
+      const database = schema === 'global' ? 'the global database' : 'this database';
       throw new Error(
-        `Embedding dimension mismatch: this database stores ${existing}-dimensional vectors, ` +
+        `Embedding dimension mismatch: ${database} stores ${existing}-dimensional vectors, ` +
           `but the embedding model (EMBEDDING_MODEL) returned ${dimension} dimensions. ` +
           'Switch EMBEDDING_MODEL back to the model this database was built with, or re-embed your memories: ' +
           'run memory_export, then memory_clear_all, then memory_sync with the new model.'
       );
     }
-    DatabaseManager.verifiedDimension = dimension;
+    DatabaseManager.verifiedDimensions.set(schema, dimension);
   }
 
   /**
-   * Drops the vector table so the next embedding recreates it at the current model's dimension.
+   * Drops a schema's vector table so the next embedding recreates it at the current model's dimension.
+   *
+   * @param schema `main` for the project DB, `global` for the user-wide DB.
    */
-  public static dropVectorTable(): void {
-    DatabaseManager.getInstance().exec('DROP TABLE IF EXISTS main.vec_memory');
-    DatabaseManager.verifiedDimension = null;
+  public static dropVectorTable(schema: VectorSchema = 'main'): void {
+    DatabaseManager.getInstance().exec(`DROP TABLE IF EXISTS ${schema}.vec_memory`);
+    DatabaseManager.verifiedDimensions.delete(schema);
+  }
+
+  /**
+   * Drops the global vector table left by older versions, but only while it holds no vectors.
+   *
+   * @param db The database with the global DB attached.
+   */
+  private static dropEmptyLegacyGlobalVectorTable(db: Database.Database): void {
+    const exists = db.prepare("SELECT 1 FROM global.sqlite_master WHERE name = 'vec_memory'").get();
+    if (!exists) {
+      return;
+    }
+    const { n } = db.prepare('SELECT COUNT(*) AS n FROM global.vec_memory').get() as { n: number };
+    if (n === 0) {
+      db.exec('DROP TABLE global.vec_memory');
+    }
   }
 
   /**
@@ -223,6 +274,6 @@ export class DatabaseManager {
       DatabaseManager.instance.close();
       DatabaseManager.instance = null;
     }
-    DatabaseManager.verifiedDimension = null;
+    DatabaseManager.verifiedDimensions.clear();
   }
 }
