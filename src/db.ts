@@ -69,6 +69,11 @@ export class DatabaseManager {
         fs.mkdirSync(GLOBAL_DB_DIR, { recursive: true });
       }
 
+      const dbDir = path.dirname(DB_PATH);
+      if (!fs.existsSync(dbDir)) {
+        fs.mkdirSync(dbDir, { recursive: true });
+      }
+
       const db = new Database(DB_PATH);
 
       // Load sqlite-vec extension

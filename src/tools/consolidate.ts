@@ -93,7 +93,7 @@ export async function executeMemoryConsolidate(): Promise<{
     )
     .all() as any[];
 
-  console.log('activeRecords length:', activeRecords.length);
+  console.error('activeRecords length:', activeRecords.length);
 
   let prunedCount = 0;
   let updatedCount = 0;
