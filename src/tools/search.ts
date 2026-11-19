@@ -21,6 +21,7 @@ interface SearchArgs {
 
 /**
  * Execute a memory search with the given query and optional parameters.
+ * Optimized with subquery/CTE to compute vec_distance_cosine only once per row.
  *
  * @param args Search arguments.
  * @returns An object containing the result status and the searched items.
@@ -41,31 +42,43 @@ export async function executeMemorySearch(args: SearchArgs) {
   // 3. Query SQLite using sqlite-vec
   // Threshold of 0.6 similarity means distance <= 0.4
   const maxDistance = 1.0 - threshold;
+  const floatArray = new Float32Array(queryEmbedding);
 
-  // We use a brute-force approach across `is_active = 1` to ensure perfect recall (pre-filtering),
-  // which is extremely fast in sqlite-vec for < 100k records.
+  // Optimized single-pass distance calculation via subquery/CTE
   const stmt = db.prepare(`
+    WITH scored AS (
+      SELECT 
+        m.rowid,
+        m.id, 
+        m.text, 
+        m.metadata, 
+        m.created_at, 
+        m.importance,
+        m.last_accessed_at,
+        m.accessed_count,
+        vec_distance_cosine(v.embedding, ?) AS distance
+      FROM memory m
+      JOIN vec_memory v ON m.rowid = v.rowid
+      WHERE m.is_active = 1
+    )
     SELECT 
-      m.rowid,
-      m.id, 
-      m.text, 
-      m.metadata, 
-      m.created_at, 
-      m.importance,
-      m.last_accessed_at,
-      m.accessed_count,
-      (1.0 - vec_distance_cosine(v.embedding, ?)) AS similarity 
-    FROM memory m
-    JOIN vec_memory v ON m.rowid = v.rowid
-    WHERE m.is_active = 1 
-      AND vec_distance_cosine(v.embedding, ?) <= ?
-    ORDER BY vec_distance_cosine(v.embedding, ?) ASC
+      rowid,
+      id,
+      text,
+      metadata,
+      created_at,
+      importance,
+      last_accessed_at,
+      accessed_count,
+      distance,
+      (1.0 - distance) AS similarity
+    FROM scored
+    WHERE distance <= ?
+    ORDER BY distance ASC
     LIMIT ?
   `);
 
-  const floatArray = new Float32Array(queryEmbedding);
-  // Pass the float array for each parameter placeholder (?)
-  const results = stmt.all(floatArray, floatArray, maxDistance, floatArray, limit) as any[];
+  const results = stmt.all(floatArray, maxDistance, limit) as any[];
 
   // Update last_accessed_at and increment accessed_count
   if (results.length > 0) {

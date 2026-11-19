@@ -101,4 +101,25 @@ describe('EmbeddingCache', () => {
     spy.mockRestore();
     consoleSpy.mockRestore();
   });
+
+  it('should enforce bounded LRU eviction in L1 cache', () => {
+    const l1 = (EmbeddingCache as any).l1Cache;
+    l1.clear();
+
+    const sampleVec = [0.1, 0.2];
+
+    // Fill to MAX_CACHE_SIZE
+    for (let i = 0; i < EmbeddingCache.MAX_CACHE_SIZE; i++) {
+      (EmbeddingCache as any).setL1(`key-${i}`, sampleVec);
+    }
+    expect(l1.size).toBe(EmbeddingCache.MAX_CACHE_SIZE);
+    expect(l1.has('key-0')).toBe(true);
+
+    // Adding one more item should evict the oldest key (key-0)
+    (EmbeddingCache as any).setL1('key-overflow', sampleVec);
+    expect(l1.size).toBe(EmbeddingCache.MAX_CACHE_SIZE);
+    expect(l1.has('key-0')).toBe(false);
+    expect(l1.has('key-overflow')).toBe(true);
+    expect(l1.has('key-1')).toBe(true);
+  });
 });

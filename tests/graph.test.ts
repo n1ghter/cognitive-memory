@@ -53,4 +53,41 @@ describe('Memory Relate', () => {
       })
     ).rejects.toThrow('Invalid input: sourceId, targetId, and relationType are required');
   });
+
+  it('should allow external URI target for grounded_in and references', async () => {
+    const s1 = await executeMemoryStore({ text: 'Observation about architecture' });
+
+    const relRes = await executeMemoryRelate({
+      sourceId: s1.record.id,
+      targetId: 'obsidian://vault/master-brain/system/arch.md',
+      relationType: 'grounded_in',
+    });
+
+    expect(relRes.success).toBe(true);
+    expect(relRes.edge.is_external).toBe(true);
+    expect(relRes.edge.target_id).toBe('obsidian://vault/master-brain/system/arch.md');
+
+    const relRes2 = await executeMemoryRelate({
+      sourceId: s1.record.id,
+      targetId: 'vault://specs/002-zero-copy.md',
+      relationType: 'references',
+    });
+
+    expect(relRes2.success).toBe(true);
+    expect(relRes2.edge.is_external).toBe(true);
+  });
+
+  it('should reject external URI target for unsupported relation types', async () => {
+    const s1 = await executeMemoryStore({ text: 'Observation' });
+
+    await expect(
+      executeMemoryRelate({
+        sourceId: s1.record.id,
+        targetId: 'obsidian://vault/master-brain/note.md',
+        relationType: 'contradicts',
+      })
+    ).rejects.toThrow(
+      'External targets are only permitted for "grounded_in" or "references" relation types'
+    );
+  });
 });

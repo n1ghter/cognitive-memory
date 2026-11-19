@@ -125,6 +125,7 @@ export class DatabaseManager {
         target_id TEXT NOT NULL,
         relation_type TEXT NOT NULL,
         metadata TEXT,
+        is_external INTEGER DEFAULT 0,
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
         FOREIGN KEY(source_id) REFERENCES memory(id),
         FOREIGN KEY(target_id) REFERENCES memory(id)
@@ -148,6 +149,12 @@ export class DatabaseManager {
     // Migration for existing databases
     try {
       db.exec(`ALTER TABLE ${schemaName}.memory ADD COLUMN updated_at DATETIME`);
+    } catch (_e) {
+      // Column already exists or table doesn't exist yet
+    }
+
+    try {
+      db.exec(`ALTER TABLE ${schemaName}.edges ADD COLUMN is_external INTEGER DEFAULT 0`);
     } catch (_e) {
       // Column already exists or table doesn't exist yet
     }
