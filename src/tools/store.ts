@@ -5,6 +5,9 @@ import { DatabaseManager, generateId } from '../db.js';
 /**
  * Zod schema for validating the reserved 'ref' pointer space.
  */
+export type MemoryProfile = 'user' | 'working' | 'agent_core';
+export const MemoryProfileSchema = z.enum(['user', 'working', 'agent_core']);
+
 export const PointerRefSchema = z
   .object({
     vault_path: z.string().optional(),
@@ -20,6 +23,10 @@ export type PointerRef = z.infer<typeof PointerRefSchema>;
  * Metadata structure supporting Zero-Copy Pointers to external knowledge bases.
  */
 export interface PointerMetadata {
+  /**
+   * Memory profile isolation: user (default), working, or agent_core.
+   */
+  profile?: MemoryProfile;
   /**
    * Reserved space for external knowledge base pointers.
    */
@@ -52,6 +59,7 @@ export interface PointerMetadata {
 export const StoreMetadataSchema = z.record(z.string(), z.any()).and(
   z
     .object({
+      profile: MemoryProfileSchema.optional(),
       ref: PointerRefSchema.optional(),
     })
     .passthrough()
@@ -73,6 +81,10 @@ interface StoreArgs {
    * Importance level of the text (default is 0.5).
    */
   importance?: number;
+  /**
+   * Memory profile isolation: user (default), working, or agent_core.
+   */
+  profile?: MemoryProfile;
 }
 
 /**
@@ -82,7 +94,10 @@ interface StoreArgs {
  * @returns A promise that resolves with an object containing a success flag and a stored record.
  */
 export async function executeMemoryStore(args: StoreArgs) {
-  const { text, metadata = {}, importance = 0.5 } = args;
+  const { text, metadata = {}, importance = 0.5, profile } = args;
+
+  const resolvedProfile: MemoryProfile = profile || metadata.profile || 'user';
+  metadata.profile = resolvedProfile;
 
   if (!text || typeof text !== 'string') {
     throw new Error('Invalid input: "text" must be a non-empty string');
@@ -107,9 +122,13 @@ export async function executeMemoryStore(args: StoreArgs) {
       SELECT id, rowid, importance, metadata 
       FROM memory 
       WHERE text = ? AND is_active = 1
+        AND (
+          json_extract(metadata, '$.profile') = ? OR 
+          (? = 'user' AND json_extract(metadata, '$.profile') IS NULL)
+        )
       LIMIT 1
     `);
-    const existing = existingStmt.get(cleanText) as
+    const existing = existingStmt.get(cleanText, resolvedProfile, resolvedProfile) as
       | {
           id: string;
           rowid: number | bigint;

@@ -79,13 +79,21 @@ export function createMcpServer(): McpServer {
         .optional()
         .default(0.6)
         .describe('Minimum cosine similarity match threshold (0.0 to 1.0)'),
+      /**
+       * Optional input parameter for filtering by memory profile.
+       */
+      profile: z
+        .enum(['user', 'working', 'agent_core', 'all'])
+        .optional()
+        .default('all')
+        .describe('Memory profile filter: user, working, agent_core, or all (default)'),
     },
     /**
      * Asynchronous function that executes the tool's logic.
      */
-    async ({ query, limit, threshold }) => {
+    async ({ query, limit, threshold, profile }) => {
       try {
-        const result = await executeMemorySearch({ query, limit, threshold });
+        const result = await executeMemorySearch({ query, limit, threshold, profile });
         return {
           content: [{ type: 'text', text: JSON.stringify(result, null, 2) }],
         };

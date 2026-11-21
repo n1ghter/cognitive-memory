@@ -1,10 +1,11 @@
 import { EmbeddingCache } from '../cache.js';
 import { DatabaseManager } from '../db.js';
+import type { MemoryProfile } from './store.js';
 
 /**
  * Search arguments.
  */
-interface SearchArgs {
+export interface SearchArgs {
   /**
    * The search query string.
    */
@@ -17,6 +18,10 @@ interface SearchArgs {
    * Optional threshold for similarity. Defaults to 0.6 (distance <= 0.4).
    */
   threshold?: number;
+  /**
+   * Optional memory profile filter: user, working, agent_core, or all (default).
+   */
+  profile?: MemoryProfile | 'all';
 }
 
 /**
@@ -27,7 +32,7 @@ interface SearchArgs {
  * @returns An object containing the result status and the searched items.
  */
 export async function executeMemorySearch(args: SearchArgs) {
-  const { query, limit = 5, threshold = 0.6 } = args;
+  const { query, limit = 5, threshold = 0.6, profile = 'all' } = args;
 
   if (!query || typeof query !== 'string') {
     throw new Error('Invalid input: "query" must be a non-empty string');
@@ -60,6 +65,11 @@ export async function executeMemorySearch(args: SearchArgs) {
       FROM memory m
       JOIN vec_memory v ON m.rowid = v.rowid
       WHERE m.is_active = 1
+        AND (
+          ? = 'all' OR
+          (? = 'user' AND (json_extract(m.metadata, '$.profile') = 'user' OR json_extract(m.metadata, '$.profile') IS NULL)) OR
+          (json_extract(m.metadata, '$.profile') = ?)
+        )
     )
     SELECT 
       rowid,
@@ -78,7 +88,7 @@ export async function executeMemorySearch(args: SearchArgs) {
     LIMIT ?
   `);
 
-  const results = stmt.all(floatArray, maxDistance, limit) as any[];
+  const results = stmt.all(floatArray, profile, profile, profile, maxDistance, limit) as any[];
 
   // Update last_accessed_at and increment accessed_count
   if (results.length > 0) {
@@ -105,7 +115,7 @@ export async function executeMemorySearch(args: SearchArgs) {
      * The searched items with their similarity scores.
      */
     results: results.map((r: any) => {
-      let parsedMetadata = {};
+      let parsedMetadata: any = {};
       if (r.metadata) {
         try {
           parsedMetadata = JSON.parse(r.metadata);
