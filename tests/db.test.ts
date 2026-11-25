@@ -73,6 +73,8 @@ describe('DatabaseManager & Utils', () => {
 
     process.env.HOME = tempHome;
     process.env.USERPROFILE = tempHome;
+    const globalDbOverride = process.env.MEMORY_GLOBAL_DB_PATH;
+    delete process.env.MEMORY_GLOBAL_DB_PATH;
 
     vi.resetModules();
     const dbModule = await import('../src/db.js');
@@ -90,6 +92,7 @@ describe('DatabaseManager & Utils', () => {
     // Restore env
     delete process.env.HOME;
     delete process.env.USERPROFILE;
+    process.env.MEMORY_GLOBAL_DB_PATH = globalDbOverride;
     vi.resetModules();
   });
 });

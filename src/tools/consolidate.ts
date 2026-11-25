@@ -89,7 +89,7 @@ export async function executeMemoryConsolidate(): Promise<{
   // Retrieve active records from the database
   const activeRecords = db
     .prepare(
-      'SELECT m.id, m.rowid, m.text, m.importance, m.last_accessed_at, m.metadata, v.embedding FROM memory m JOIN vec_memory v ON m.rowid = v.rowid WHERE m.is_active = 1'
+      'SELECT m.id, m.rowid, m.text, m.importance, m.last_accessed_at, m.metadata, v.embedding FROM memory m JOIN main.vec_memory v ON m.rowid = v.rowid WHERE m.is_active = 1'
     )
     .all() as any[];
 
@@ -172,7 +172,7 @@ async function runBackgroundDeduplication(memories: MemoryRecord[]): Promise<voi
     const floatArray = new Float32Array(memA.embedding);
     const similarMemories = db
       .prepare(
-        'SELECT m.id, m.text, m.importance, m.metadata, (1.0 - vec_distance_cosine(v.embedding, ?)) AS similarity FROM memory m JOIN vec_memory v ON m.rowid = v.rowid WHERE m.is_active = 1 AND m.id != ? AND vec_distance_cosine(v.embedding, ?) <= 0.08 ORDER BY similarity DESC'
+        'SELECT m.id, m.text, m.importance, m.metadata, (1.0 - vec_distance_cosine(v.embedding, ?)) AS similarity FROM memory m JOIN main.vec_memory v ON m.rowid = v.rowid WHERE m.is_active = 1 AND m.id != ? AND vec_distance_cosine(v.embedding, ?) <= 0.08 ORDER BY similarity DESC'
       )
       .all(floatArray, memA.id, floatArray) as any[];
 
