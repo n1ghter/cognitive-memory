@@ -79,10 +79,15 @@ export async function executeMemoryImport(args: ImportArgs = {}): Promise<{
 
       const fullId = shortId.includes(':') ? shortId : `memory:${shortId}`;
       validIdsOnDisk.add(fullId);
+      validIdsOnDisk.add(shortId);
 
       const row = db
         .prepare('SELECT id, updated_at, is_active FROM memory WHERE id = ? OR id = ?')
         .get(shortId, fullId) as { id: string; updated_at: string; is_active: number } | undefined;
+
+      if (row?.id) {
+        validIdsOnDisk.add(row.id);
+      }
 
       let dbUpdatedMs = 0;
       if (row?.updated_at) {
@@ -95,6 +100,8 @@ export async function executeMemoryImport(args: ImportArgs = {}): Promise<{
           // Delete the lingering file to reflect the agent's deletion in Obsidian.
           fs.unlinkSync(filePath);
           validIdsOnDisk.delete(fullId);
+          validIdsOnDisk.delete(shortId);
+          validIdsOnDisk.delete(row.id);
         }
         continue;
       }
