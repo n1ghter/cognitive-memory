@@ -33,7 +33,9 @@
     "dev": "ts-node-esm src/index.ts",
     "seed": "npx tsx scripts/seed-test-data.ts",
     "eval": "npx tsx evals/run.ts",
-    "gitnexus": "gitnexus analyze --skip-skills --skip-agents-md",
+    "eval:ci": "npx tsx evals/run.ts --embedder hash",
+    "verify": "pnpm exec biome ci . && pnpm exec tsc -b && pnpm build && pnpm test && pnpm --dir ui build && pnpm --dir ui test",
+    "gitnexus": "npx -y gitnexus analyze --skip-skills --skip-agents-md",
     "test": "vitest run",
     "test:coverage": "vitest run --coverage",
     "test:watch": "vitest",
@@ -64,7 +66,6 @@
     "@types/node": "^26.1.0",
     "@types/supertest": "^7.2.0",
     "@vitest/coverage-v8": "^5.0.5",
-    "gitnexus": "^1.6.5",
     "husky": "^9.1.7",
     "lint-staged": "^17.0.7",
     "supertest": "^7.2.2",
@@ -75,7 +76,6 @@
   "pnpm": {
     "onlyBuiltDependencies": [
       "better-sqlite3",
-      "@ladybugdb/core",
       "sqlite-vec",
       "esbuild"
     ]

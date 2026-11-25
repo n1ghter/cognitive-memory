@@ -1,14 +1,15 @@
-name: Auto Create PR
+name: Auto Create Draft PR
 
 on:
   push:
     branches-ignore:
       - main
       - master
+      - 'dependabot/**'
 
 permissions:
   pull-requests: write
-  contents: write
+  contents: read
 
 jobs:
   create-pr:
@@ -17,16 +18,19 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Create Pull Request
+      - name: Create Draft PR if none exists
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          # Create the PR, and then immediately enable auto-merge on it
+          EXISTING=$(gh pr list --head "${{ github.ref_name }}" --state open --json number --jq 'length')
+          if [ "$EXISTING" -gt 0 ]; then
+            echo "Open PR already exists for ${{ github.ref_name }}, skipping."
+            exit 0
+          fi
+
           gh pr create \
+            --draft \
             --base main \
             --head "${{ github.ref_name }}" \
             --title "$(git log -1 --pretty=%s)" \
-            --body "Automated PR created from branch \`${{ github.ref_name }}\`." || true
-
-          # Attempt to enable auto-merge (fails silently if repo settings don't allow it or PR doesn't exist)
-          gh pr merge "${{ github.ref_name }}" --auto --merge --delete-branch || true
+            --body "Draft PR automatically opened for branch \`${{ github.ref_name }}\`. Mark ready for review once CI and eval gates are green."

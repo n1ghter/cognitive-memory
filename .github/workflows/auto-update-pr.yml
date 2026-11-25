@@ -1,4 +1,4 @@
-name: Auto-update PRs
+name: Auto-update Open PRs
 
 on:
   push:
@@ -13,6 +13,39 @@ jobs:
   autoupdate:
     runs-on: ubuntu-latest
     steps:
-      - uses: allonsy-studio/actions-pr-auto-update@v3
+      - name: Update behind non-draft same-repo PRs
+        uses: actions/github-script@v7
         with:
-          token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const { owner, repo } = context.repo;
+            const { data: prs } = await github.rest.pulls.list({
+              owner,
+              repo,
+              state: 'open',
+              base: 'main',
+              per_page: 20,
+            });
+
+            for (const pr of prs) {
+              if (pr.draft) continue;
+              if (!pr.head.repo || pr.head.repo.full_name !== `${owner}/${repo}`) continue;
+
+              const { data: full } = await github.rest.pulls.get({
+                owner,
+                repo,
+                pull_number: pr.number,
+              });
+
+              if (full.mergeable_state === 'behind') {
+                try {
+                  await github.rest.pulls.updateBranch({
+                    owner,
+                    repo,
+                    pull_number: pr.number,
+                  });
+                  core.info(`Updated PR #${pr.number} (${pr.head.ref})`);
+                } catch (err) {
+                  core.warning(`Skipped PR #${pr.number}: ${err.message}`);
+                }
+              }
+            }
