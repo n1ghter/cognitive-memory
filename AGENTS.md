@@ -5,12 +5,14 @@ This repository is operated **AI-first**: autonomous agents act as principal eng
 ## Required Verification Harness
 
 Run before opening or merging any PR:
+
 ```bash
 pnpm verify
 ```
 `pnpm verify` executes Biome lint/format, root TypeScript (`tsc -b`), build, all Vitest suites (including the offline `evals` regression gate in `tests/evals.test.ts`), and UI build + tests.
 
 To inspect retrieval metrics directly:
+
 ```bash
 pnpm eval:ci          # deterministic offline run (no Ollama required)
 pnpm eval             # live run against local Ollama

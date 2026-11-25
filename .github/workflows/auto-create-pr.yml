@@ -5,7 +5,7 @@ on:
     branches-ignore:
       - main
       - master
-      - 'dependabot/**'
+      - "dependabot/**"
 
 permissions:
   pull-requests: write

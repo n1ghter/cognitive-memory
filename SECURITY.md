@@ -27,6 +27,7 @@ If you discover a security vulnerability, **please do not open a public GitHub i
 Instead, report it privately using [GitHub Security Advisories](https://github.com/n1ghter/cognitive-memory/security/advisories/new).
 
 Please include:
+
 - A concise description of the vulnerability and potential impact.
 - Deterministic reproduction steps or a minimal proof of concept.
 - Affected version(s), transport mode (`stdio` / `sse` / `docker`), and Node.js version.

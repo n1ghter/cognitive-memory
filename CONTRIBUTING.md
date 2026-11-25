@@ -24,6 +24,7 @@ Whether you are a human contributor or an AI coding agent working on a PR, this 
 ## Local Development Setup
 
 ### Prerequisites
+
 - **Node.js `24+`**
 - **`pnpm` `9+`**
 - **Ollama is optional:** The entire test suite, build, and offline eval harness run **100% deterministically offline** with zero external daemons.
@@ -40,13 +41,13 @@ pnpm verify
 
 ### Verification Harness Commands
 
-| Command | What It Checks |
-| --- | --- |
-| `pnpm verify` | **Required before every PR:** Biome lint/format, `tsc -b`, `dist/` build, all 116+ Vitest suites (including offline eval gates), and `ui/` build + tests. |
-| `pnpm eval:ci` | Deterministic offline retrieval scorecard (no Ollama required). |
-| `pnpm eval` | Live Hybrid RRF benchmark against local Ollama. |
-| `pnpm check:fix` | Auto-format and auto-fix Biome lint issues. |
-| `pnpm dashboard` | Launch optional read-only 3D Graph Explorer at `http://localhost:3000`. |
+| Command          | What It Checks                                                                                                                                            |
+| ---------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `pnpm verify`    | **Required before every PR:** Biome lint/format, `tsc -b`, `dist/` build, all 116+ Vitest suites (including offline eval gates), and `ui/` build + tests. |
+| `pnpm eval:ci`   | Deterministic offline retrieval scorecard (no Ollama required).                                                                                           |
+| `pnpm eval`      | Live Hybrid RRF benchmark against local Ollama.                                                                                                           |
+| `pnpm check:fix` | Auto-format and auto-fix Biome lint issues.                                                                                                               |
+| `pnpm dashboard` | Launch optional read-only 3D Graph Explorer at `http://localhost:3000`.                                                                                   |
 
 ---
 
