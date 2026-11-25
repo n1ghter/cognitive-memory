@@ -36,13 +36,14 @@ Our focus is building a **vendor-neutral, cross-tool, Markdown-first, zero-Ollam
 
 ---
 
-## 🔭 v2.1.0 — Cross-Tool Portability & Anti-Smell Harness Integration
+## ✅ v2.1.0 — Cross-Tool Portability, Deterministic Engine Boost & Hooks
 
-- [ ] **Minimal Anti-Smell `init` Templates & Lifecycle Hooks:** Replace verbose `AGENTS.md` checklists with concise, high-compliance prescriptive templates and deterministic lifecycle hooks (`#133`).
-- [ ] **Cross-Tool Memory Bridges (`setup` + Importers):** Deterministic importers for Claude Code (`MEMORY.md`), Cursor (`.cursor/rules`), Obsidian zero-copy `ref` drift bridge, plus expanded `setup` for Codex & Cline (`#134`, `#141`, `#142`).
-- [ ] **Streamable HTTP Local Daemon:** Upgrade HTTP mode to MCP Streamable HTTP (`StreamableHTTPServerTransport`) with loopback-first security defaults so multiple local IDEs share one warm daemon cleanly (`#135`).
-- [ ] **Deterministic Eval Baseline Gate (`evals/baseline.json`):** Enforce committed offline baseline floors in CI plus Track D round-trip/grounding invariants (`#140`).
-- [ ] **Zero Security Alerts:** Resolve the final moderate Dependabot advisory in frozen `ui/` (`#144`).
+- [x] **Deterministic Eval Baseline Gate (`evals/baseline.json`):** Enforce committed offline baseline floors in CI plus Track D round-trip/grounding invariants and Track E dogfooding workflow (`#140`, `#152`).
+- [x] **Deterministic Retrieval & Auto-Dream Boost:** Upgraded SQLite FTS5 to `porter unicode61`, code-aware tokenization & weighted `metadata` column (`#149`), calibrated IDF-weighted Default-Threshold Recall (`60.4% → 75.0%` at `100%` Negative Abstention, `#148`), and raised zero-LLM Auto-Dream dedup recall (`75% → 100%` at `100%` precision, `#150`) (`#153`).
+- [x] **Minimal Anti-Smell `init` Templates & Lifecycle Hooks:** Replaced verbose `AGENTS.md` checklists with concise, idempotently managed templates and deterministic lifecycle hooks (`SessionStart` / `PreCompact` / `Stop` / `AutoDream`) (`#133`, `#154`).
+- [x] **Cross-Tool Memory Bridges (`setup` + Importers + Obsidian Drift):** Deterministic importers for Claude Code (`MEMORY.md`) & Cursor (`.cursor/rules`), Obsidian zero-copy `ref` SHA-256 drift bridge (`memory_check_refs`), plus expanded atomic `setup` for Codex & Cline (`#134`, `#141`, `#142`, `#155`).
+- [x] **Streamable HTTP Local Daemon:** Upgraded HTTP mode to MCP Streamable HTTP (`StreamableHTTPServerTransport` at `/mcp`, `/health`, graceful shutdown, backwards-compatible `/sse`) with loopback-first security defaults so multiple local IDEs share one warm daemon cleanly (`#135`).
+- [x] **Zero Security Alerts:** Resolved the final moderate Dependabot advisory in frozen `ui/` (`#144`, `#147`).
 
 ---
 

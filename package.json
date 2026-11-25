@@ -30,6 +30,7 @@
   "scripts": {
     "build": "tsc -p tsconfig.build.json",
     "start": "node dist/index.js",
+    "start:http": "node dist/index.js --http",
     "start:sse": "node dist/index.js --sse",
     "dashboard": "node dist/index.js dashboard",
     "ui": "node dist/index.js ui",
