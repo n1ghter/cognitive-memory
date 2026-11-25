@@ -1,0 +1,11 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Architecture RFCs & Q&A (GitHub Discussions)
+    url: https://github.com/n1ghter/cognitive-memory/discussions
+    about: Ask usage questions, share cross-tool setups, or discuss architectural RFCs before opening an issue.
+  - name: Documentation & Wiki
+    url: https://github.com/n1ghter/cognitive-memory/wiki
+    about: Read Architecture v2, 2026 Research synthesis, Cross-Tool Setup guides, and Harness Evals.
+  - name: Security Vulnerability (Private Advisory)
+    url: https://github.com/n1ghter/cognitive-memory/security/advisories/new
+    about: Report security issues privately instead of opening a public issue.

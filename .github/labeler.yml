@@ -1,0 +1,66 @@
+"area:engine":
+  - changed-files:
+      - any-glob-to-any-file:
+          - "src/retrieval.ts"
+          - "src/cache.ts"
+          - "src/ollama.ts"
+          - "src/tools/search.ts"
+          - "src/tools/store.ts"
+          - "src/tools/consolidate.ts"
+          - "src/tools/graph.ts"
+
+"area:storage":
+  - changed-files:
+      - any-glob-to-any-file:
+          - "src/db.ts"
+          - "src/tools/sync.ts"
+          - "src/tools/export.ts"
+          - "src/tools/import.ts"
+          - "src/tools/reindex.ts"
+          - "src/tools/delete.ts"
+          - "src/tools/clear.ts"
+
+"area:cross-tool":
+  - changed-files:
+      - any-glob-to-any-file:
+          - "src/cli/**"
+
+"area:transport":
+  - changed-files:
+      - any-glob-to-any-file:
+          - "src/index.ts"
+          - "Dockerfile"
+          - "docker-compose.yml"
+
+"area:evals":
+  - changed-files:
+      - any-glob-to-any-file:
+          - "evals/**"
+          - "tests/evals.test.ts"
+
+"area:harness":
+  - changed-files:
+      - any-glob-to-any-file:
+          - ".github/**"
+          - "biome.json"
+          - "vitest.config.ts"
+          - "tsconfig*.json"
+          - ".husky/**"
+
+"area:architecture":
+  - changed-files:
+      - any-glob-to-any-file:
+          - "docs/adr/**"
+          - "docs/ARCHITECTURE_V2.md"
+          - "docs/RESEARCH_2026.md"
+
+"area:ui-frozen":
+  - changed-files:
+      - any-glob-to-any-file:
+          - "ui/**"
+
+"documentation":
+  - changed-files:
+      - any-glob-to-any-file:
+          - "**/*.md"
+          - "docs/**"

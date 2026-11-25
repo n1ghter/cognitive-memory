@@ -16,7 +16,7 @@
 
 Native auto-memory in Claude Code, Cursor, Antigravity, and Windsurf locks your project knowledge inside each tool's silo. **Cognitive Memory** provides one portable, inspectable, local memory layer across every MCP-compatible agent — combining fast SQLite storage, federated project + global scopes, zero-copy Obsidian/Markdown pointers, and an automated retrieval eval harness.
 
-> 📖 **Architecture & 2026 Research:** See [docs/RESEARCH_2026.md](docs/RESEARCH_2026.md), [docs/ARCHITECTURE_V2.md](docs/ARCHITECTURE_V2.md), [ROADMAP.md](ROADMAP.md), and the [Project Wiki](https://github.com/n1ghter/cognitive-memory/wiki).
+> 📖 **Architecture, ADRs & Collaboration:** [docs/RESEARCH_2026.md](docs/RESEARCH_2026.md) · [docs/ARCHITECTURE_V2.md](docs/ARCHITECTURE_V2.md) · [ADRs](docs/adr/README.md) · [ROADMAP.md](ROADMAP.md) · [Project Board](https://github.com/users/n1ghter/projects/1) · [Wiki](https://github.com/n1ghter/cognitive-memory/wiki) · [Milestones](https://github.com/n1ghter/cognitive-memory/milestones) · [Discussions](https://github.com/n1ghter/cognitive-memory/discussions)
 
 ---
 
@@ -132,7 +132,7 @@ pnpm dashboard                 # launches local Web UI at http://localhost:3000
 - `src/tools/` — Core MCP tool implementations (`search`, `store`, `graph`, `sync`, `export`, `import`, `consolidate`, `delete`, `clear`).
 - `src/cli/` — `setup` (multi-editor config injection) and `init` (project templates).
 - `evals/` — Golden dataset and deterministic/live retrieval scorecard runner.
-- `docs/` — 2026 empirical research memo (`RESEARCH_2026.md`) and v2.0 architecture (`ARCHITECTURE_V2.md`).
+- `docs/` — 2026 empirical research memo (`RESEARCH_2026.md`), v2.0 architecture (`ARCHITECTURE_V2.md`), and Architecture Decision Records (`docs/adr/`).
 - `ui/` — Optional React + Three.js force-graph dashboard (maintenance-only).
 
 ---

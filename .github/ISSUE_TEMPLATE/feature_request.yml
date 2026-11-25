@@ -1,0 +1,41 @@
+name: Feature / Enhancement
+description: Propose a focused, testable capability aligned with our cross-tool, deterministic-first roadmap.
+title: "[Feature] "
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Check [ROADMAP.md](https://github.com/n1ghter/cognitive-memory/blob/main/ROADMAP.md) and [docs/adr/](https://github.com/n1ghter/cognitive-memory/tree/main/docs/adr) first. Broad architectural ideas are best discussed in **GitHub Discussions** as RFCs.
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem Statement
+      description: What real cross-tool, retrieval, storage, or DX problem does this solve?
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed Solution
+      description: Describe the API, CLI, schema, or workflow change concisely.
+    validations:
+      required: true
+  - type: textarea
+    id: determinism
+    attributes:
+      label: Determinism & Offline Behavior (ADR 0002)
+      description: How does this behave deterministically with zero Ollama / zero network? If an optional LLM step is involved, what is the deterministic fallback?
+    validations:
+      required: true
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: Acceptance Criteria & Verification
+      description: How will `pnpm verify` or `evals/` prove this works and stays regression-free?
+      placeholder: |
+        - [ ] Deterministic unit tests in `tests/...`
+        - [ ] Eval cases in `evals/dataset.json` (if retrieval/dedup/temporal)
+        - [ ] `pnpm verify` passes offline
+    validations:
+      required: true

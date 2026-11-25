@@ -1,0 +1,64 @@
+name: Bug Report
+description: Report a reproducible bug in the MCP server, CLI, storage, or retrieval engine.
+title: "[Bug] "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Please provide deterministic reproduction steps. For security vulnerabilities, use **GitHub Security Advisories** instead.
+  - type: textarea
+    id: summary
+    attributes:
+      label: What happened?
+      description: Clear, concise description of the bug and expected behavior.
+    validations:
+      required: true
+  - type: textarea
+    id: repro
+    attributes:
+      label: Deterministic Reproduction Steps
+      description: Exact commands, MCP tool inputs, or test snippet to reproduce the issue.
+      placeholder: |
+        1. Run `EMBEDDING_PROVIDER=none cognitive-memory ...`
+        2. Call `memory_search` with `{ query: "...", mode: "bm25" }`
+        3. Observe error: ...
+    validations:
+      required: true
+  - type: dropdown
+    id: area
+    attributes:
+      label: Subsystem
+      options:
+        - Engine (FTS5 / RRF / Cache / Consolidate)
+        - Storage (SQLite / Markdown Sync / Reindex / Temporal)
+        - Cross-Tool CLI (`setup` / `init` / Importers)
+        - Transport & Security (Stdio / SSE / Docker)
+        - Evals & Verification Harness
+        - 3D Web UI (Maintenance-Only)
+    validations:
+      required: true
+  - type: dropdown
+    id: embedder
+    attributes:
+      label: Embedding Mode
+      options:
+        - Zero-Ollama (`EMBEDDING_PROVIDER=none` or Ollama stopped)
+        - Ollama (`auto` / `ollama` running locally)
+        - Not applicable
+    validations:
+      required: true
+  - type: input
+    id: env
+    attributes:
+      label: Environment
+      description: OS, Node.js version, package version, and MCP client (Antigravity / Claude Code / Cursor / Windsurf).
+      placeholder: "Windows 11 / Node 24.x / @cemised/cognitive-memory@2.0.0 / Claude Code"
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs / Error Output
+      description: Paste stderr logs (never include credentials or private paths).
+      render: shell
