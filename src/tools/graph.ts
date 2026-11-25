@@ -35,42 +35,51 @@ export async function executeMemoryRelate(args: GraphRelateArgs) {
     throw new Error('Invalid input: sourceId, targetId, and relationType are required');
   }
 
+  const normalizedRelationType = relationType.toLowerCase().replace(/[^a-z0-9_]/g, '_');
+  const isExternalTarget = targetId.startsWith('obsidian://') || targetId.startsWith('vault://');
+
+  if (isExternalTarget) {
+    if (normalizedRelationType !== 'grounded_in' && normalizedRelationType !== 'references') {
+      throw new Error(
+        'External targets are only permitted for "grounded_in" or "references" relation types'
+      );
+    }
+  }
+
   const db = DatabaseManager.getInstance();
   const edgeId = generateId();
 
-  /**
-   * Prepares a SQL statement to insert an edge into the database.
-   */
+  // Keep foreign key integrity without polluting active memory queries/exports (is_active = 0)
+  if (isExternalTarget) {
+    db.prepare(`
+      INSERT OR IGNORE INTO memory (id, text, metadata, importance, is_active, created_at, updated_at, last_accessed_at, accessed_count)
+      VALUES (?, ?, ?, 0.0, 0, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 0)
+    `).run(targetId, targetId, JSON.stringify({ is_external: true, uri: targetId }));
+  }
+
   const stmt = db.prepare(`
-    INSERT INTO edges (id, source_id, target_id, relation_type, metadata, created_at)
-    VALUES (?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+    INSERT INTO edges (id, source_id, target_id, relation_type, metadata, is_external, created_at)
+    VALUES (?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
   `);
 
   stmt.run(
     edgeId,
     sourceId,
     targetId,
-    relationType.toLowerCase().replace(/[^a-z0-9_]/g, '_'),
-    JSON.stringify(metadata)
+    normalizedRelationType,
+    JSON.stringify(metadata),
+    isExternalTarget ? 1 : 0
   );
 
   return {
-    /**
-     * Indicates whether the operation was successful.
-     */
     success: true,
-    /**
-     * A message describing the outcome of the operation.
-     */
     message: `Successfully created relation '${relationType}' between '${sourceId}' and '${targetId}'`,
-    /**
-     * Information about the created edge.
-     */
     edge: {
       id: edgeId,
       source_id: sourceId,
       target_id: targetId,
       relation_type: relationType,
+      is_external: isExternalTarget,
     },
   };
 }

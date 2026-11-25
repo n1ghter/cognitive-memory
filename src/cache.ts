@@ -3,14 +3,20 @@ import { DatabaseManager } from './db.js';
 import { OllamaClient } from './ollama.js';
 
 /**
- * A fast L1 In-Memory Cache used to store computed embeddings for high-speed lookups.
+ * A fast L1 In-Memory Cache with bounded LRU eviction used to store computed embeddings.
  */
 export class EmbeddingCache {
   /**
    * The ultra-fast in-memory cache for storing computed embeddings.
+   * Uses Map's insertion-order iteration to provide O(1) LRU eviction.
    * @private
    */
   private static l1Cache = new Map<string, number[]>();
+
+  /**
+   * Maximum allowed items in L1 memory cache before oldest entries are evicted.
+   */
+  public static readonly MAX_CACHE_SIZE = 1000;
 
   /**
    * Computes a SHA-256 hash for the given text.
@@ -23,10 +29,26 @@ export class EmbeddingCache {
   }
 
   /**
+   * Helper to insert into L1 cache with bounded LRU eviction.
+   * @private
+   */
+  private static setL1(hash: string, embedding: number[]): void {
+    if (EmbeddingCache.l1Cache.has(hash)) {
+      EmbeddingCache.l1Cache.delete(hash);
+    } else if (EmbeddingCache.l1Cache.size >= EmbeddingCache.MAX_CACHE_SIZE) {
+      const oldestKey = EmbeddingCache.l1Cache.keys().next().value;
+      if (oldestKey) {
+        EmbeddingCache.l1Cache.delete(oldestKey);
+      }
+    }
+    EmbeddingCache.l1Cache.set(hash, embedding);
+  }
+
+  /**
    * Retrieves an embedding for the given text from the cache.
    *
    * @param text The input text to retrieve the embedding for.
-   * @returns A promise that resolves with the embedded vector as a Float32Array.
+   * @returns A promise that resolves with the embedded vector.
    */
   public static async getEmbedding(text: string): Promise<number[]> {
     const cleanText = text.trim();
@@ -36,9 +58,10 @@ export class EmbeddingCache {
 
     const hash = EmbeddingCache.computeHash(cleanText);
 
-    // L1: Check high-speed in-memory cache
+    // L1: Check high-speed in-memory cache (promote to MRU on hit)
     const l1Match = EmbeddingCache.l1Cache.get(hash);
     if (l1Match) {
+      EmbeddingCache.setL1(hash, l1Match);
       DatabaseManager.ensureVectorTable(l1Match.length);
       return l1Match;
     }
@@ -58,7 +81,7 @@ export class EmbeddingCache {
         );
         const embeddingArray = Array.from(floatArray);
         DatabaseManager.ensureVectorTable(embeddingArray.length);
-        EmbeddingCache.l1Cache.set(hash, embeddingArray);
+        EmbeddingCache.setL1(hash, embeddingArray);
         return embeddingArray;
       }
     } catch (err) {
@@ -72,8 +95,8 @@ export class EmbeddingCache {
     // Reject a dimension change before caching, so a mismatched vector never lingers
     DatabaseManager.ensureVectorTable(embedding.length);
 
-    // Hydrate L1 Memory Cache
-    EmbeddingCache.l1Cache.set(hash, embedding);
+    // Hydrate L1 Memory Cache with LRU bound
+    EmbeddingCache.setL1(hash, embedding);
 
     // Hydrate L2 SQLite Cache Table
     try {

@@ -25,6 +25,8 @@ describe('OllamaClient', () => {
       const embedding = await OllamaClient.getEmbedding('test text');
       expect(embedding).toEqual([0.1, 0.2, 0.3]);
       expect(fetch).toHaveBeenCalledTimes(1);
+      const callArgs = vi.mocked(fetch).mock.calls[0];
+      expect((callArgs[1] as any)?.signal).toBeDefined();
     });
 
     it('should throw an error if the API returns an error status', async () => {
