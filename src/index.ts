@@ -86,9 +86,9 @@ export function createMcpServer(): McpServer {
 
   server.tool(
     'memory_search',
-    'Perform optimized semantic memory searches with scope and profile filtering',
+    'Perform hybrid memory search (SQLite FTS5 BM25 + optional dense vector RRF) with zero-Ollama fallback, scope, and profile filtering',
     {
-      query: z.string().describe('Semantic search query'),
+      query: z.string().describe('Search query (keywords, identifiers, or natural language)'),
       limit: z
         .number()
         .int()
@@ -103,7 +103,7 @@ export function createMcpServer(): McpServer {
         .max(1.0)
         .optional()
         .default(0.6)
-        .describe('Minimum cosine similarity match threshold (0.0 to 1.0)'),
+        .describe('Minimum similarity/confidence threshold (0.0 to 1.0)'),
       scope: z
         .enum(['local', 'global', 'all'])
         .optional()
@@ -114,10 +114,17 @@ export function createMcpServer(): McpServer {
         .optional()
         .default('all')
         .describe('Memory profile filter: user, working, agent_core, or all (default)'),
+      mode: z
+        .enum(['hybrid', 'bm25', 'vector'])
+        .optional()
+        .default('hybrid')
+        .describe(
+          'Retrieval mode: hybrid (FTS5 BM25 + optional dense RRF, default), bm25 (lexical only, zero Ollama), or vector (dense only)'
+        ),
     },
-    async ({ query, limit, threshold, scope, profile }) => {
+    async ({ query, limit, threshold, scope, profile, mode }) => {
       try {
-        const result = await executeMemorySearch({ query, limit, threshold, scope, profile });
+        const result = await executeMemorySearch({ query, limit, threshold, scope, profile, mode });
         return {
           content: [{ type: 'text', text: JSON.stringify(result, null, 2) }],
         };
