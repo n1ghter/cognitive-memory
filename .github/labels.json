@@ -1,0 +1,95 @@
+[
+  {
+    "name": "area:architecture",
+    "color": "5319e7",
+    "description": "Architectural design, ADRs, and system boundaries"
+  },
+  {
+    "name": "area:engine",
+    "color": "0075ca",
+    "description": "Core retrieval (FTS5/RRF), caching, and consolidation engine"
+  },
+  {
+    "name": "area:storage",
+    "color": "1d76db",
+    "description": "Markdown-first canonical store, SQLite index, and temporal versioning"
+  },
+  {
+    "name": "area:cross-tool",
+    "color": "fbca04",
+    "description": "Multi-IDE / multi-agent portability, bridges, and importers"
+  },
+  {
+    "name": "area:evals",
+    "color": "0e8a16",
+    "description": "Retrieval benchmarks, datasets, and regression gates"
+  },
+  {
+    "name": "area:harness",
+    "color": "d93f0b",
+    "description": "CI/CD, verification harness, and entropy guards"
+  },
+  {
+    "name": "area:transport",
+    "color": "006b75",
+    "description": "Stdio, SSE, Streamable HTTP, auth, and Docker deployment"
+  },
+  {
+    "name": "area:ui-frozen",
+    "color": "bfdadc",
+    "description": "Maintenance-only 3D Web UI dashboard (ui/)"
+  },
+  {
+    "name": "priority:P0",
+    "color": "b60205",
+    "description": "Critical blocker, security issue, or broken release"
+  },
+  {
+    "name": "priority:P1",
+    "color": "d93f0b",
+    "description": "High-priority item targeting the active milestone"
+  },
+  {
+    "name": "priority:P2",
+    "color": "fbca04",
+    "description": "Important enhancement or next-milestone work"
+  },
+  {
+    "name": "determinism",
+    "color": "0052cc",
+    "description": "Deterministic behavior, offline parity, or removing unnecessary non-determinism"
+  },
+  {
+    "name": "security",
+    "color": "ee0701",
+    "description": "Security hardening, auth, CORS, and vulnerability remediation"
+  },
+  { "name": "rfc", "color": "c5def5", "description": "Architecture proposal or design discussion" },
+  { "name": "bug", "color": "d73a4a", "description": "Something isn't working" },
+  { "name": "enhancement", "color": "a2eeef", "description": "New feature or request" },
+  {
+    "name": "documentation",
+    "color": "0075ca",
+    "description": "Improvements or additions to documentation"
+  },
+  { "name": "good first issue", "color": "7057ff", "description": "Good for newcomers" },
+  { "name": "help wanted", "color": "008672", "description": "Extra attention is needed" },
+  {
+    "name": "dependencies",
+    "color": "0366d6",
+    "description": "Pull requests that update a dependency file"
+  },
+  {
+    "name": "javascript",
+    "color": "168700",
+    "description": "Pull requests that update javascript code"
+  },
+  { "name": "question", "color": "d876e3", "description": "Further information is requested" },
+  {
+    "name": "duplicate",
+    "color": "cfd3d7",
+    "description": "This issue or pull request already exists"
+  },
+  { "name": "invalid", "color": "e4e669", "description": "This doesn't seem right" },
+  { "name": "wontfix", "color": "ffffff", "description": "This will not be worked on" }
+]

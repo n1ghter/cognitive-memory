@@ -1,0 +1,42 @@
+name: Retrieval / Eval Regression
+description: Report a retrieval miss, false positive, stale contradiction leak, or dedup error to add to evals/dataset.json.
+title: "[Eval] "
+labels: ["area:evals", "determinism"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Per **ADR 0004 (Track E — Dogfooding Regressions)**, every real-world retrieval failure becomes a permanent deterministic test case in `evals/dataset.json`.
+  - type: dropdown
+    id: failure_type
+    attributes:
+      label: Failure Category
+      options:
+        - Missed relevant memory (Recall failure)
+        - Wrong top-1 ranking (Precision / MRR failure)
+        - False positive on unrelated query (Negative abstention failure)
+        - Stale / superseded fact leaked (Temporal contradiction)
+        - Bad merge / missed duplicate (Auto-Dream consolidation)
+    validations:
+      required: true
+  - type: textarea
+    id: memory_sample
+    attributes:
+      label: Sanitized Memory Record(s)
+      description: Provide sanitized English example memory text(s) that trigger the issue (no private data).
+    validations:
+      required: true
+  - type: input
+    id: query
+    attributes:
+      label: Query & Search Mode
+      placeholder: 'query: "why did we switch off SurrealDB", mode: "bm25" | "hybrid"'
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected vs. Actual Ranking
+      description: Which memory should rank #1 (or be abstained/merged), and what happened instead?
+    validations:
+      required: true

@@ -1,6 +1,8 @@
 # Cognitive Memory Roadmap (2026–2027)
 
-> Grounded in 2026 empirical memory & agent harness research — see [docs/RESEARCH_2026.md](docs/RESEARCH_2026.md) and [docs/ARCHITECTURE_V2.md](docs/ARCHITECTURE_V2.md).
+> Grounded in 2026 empirical memory & agent harness research — see [docs/RESEARCH_2026.md](docs/RESEARCH_2026.md), [docs/ARCHITECTURE_V2.md](docs/ARCHITECTURE_V2.md), and [Architecture Decision Records](docs/adr/README.md).
+>
+> Live tracking: **[Engineering Board (Project)](https://github.com/users/n1ghter/projects/1)** · **[Milestones](https://github.com/n1ghter/cognitive-memory/milestones)** · **[Issues](https://github.com/n1ghter/cognitive-memory/issues)** · **[Discussions](https://github.com/n1ghter/cognitive-memory/discussions)** · **[Good First Issues](https://github.com/n1ghter/cognitive-memory/issues?q=is%3Aopen+is%3Aissue+label%3A%22good+first+issue%22)**
 
 Our focus is building a **vendor-neutral, cross-tool, Markdown-first, zero-Ollama hybrid memory layer** for developers who work across multiple AI coding environments (Claude Code, Cursor, Antigravity, Windsurf, Codex, Cline).
 
@@ -32,10 +34,17 @@ Our focus is building a **vendor-neutral, cross-tool, Markdown-first, zero-Ollam
 ---
 
 ## 🔭 v2.1.0 — Cross-Tool Portability & Anti-Smell Harness Integration
-- [ ] **Minimal Anti-Smell `init` Templates:** Replace verbose `AGENTS.md` checklists with concise, high-compliance prescriptive templates.
-- [ ] **Cross-Tool Memory Bridges (`setup` + Importers):** Sync and import memories seamlessly across Claude Code (`MEMORY.md`), Cursor, Windsurf, Antigravity, Codex, and Cline.
-- [ ] **Streamable HTTP Local Daemon:** Upgrade HTTP mode to MCP Streamable HTTP (`StreamableHTTPServerTransport`) so multiple local IDEs share one warm daemon cleanly.
-- [ ] **Pluggable Embedders:** Support local Ollama, OpenAI-compatible endpoints, or lightweight local ONNX models as optional hybrid accelerators.
+- [ ] **Minimal Anti-Smell `init` Templates & Lifecycle Hooks:** Replace verbose `AGENTS.md` checklists with concise, high-compliance prescriptive templates and deterministic lifecycle hooks (`#133`).
+- [ ] **Cross-Tool Memory Bridges (`setup` + Importers):** Deterministic importers for Claude Code (`MEMORY.md`), Cursor (`.cursor/rules`), Obsidian zero-copy `ref` drift bridge, plus expanded `setup` for Codex & Cline (`#134`, `#141`, `#142`).
+- [ ] **Streamable HTTP Local Daemon:** Upgrade HTTP mode to MCP Streamable HTTP (`StreamableHTTPServerTransport`) with loopback-first security defaults so multiple local IDEs share one warm daemon cleanly (`#135`).
+- [ ] **Deterministic Eval Baseline Gate (`evals/baseline.json`):** Enforce committed offline baseline floors in CI plus Track D round-trip/grounding invariants (`#140`).
+- [ ] **Zero Security Alerts:** Resolve the final moderate Dependabot advisory in frozen `ui/` (`#144`).
+
+---
+
+## 🧭 v2.2.0 — Pluggable Embedders, Scale & Dogfooding Evals
+- [ ] **Pluggable Embedders:** Clean `EmbeddingProvider` interface supporting `none`, local Ollama, OpenAI-compatible endpoints, or lazy-loaded local ONNX models with automatic deterministic fallback (`#143`).
+- [ ] **Scale & Track E Dogfooding Benchmarks:** Large-corpus latency/memory benchmarks and continuous regression ingestion from real cross-tool usage.
 
 ---
 

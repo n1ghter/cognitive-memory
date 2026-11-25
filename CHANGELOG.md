@@ -4,6 +4,13 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+### Added
+- **Architecture Decision Records (`docs/adr/`):** Codified key architectural decisions (`0001`–`0005`), including **ADR 0002 (Deterministic-First Engineering)**, **ADR 0004 (Continuous Harness Engineering)**, and **ADR 0005 (Frozen 3D UI & Cross-Tool Focus)**.
+- **Open-Source Governance & Deterministic GitHub Automation:** Added structured YAML Issue Forms (`bug_report.yml`, `feature_request.yml`, `eval_regression.yml`, `config.yml`), Pull Request template, `CODEOWNERS`, `CODE_OF_CONDUCT.md`, declarative Labels-as-Code (`.github/labels.json` + `scripts/sync-labels.ts`), and deterministic path-based PR auto-labeling (`.github/labeler.yml` + `.github/workflows/labeler.yml`).
+
+### Changed
+- **Contributor & Security Docs:** Updated `CONTRIBUTING.md`, `SECURITY.md` (`2.0.x`), `AGENTS.md` (added Invariant #7 Deterministic-First Engineering), `ROADMAP.md`, and `README.md` to align with `v2.0.0`, Milestones `v2.1.0`/`v2.2.0`, GitHub Discussions, and curated Issue Views.
+
 ## [2.0.0] - 2026-11-25
 
 ### Added
