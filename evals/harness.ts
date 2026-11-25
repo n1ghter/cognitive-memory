@@ -1,16 +1,17 @@
 import { EmbeddingCache } from '../src/cache.js';
 import { OllamaClient } from '../src/ollama.js';
-import type { SearchMode } from '../src/retrieval.js';
+import { areLexicallyDuplicate, type SearchMode } from '../src/retrieval.js';
 import { executeMemorySearch } from '../src/tools/search.js';
 import { executeMemoryStore } from '../src/tools/store.js';
 
 /**
- * Golden dataset: memories to store, graded queries, and pairs for the dedup check.
+ * Golden dataset: memories to store, graded queries, dedup pairs, and temporal contradiction cases.
  */
 export interface EvalDataset {
   memories: { key: string; text: string }[];
   queries: { query: string; relevant: string[]; category: string }[];
   dedupPairs: { a: string; b: string; duplicate: boolean }[];
+  contradictions?: { oldText: string; newText: string; query: string }[];
 }
 
 /** Retrieval metrics averaged over a set of queries that have at least one relevant memory. */
@@ -31,6 +32,8 @@ export interface EvalReport {
   /** Behaviour of memory_search with its default similarity threshold, as agents see it. */
   thresholded: { recallAtK: number; precision: number; negativeAbstention: number };
   dedup: { threshold: number; precision: number; recall: number; accuracy: number };
+  lexicalDedup: { precision: number; recall: number; accuracy: number };
+  contradictions: { total: number; resolvedRate: number; staleLeakRate: number };
   failures: { query: string; category: string; expected: string[]; got: string[] }[];
 }
 
@@ -222,6 +225,31 @@ export async function runEvals(
     }
   }
 
+  let lexTp = 0;
+  let lexFp = 0;
+  let lexFn = 0;
+  let lexCorrect = 0;
+  for (const pair of dataset.dedupPairs) {
+    const merged = areLexicallyDuplicate(pair.a, pair.b);
+    if (merged && pair.duplicate) lexTp++;
+    if (merged && !pair.duplicate) lexFp++;
+    if (!merged && pair.duplicate) lexFn++;
+    if (merged === pair.duplicate) lexCorrect++;
+  }
+
+  // Evaluate temporal supersession / contradiction resolution
+  const contradictionCases = dataset.contradictions ?? [];
+  let contradictionResolved = 0;
+  let staleLeaks = 0;
+  for (const c of contradictionCases) {
+    const oldRes = await executeMemoryStore({ text: c.oldText });
+    const newRes = await executeMemoryStore({ text: c.newText, supersedes: oldRes.record.id });
+    const searchRes = await executeMemorySearch({ query: c.query, limit: k, threshold: -1, mode });
+    const ids = searchRes.results.map((r) => r.id);
+    if (ids[0] === newRes.record.id) contradictionResolved++;
+    if (ids.includes(oldRes.record.id)) staleLeaks++;
+  }
+
   return {
     embedder: options.embedder,
     mode,
@@ -244,6 +272,18 @@ export async function runEvals(
             ? correct / dataset.dedupPairs.length
             : 0,
     },
+    lexicalDedup: {
+      precision: lexTp + lexFp ? lexTp / (lexTp + lexFp) : 0,
+      recall: lexTp + lexFn ? lexTp / (lexTp + lexFn) : 0,
+      accuracy: dataset.dedupPairs.length ? lexCorrect / dataset.dedupPairs.length : 0,
+    },
+    contradictions: {
+      total: contradictionCases.length,
+      resolvedRate: contradictionCases.length
+        ? contradictionResolved / contradictionCases.length
+        : 1,
+      staleLeakRate: contradictionCases.length ? staleLeaks / contradictionCases.length : 0,
+    },
     failures: positives
       .filter((q) => !q.got.slice(0, k).some((key) => q.relevant.includes(key)))
       .map((q) => ({ query: q.query, category: q.category, expected: q.relevant, got: q.got })),
@@ -265,8 +305,12 @@ export function formatScorecard(report: EvalReport): string {
     'memory_search with default threshold',
     `  recall@${report.k} ${pct(report.thresholded.recallAtK)}   precision ${pct(report.thresholded.precision)}   negative abstention ${pct(report.thresholded.negativeAbstention)}`,
     '',
-    `Consolidation dedup (similarity >= ${report.dedup.threshold})`,
+    `Consolidation dedup (vector >= ${report.dedup.threshold})`,
     `  precision ${pct(report.dedup.precision)}   recall ${pct(report.dedup.recall)}   accuracy ${pct(report.dedup.accuracy)}`,
+    'Auto-Dream zero-LLM lexical dedup',
+    `  precision ${pct(report.lexicalDedup.precision)}   recall ${pct(report.lexicalDedup.recall)}   accuracy ${pct(report.lexicalDedup.accuracy)}`,
+    `Temporal contradictions (n=${report.contradictions.total})`,
+    `  resolved@1 ${pct(report.contradictions.resolvedRate)}   stale leak ${pct(report.contradictions.staleLeakRate)}`,
   ];
   if (report.failures.length) {
     lines.push('', `Misses (no relevant memory in top ${report.k}):`);

@@ -243,5 +243,27 @@
       "b": "Text generation uses llama3.2 in Ollama.",
       "duplicate": false
     }
+  ],
+  "contradictions": [
+    {
+      "oldText": "The telemetry collector stores graph snapshots inside SurrealDB.",
+      "newText": "The telemetry collector migrated from SurrealDB to embedded SQLite with FTS5.",
+      "query": "Which database stores telemetry collector snapshots?"
+    },
+    {
+      "oldText": "Staging webhooks listen on HTTPS port 8080.",
+      "newText": "Staging webhooks moved from port 8080 to HTTPS port 8443.",
+      "query": "Which port do staging webhooks listen on?"
+    },
+    {
+      "oldText": "Production deployments are hosted on Heroku dynos.",
+      "newText": "Production deployments migrated from Heroku dynos to Fly.io machines.",
+      "query": "Where are production deployments hosted?"
+    },
+    {
+      "oldText": "Session tokens are cached in Redis Cluster.",
+      "newText": "Session tokens switched from Redis Cluster to in-process LRU memory.",
+      "query": "Where are session tokens cached?"
+    }
   ]
 }

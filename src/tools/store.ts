@@ -1,6 +1,12 @@
 import { z } from 'zod';
 import { EmbeddingCache } from '../cache.js';
-import { DatabaseManager, generateId, type MemoryScope, scopeToSchemas } from '../db.js';
+import {
+  DatabaseManager,
+  generateId,
+  type MemoryScope,
+  normalizeRecordId,
+  scopeToSchemas,
+} from '../db.js';
 import { getEmbeddingProvider, isEmbeddingDimensionError } from '../retrieval.js';
 
 /**
@@ -72,16 +78,22 @@ export interface StoreArgs {
    * Memory profile isolation: `user` (default), `working`, or `agent_core`.
    */
   profile?: MemoryProfile;
+  /**
+   * Optional ID of an older memory that this new fact temporally supersedes.
+   * Marks the older memory with valid_until and superseded_by and adds a `supersedes` edge.
+   */
+  supersedes?: string;
 }
 
 /**
- * Executes a memory store operation with zero-copy pointer validation, profile isolation, and exact deduplication.
+ * Executes a memory store operation with zero-copy pointer validation, profile isolation, exact deduplication,
+ * and optional temporal supersession.
  *
  * @param args - The arguments for the function.
  * @returns A promise that resolves with an object containing a success flag and a stored record.
  */
 export async function executeMemoryStore(args: StoreArgs) {
-  const { text, metadata = {}, importance = 0.5, scope = 'local', profile } = args;
+  const { text, metadata = {}, importance = 0.5, scope = 'local', profile, supersedes } = args;
 
   if (!text || typeof text !== 'string') {
     throw new Error('Invalid input: "text" must be a non-empty string');
@@ -182,12 +194,16 @@ export async function executeMemoryStore(args: StoreArgs) {
 
   // 2. Generate UUID for record
   const id = generateId();
+  let supersededTargetId: string | null = null;
 
-  // 3. Run transaction to ensure atomicity between metadata, FTS5 trigger, and optional vector table
+  // 3. Run transaction to ensure atomicity between metadata, FTS5 trigger, optional vector table, and temporal supersession
   const storeTx = db.transaction(() => {
     const stmt = db.prepare(`
-      INSERT INTO ${schema}.memory (id, text, metadata, importance, is_active, created_at, updated_at, last_accessed_at, accessed_count)
-      VALUES (?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 0)
+      INSERT INTO ${schema}.memory (
+        id, text, metadata, importance, is_active,
+        created_at, updated_at, last_accessed_at, accessed_count, valid_from
+      )
+      VALUES (?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 0, CURRENT_TIMESTAMP)
     `);
     const info = stmt.run(id, cleanText, JSON.stringify(normalizedMetadata), importance, 1);
 
@@ -206,6 +222,30 @@ export async function executeMemoryStore(args: StoreArgs) {
       vecStmt.run(rowid, floatArray);
     }
 
+    if (supersedes) {
+      const normalizedOld = normalizeRecordId(supersedes);
+      const oldRow = db
+        .prepare(`SELECT id FROM ${schema}.memory WHERE id = ? OR id = ? LIMIT 1`)
+        .get(supersedes, normalizedOld) as { id: string } | undefined;
+
+      if (oldRow) {
+        supersededTargetId = oldRow.id;
+        db.prepare(`
+          UPDATE ${schema}.memory
+          SET valid_until = CURRENT_TIMESTAMP,
+              superseded_by = ?,
+              is_active = 0,
+              updated_at = CURRENT_TIMESTAMP
+          WHERE id = ?
+        `).run(id, oldRow.id);
+
+        db.prepare(`
+          INSERT INTO ${schema}.edges (id, source_id, target_id, relation_type, metadata, is_external, created_at)
+          VALUES (?, ?, ?, 'supersedes', '{}', 0, CURRENT_TIMESTAMP)
+        `).run(generateId(), id, oldRow.id);
+      }
+    }
+
     return id;
   });
 
@@ -217,6 +257,7 @@ export async function executeMemoryStore(args: StoreArgs) {
       ? 'Memory stored successfully'
       : 'Memory stored successfully (lexical FTS5 mode; embeddings offline)',
     indexed_vectors: Boolean(embedding),
+    superseded_id: supersededTargetId,
     record: {
       id: id,
       text: cleanText,

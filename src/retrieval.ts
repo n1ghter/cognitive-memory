@@ -232,3 +232,115 @@ export function fuseReciprocalRank(
 
   return scores;
 }
+
+const DEDUP_STOPWORDS = new Set([
+  ...STOPWORDS,
+  'always',
+  'must',
+  'over',
+  'rather',
+  'than',
+  'use',
+  'used',
+  'uses',
+  'using',
+  'version',
+  'runs',
+  'prefer',
+  'prefers',
+  'licensed',
+  'license',
+]);
+
+const NEGATION_PAIRS: [RegExp, RegExp][] = [
+  [/\blikes?\b/i, /\bdislikes?\b/i],
+  [/\bprefers?\b/i, /\bavoids?\b/i],
+  [/\benabled?\b/i, /\bdisabled?\b/i],
+  [/\ballows?\b/i, /\bforbids?\b/i],
+  [/\btrue\b/i, /\bfalse\b/i],
+];
+
+const NEGATION_MARKERS = /\b(not|never|no|don't|doesn't|isn't|aren't|won't|dislikes?|forbids?)\b/i;
+
+function stemDedupToken(token: string): string {
+  if (token === 'ci') return 'ci';
+  if (token.length <= 4) return token;
+  return token.replace(/(ies|ing|ed|es|ly|s)$/, (s) => (s === 'ies' ? 'y' : ''));
+}
+
+function normalizeForDedup(text: string): string {
+  return text
+    .replace(/\bcontinuous integration\b/gi, 'ci')
+    .replace(/\bnode\.js\b/gi, 'nodejs')
+    .replace(/\bnode\b/gi, 'nodejs');
+}
+
+function extractNumbers(text: string): string[] {
+  return [...new Set(text.match(/\d+(?:\.\d+)*/g) ?? [])].sort();
+}
+
+function extractInternalProperNouns(text: string): string[] {
+  // Capture capitalized words that are NOT at index 0 (e.g. Berlin, Lisbon, PostgreSQL, Apache)
+  const matches = text.slice(1).match(/\b[A-Z][a-zA-Z0-9._-]{2,}\b/g) ?? [];
+  return [...new Set(matches.map((m) => m.toLowerCase()))];
+}
+
+/**
+ * Zero-LLM lexical near-duplicate detector with strict conflict guards
+ * (version numbers, opposing polarity/negation, and differing proper entities).
+ */
+export function areLexicallyDuplicate(a: string, b: string, threshold: number = 0.6): boolean {
+  const cleanA = a.trim();
+  const cleanB = b.trim();
+  if (!cleanA || !cleanB) return false;
+  if (cleanA.toLowerCase() === cleanB.toLowerCase()) return true;
+
+  // Guard 1: Differing numeric values / versions (e.g. PostgreSQL 15 vs PostgreSQL 16)
+  const numsA = extractNumbers(cleanA);
+  const numsB = extractNumbers(cleanB);
+  if (numsA.length > 0 && numsB.length > 0 && numsA.join(',') !== numsB.join(',')) {
+    return false;
+  }
+
+  // Guard 2: Polarity / negation contradiction (e.g. likes vs dislikes)
+  if (NEGATION_MARKERS.test(cleanA) !== NEGATION_MARKERS.test(cleanB)) {
+    return false;
+  }
+  for (const [pos, neg] of NEGATION_PAIRS) {
+    if ((pos.test(cleanA) && neg.test(cleanB)) || (neg.test(cleanA) && pos.test(cleanB))) {
+      return false;
+    }
+  }
+
+  // Guard 3: Conflicting proper entities (e.g. Berlin vs Lisbon)
+  const normA = normalizeForDedup(cleanA);
+  const normB = normalizeForDedup(cleanB);
+  const nounsA = new Set(extractInternalProperNouns(normA));
+  const nounsB = new Set(extractInternalProperNouns(normB));
+  if (nounsA.size > 0 && nounsB.size > 0) {
+    const onlyA = [...nounsA].filter((n) => !nounsB.has(n));
+    const onlyB = [...nounsB].filter((n) => !nounsA.has(n));
+    if (onlyA.length > 0 && onlyB.length > 0) {
+      return false;
+    }
+  }
+
+  const tokensA = new Set(
+    (normA.toLowerCase().match(/[\p{L}\p{N}]+/gu) ?? [])
+      .filter((t) => !DEDUP_STOPWORDS.has(t) && t.length > 1)
+      .map(stemDedupToken)
+  );
+  const tokensB = new Set(
+    (normB.toLowerCase().match(/[\p{L}\p{N}]+/gu) ?? [])
+      .filter((t) => !DEDUP_STOPWORDS.has(t) && t.length > 1)
+      .map(stemDedupToken)
+  );
+
+  if (tokensA.size === 0 || tokensB.size === 0) return false;
+  let intersection = 0;
+  for (const t of tokensA) {
+    if (tokensB.has(t)) intersection++;
+  }
+  const union = tokensA.size + tokensB.size - intersection;
+  return union > 0 && intersection / union >= threshold;
+}

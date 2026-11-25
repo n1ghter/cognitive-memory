@@ -2,9 +2,12 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { EmbeddingCache } from '../cache.js';
 import { DatabaseManager } from '../db.js';
+import { getEmbeddingProvider, isEmbeddingDimensionError } from '../retrieval.js';
 
 interface ImportArgs {
   vaultPath?: string;
+  /** When true, re-imports all Markdown files regardless of mtime (used by reindex). */
+  force?: boolean;
 }
 
 interface ParsedMemory {
@@ -13,7 +16,16 @@ interface ParsedMemory {
   importance: number;
   text: string;
   metadata: any;
-  relations: Array<{ type: string; target: string; direction: 'out' | 'in' }>;
+  valid_from?: string | null;
+  valid_until?: string | null;
+  superseded_by?: string | null;
+  is_active: number;
+  relations: Array<{
+    type: string;
+    target: string;
+    direction: 'out' | 'in';
+    is_external?: boolean;
+  }>;
 }
 
 export async function executeMemoryImport(args: ImportArgs = {}): Promise<{
@@ -77,7 +89,7 @@ export async function executeMemoryImport(args: ImportArgs = {}): Promise<{
         dbUpdatedMs = new Date(`${row.updated_at.replace(' ', 'T')}Z`).getTime();
       }
 
-      if (row && mtimeMs <= dbUpdatedMs + 2000) {
+      if (!args.force && row && mtimeMs <= dbUpdatedMs + 2000) {
         if (row.is_active === 0) {
           // The agent deleted this memory, and the user hasn't modified the file.
           // Delete the lingering file to reflect the agent's deletion in Obsidian.
@@ -93,9 +105,9 @@ export async function executeMemoryImport(args: ImportArgs = {}): Promise<{
     }
   }
 
-  // Deletion Handling via Sync State
+  // Deletion Handling via Sync State (skipped during full force reindex)
   const syncStatePath = path.join(exportDir, '.sync_state.json');
-  if (fs.existsSync(syncStatePath)) {
+  if (!args.force && fs.existsSync(syncStatePath)) {
     try {
       const syncState = JSON.parse(fs.readFileSync(syncStatePath, 'utf-8'));
       if (Array.isArray(syncState.exported_ids)) {
@@ -112,52 +124,83 @@ export async function executeMemoryImport(args: ImportArgs = {}): Promise<{
     }
   }
 
-  // Phase 2: Upsert nodes and fetch embeddings
+  // Phase 2: Upsert nodes and optionally fetch embeddings (zero-Ollama resilient)
+  const provider = getEmbeddingProvider();
   for (const { file, mtimeMs, parsed, fullId } of parsedFiles) {
     try {
       const rowExists = db.prepare('SELECT 1 FROM memory WHERE id = ?').get(fullId);
 
       const importTx = db.transaction(() => {
         const timestamp = new Date(mtimeMs).toISOString().replace('T', ' ').replace('Z', '');
+        const validFrom = parsed.valid_from || timestamp;
         if (rowExists) {
           db.prepare(
-            'UPDATE memory SET text = ?, metadata = ?, importance = ?, updated_at = ?, is_active = 1 WHERE id = ?'
-          ).run(parsed.text, JSON.stringify(parsed.metadata), parsed.importance, timestamp, fullId);
+            `UPDATE memory
+             SET text = ?, metadata = ?, importance = ?, updated_at = ?, is_active = ?,
+                 valid_from = COALESCE(valid_from, ?), valid_until = ?, superseded_by = ?
+             WHERE id = ?`
+          ).run(
+            parsed.text,
+            JSON.stringify(parsed.metadata),
+            parsed.importance,
+            timestamp,
+            parsed.is_active,
+            validFrom,
+            parsed.valid_until ?? null,
+            parsed.superseded_by ?? null,
+            fullId
+          );
         } else {
           const stmt = db.prepare(`
-            INSERT INTO memory (id, text, metadata, importance, is_active, created_at, updated_at, last_accessed_at, accessed_count)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, 0)
+            INSERT INTO memory (
+              id, text, metadata, importance, is_active,
+              created_at, updated_at, last_accessed_at, accessed_count,
+              valid_from, valid_until, superseded_by
+            )
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, 0, ?, ?, ?)
           `);
           stmt.run(
             fullId,
             parsed.text,
             JSON.stringify(parsed.metadata),
             parsed.importance,
-            1,
+            parsed.is_active,
             timestamp,
             timestamp,
-            timestamp
+            timestamp,
+            validFrom,
+            parsed.valid_until ?? null,
+            parsed.superseded_by ?? null
           );
         }
       });
       importTx();
 
-      if (parsed.text.trim()) {
-        const embedding = await EmbeddingCache.getEmbedding(parsed.text);
-        const rowidRow = db.prepare('SELECT rowid FROM memory WHERE id = ?').get(fullId) as {
-          rowid: bigint;
-        };
-        if (rowidRow) {
-          const rowid = BigInt(rowidRow.rowid);
-          const floatArray = new Float32Array(embedding);
-          const vecTx = db.transaction(() => {
-            db.prepare('DELETE FROM main.vec_memory WHERE rowid = ?').run(rowid);
-            db.prepare('INSERT INTO main.vec_memory (rowid, embedding) VALUES (?, ?)').run(
-              rowid,
-              floatArray
-            );
-          });
-          vecTx();
+      if (parsed.text.trim() && provider !== 'none') {
+        try {
+          const embedding = await EmbeddingCache.getEmbedding(parsed.text);
+          const rowidRow = db.prepare('SELECT rowid FROM memory WHERE id = ?').get(fullId) as {
+            rowid: bigint;
+          };
+          if (rowidRow) {
+            const rowid = BigInt(rowidRow.rowid);
+            const floatArray = new Float32Array(embedding);
+            const vecTx = db.transaction(() => {
+              db.prepare('DELETE FROM main.vec_memory WHERE rowid = ?').run(rowid);
+              db.prepare('INSERT INTO main.vec_memory (rowid, embedding) VALUES (?, ?)').run(
+                rowid,
+                floatArray
+              );
+            });
+            vecTx();
+          }
+        } catch (embErr) {
+          if (isEmbeddingDimensionError(embErr) || provider === 'ollama') {
+            throw embErr;
+          }
+          console.error(
+            `[Import] Embedding provider unavailable for ${file}; indexed in lexical FTS5 mode.`
+          );
         }
       }
 
@@ -175,19 +218,40 @@ export async function executeMemoryImport(args: ImportArgs = {}): Promise<{
         db.prepare('DELETE FROM edges WHERE source_id = ? OR target_id = ?').run(fullId, fullId);
         for (const rel of parsed.relations) {
           const isOut = rel.direction === 'out';
-          const targetFullId = rel.target.includes(':') ? rel.target : `memory:${rel.target}`;
+          const isExternal =
+            Boolean(rel.is_external) ||
+            rel.target.startsWith('obsidian://') ||
+            rel.target.startsWith('vault://');
 
+          if (isExternal && isOut) {
+            db.prepare(`
+              INSERT OR IGNORE INTO memory (id, text, metadata, importance, is_active, created_at, updated_at, last_accessed_at, accessed_count)
+              VALUES (?, ?, ?, 0.0, 0, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 0)
+            `).run(rel.target, rel.target, JSON.stringify({ is_external: true, uri: rel.target }));
+            const relId = `edge:${fullId}:${rel.target}:${rel.type}`;
+            db.prepare(`
+              INSERT OR REPLACE INTO edges (id, source_id, target_id, relation_type, is_external)
+              VALUES (?, ?, ?, ?, 1)
+            `).run(relId, fullId, rel.target, rel.type);
+            continue;
+          }
+
+          const targetFullId = rel.target.includes(':') ? rel.target : `memory:${rel.target}`;
           const sourceId = isOut ? fullId : targetFullId;
           const targetId = isOut ? targetFullId : fullId;
 
           const otherId = isOut ? targetId : sourceId;
-          const otherExists = db.prepare('SELECT 1 FROM memory WHERE id = ?').get(otherId);
-          if (otherExists) {
-            const relId = `edge:${sourceId}:${targetId}:${rel.type}`;
+          const otherRow = db
+            .prepare('SELECT id FROM memory WHERE id = ? OR id = ? LIMIT 1')
+            .get(otherId, rel.target) as { id: string } | undefined;
+          if (otherRow) {
+            const resolvedSource = isOut ? fullId : otherRow.id;
+            const resolvedTarget = isOut ? otherRow.id : fullId;
+            const relId = `edge:${resolvedSource}:${resolvedTarget}:${rel.type}`;
             db.prepare(`
-              INSERT OR REPLACE INTO edges (id, source_id, target_id, relation_type)
-              VALUES (?, ?, ?, ?)
-            `).run(relId, sourceId, targetId, rel.type);
+              INSERT OR REPLACE INTO edges (id, source_id, target_id, relation_type, is_external)
+              VALUES (?, ?, ?, ?, 0)
+            `).run(relId, resolvedSource, resolvedTarget, rel.type);
           }
         }
       });
@@ -208,7 +272,7 @@ function parseMarkdownMemory(content: string): ParsedMemory | null {
     const textLines: string[] = [];
     let inText = false;
     let inRelations = false;
-    const relations: Array<{ type: string; target: string; direction: 'out' | 'in' }> = [];
+    const relations: ParsedMemory['relations'] = [];
     let inDetails = false;
     let inJson = false;
     let jsonString = '';
@@ -258,10 +322,18 @@ function parseMarkdownMemory(content: string): ParsedMemory | null {
       if (inRelations && line.startsWith('<details>')) inRelations = false;
 
       if (inRelations && line.startsWith('- ')) {
+        const outExtMatch = line.match(/- \*\*(.*?)\*\* ➡️ ((?:obsidian|vault):\/\/\S+)/);
         const outMatch =
           line.match(/- \*\*(.*?)\*\* ➡️ \[\[Memory_(.*?)\]\]/) ||
           line.match(/- \*\*(.*?)\*\* ➡️ \[\[(.*?)\]\]/);
-        if (outMatch) {
+        if (outExtMatch) {
+          relations.push({
+            type: outExtMatch[1],
+            target: outExtMatch[2],
+            direction: 'out',
+            is_external: true,
+          });
+        } else if (outMatch) {
           relations.push({ type: outMatch[1], target: outMatch[2], direction: 'out' });
         } else {
           const inMatch =
@@ -282,12 +354,19 @@ function parseMarkdownMemory(content: string): ParsedMemory | null {
       if (inJson) jsonString += `${line}\n`;
     }
 
-    let metadata = {};
+    let metadata: any = {};
     if (jsonString.trim()) {
       try {
         metadata = JSON.parse(jsonString);
       } catch (_e) {}
     }
+    if (frontmatter.profile && !metadata.profile) {
+      metadata.profile = frontmatter.profile;
+    }
+
+    const validUntil = frontmatter.valid_until || null;
+    const supersededBy = frontmatter.superseded_by || null;
+    const isSuperseded = frontmatter.status === 'superseded' || Boolean(validUntil);
 
     return {
       id: frontmatter.id || null,
@@ -295,6 +374,10 @@ function parseMarkdownMemory(content: string): ParsedMemory | null {
       importance: parseFloat(frontmatter.importance) || 0.5,
       text: textLines.join('\n').trim(),
       metadata,
+      valid_from: frontmatter.valid_from || null,
+      valid_until: validUntil,
+      superseded_by: supersededBy,
+      is_active: isSuperseded ? 0 : 1,
       relations,
     };
   } catch (_e) {

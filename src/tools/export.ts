@@ -4,6 +4,7 @@ import { DatabaseManager } from '../db.js';
 
 interface ExportArgs {
   vaultPath?: string;
+  includeSuperseded?: boolean;
 }
 
 interface MemoryRecord {
@@ -11,15 +12,20 @@ interface MemoryRecord {
   text: string;
   metadata: any;
   importance: number;
+  is_active: number;
   created_at: string;
   last_accessed_at: string;
   accessed_count: number;
+  valid_from?: string | null;
+  valid_until?: string | null;
+  superseded_by?: string | null;
 }
 
 interface EdgeRecord {
   source_id: string;
   target_id: string;
   relation_type: string;
+  is_external?: number;
 }
 
 /**
@@ -43,16 +49,24 @@ export async function executeMemoryExport(args: ExportArgs = {}): Promise<{
 
   const db = DatabaseManager.getInstance();
 
-  // 1. Fetch all memories
+  // 1. Fetch memories (active only by default, or include temporally superseded history)
+  const whereClause = args.includeSuperseded
+    ? "(is_active = 1 OR superseded_by IS NOT NULL) AND COALESCE(json_extract(metadata, '$.is_external'), 0) != 1"
+    : 'is_active = 1 AND valid_until IS NULL';
+
   const memories = db
     .prepare(
-      'SELECT id, text, metadata, importance, created_at, updated_at, last_accessed_at, accessed_count FROM memory WHERE is_active = 1'
+      `SELECT id, text, metadata, importance, is_active, created_at, updated_at, last_accessed_at, accessed_count, valid_from, valid_until, superseded_by
+       FROM memory
+       WHERE ${whereClause}`
     )
     .all() as (MemoryRecord & { updated_at: string })[];
 
   // 2. Fetch all edges
   const edges = db
-    .prepare('SELECT source_id, target_id, relation_type FROM edges')
+    .prepare(
+      'SELECT source_id, target_id, relation_type, COALESCE(is_external, 0) AS is_external FROM edges'
+    )
     .all() as EdgeRecord[];
 
   // Build edge lookup maps
@@ -94,12 +108,24 @@ export async function executeMemoryExport(args: ExportArgs = {}): Promise<{
     } catch (_e) {}
 
     const category = meta?.type || 'semantic';
+    const profile = meta?.profile || 'user';
+    const status = mem.valid_until ? 'superseded' : 'active';
+    const temporalLines = [
+      `profile: ${profile}`,
+      `status: ${status}`,
+      mem.valid_from ? `valid_from: ${mem.valid_from}` : null,
+      mem.valid_until ? `valid_until: ${mem.valid_until}` : null,
+      mem.superseded_by ? `superseded_by: ${mem.superseded_by}` : null,
+    ]
+      .filter(Boolean)
+      .join('\n');
 
     // Frontmatter
     let md = `---
 id: ${shortId}
 type: agent_memory
 category: ${category}
+${temporalLines}
 importance: ${mem.importance.toFixed(3)}
 created_at: ${mem.created_at}
 last_accessed: ${mem.last_accessed_at}
@@ -114,7 +140,7 @@ updated_at: ${syncTime}
 ## Graph Relations
 `;
 
-    // Add explicit Obsidian Wikilinks for Obsidian Graph View
+    // Add explicit Obsidian Wikilinks (or raw external URIs) for Obsidian Graph View
     const outEdges = outgoingEdges.get(mem.id) || [];
     const inEdges = incomingEdges.get(mem.id) || [];
 
@@ -122,8 +148,16 @@ updated_at: ${syncTime}
       md += `*No direct relations to other memories.*\n`;
     } else {
       for (const edge of outEdges) {
-        const targetShortId = String(edge.target_id).split(':')[1] || String(edge.target_id);
-        md += `- **${edge.relation_type}** ➡️ [[Memory_${targetShortId}]]\n`;
+        if (
+          edge.is_external === 1 ||
+          edge.target_id.startsWith('obsidian://') ||
+          edge.target_id.startsWith('vault://')
+        ) {
+          md += `- **${edge.relation_type}** ➡️ ${edge.target_id}\n`;
+        } else {
+          const targetShortId = String(edge.target_id).split(':')[1] || String(edge.target_id);
+          md += `- **${edge.relation_type}** ➡️ [[Memory_${targetShortId}]]\n`;
+        }
       }
       for (const edge of inEdges) {
         const sourceShortId = String(edge.source_id).split(':')[1] || String(edge.source_id);

@@ -41,6 +41,18 @@ export interface SearchArgs {
    * Retrieval mode: `hybrid` (FTS5 BM25 + optional dense RRF, default), `bm25` (zero-Ollama lexical), or `vector` (dense only).
    */
   mode?: SearchMode;
+  /**
+   * Whether to include temporally superseded historical memories (default: false).
+   */
+  includeSuperseded?: boolean;
+  /**
+   * Whether to expand a bounded 1-2 hop graph neighborhood around matched results (default: false).
+   */
+  includeGraph?: boolean;
+  /**
+   * Hop depth when includeGraph is true (capped at 1 or 2 to prevent transitive noise explosion).
+   */
+  graphDepth?: 1 | 2;
 }
 
 interface CandidateRow {
@@ -54,15 +66,36 @@ interface CandidateRow {
   importance: number;
   last_accessed_at: string;
   accessed_count: number;
+  valid_from?: string | null;
+  valid_until?: string | null;
+  superseded_by?: string | null;
   vecSimilarity?: number;
   bm25Score?: number;
   termCoverage?: number;
   rrfScore?: number;
 }
 
+export interface SubgraphEdge {
+  source_id: string;
+  target_id: string;
+  relation_type: string;
+  is_external: boolean;
+  hop: number;
+  scope: 'local' | 'global';
+}
+
+export interface SubgraphNeighbor {
+  id: string;
+  text: string;
+  is_external: boolean;
+  valid_until: string | null;
+  superseded_by: string | null;
+  scope: 'local' | 'global';
+}
+
 /**
  * Execute a memory search using Hybrid RRF (SQLite FTS5 BM25 + optional sqlite-vec cosine),
- * pure BM25 (zero-Ollama), or pure vector search.
+ * pure BM25 (zero-Ollama), or pure vector search, with temporal filtering and optional 1-2 hop CTE subgraph expansion.
  */
 export async function executeMemorySearch(args: SearchArgs) {
   const {
@@ -72,6 +105,9 @@ export async function executeMemorySearch(args: SearchArgs) {
     scope = 'local',
     profile = 'all',
     mode = 'hybrid',
+    includeSuperseded = false,
+    includeGraph = false,
+    graphDepth = 1,
   } = args;
 
   if (!query || typeof query !== 'string') {
@@ -80,6 +116,10 @@ export async function executeMemorySearch(args: SearchArgs) {
   const schemas = scopeToSchemas(scope);
   const db = DatabaseManager.getInstance();
   const candidatePoolSize = Math.max(limit * 4, 25);
+
+  const activeCondition = includeSuperseded
+    ? "(m.is_active = 1 OR m.superseded_by IS NOT NULL) AND COALESCE(json_extract(m.metadata, '$.is_external'), 0) != 1"
+    : 'm.is_active = 1 AND m.valid_until IS NULL';
 
   const provider = getEmbeddingProvider();
   const shouldRunBm25 = mode !== 'vector';
@@ -121,11 +161,14 @@ export async function executeMemorySearch(args: SearchArgs) {
           m.importance,
           m.last_accessed_at,
           m.accessed_count,
+          m.valid_from,
+          m.valid_until,
+          m.superseded_by,
           bm25(fts_memory) AS raw_bm25
         FROM ${schema}.fts_memory
         JOIN ${schema}.memory m ON ${schema}.fts_memory.rowid = m.rowid
         WHERE fts_memory MATCH ?
-          AND m.is_active = 1
+          AND ${activeCondition}
           AND (
             ? = 'all' OR
             (? = 'user' AND (json_extract(m.metadata, '$.profile') = 'user' OR json_extract(m.metadata, '$.profile') IS NULL)) OR
@@ -149,6 +192,9 @@ export async function executeMemorySearch(args: SearchArgs) {
           importance: r.importance,
           last_accessed_at: r.last_accessed_at,
           accessed_count: r.accessed_count,
+          valid_from: r.valid_from ?? null,
+          valid_until: r.valid_until ?? null,
+          superseded_by: r.superseded_by ?? null,
           bm25Score,
           termCoverage,
         });
@@ -179,10 +225,13 @@ export async function executeMemorySearch(args: SearchArgs) {
             m.importance,
             m.last_accessed_at,
             m.accessed_count,
+            m.valid_from,
+            m.valid_until,
+            m.superseded_by,
             vec_distance_cosine(v.embedding, ?) AS distance
           FROM ${schema}.memory m
           JOIN ${schema}.vec_memory v ON m.rowid = v.rowid
-          WHERE m.is_active = 1
+          WHERE ${activeCondition}
             AND (
               ? = 'all' OR
               (? = 'user' AND (json_extract(m.metadata, '$.profile') = 'user' OR json_extract(m.metadata, '$.profile') IS NULL)) OR
@@ -198,6 +247,9 @@ export async function executeMemorySearch(args: SearchArgs) {
           importance,
           last_accessed_at,
           accessed_count,
+          valid_from,
+          valid_until,
+          superseded_by,
           (1.0 - distance) AS similarity
         FROM scored
         WHERE distance <= ?
@@ -224,6 +276,9 @@ export async function executeMemorySearch(args: SearchArgs) {
           importance: r.importance,
           last_accessed_at: r.last_accessed_at,
           accessed_count: r.accessed_count,
+          valid_from: r.valid_from ?? null,
+          valid_until: r.valid_until ?? null,
+          superseded_by: r.superseded_by ?? null,
           vecSimilarity: r.similarity,
         });
       }
@@ -289,7 +344,6 @@ export async function executeMemorySearch(args: SearchArgs) {
       .filter((row) => threshold <= 0 || (row.vecSimilarity ?? -1) >= threshold)
       .slice(0, limit);
   } else {
-    // bm25 or bm25_fallback
     ranked = bm25Candidates
       .filter(
         (row) =>
@@ -314,6 +368,99 @@ export async function executeMemorySearch(args: SearchArgs) {
     } catch (err: any) {
       console.error('[Search] Failed to update access stats:', err);
     }
+  }
+
+  // 6. Optional bounded 1-2 hop recursive CTE subgraph expansion
+  let graph: { depth: number; edges: SubgraphEdge[]; neighbors: SubgraphNeighbor[] } | undefined;
+  if (includeGraph && ranked.length > 0) {
+    const cappedDepth = Math.min(Math.max(Math.trunc(graphDepth), 1), 2);
+    const edgeMap = new Map<string, SubgraphEdge>();
+    const neighborMap = new Map<string, SubgraphNeighbor>();
+    const seedIds = new Set(ranked.map((r) => `${r.schema}:${r.id}`));
+
+    for (const schema of schemas) {
+      const schemaSeedIds = ranked.filter((r) => r.schema === schema).map((r) => r.id);
+      if (schemaSeedIds.length === 0) continue;
+      const placeholders = schemaSeedIds.map(() => '?').join(',');
+      const edgeRows = db
+        .prepare(`
+          WITH RECURSIVE
+            seeds(node_id, depth) AS (
+              SELECT id, 0 FROM ${schema}.memory WHERE id IN (${placeholders})
+              UNION
+              SELECT
+                CASE WHEN e.source_id = s.node_id THEN e.target_id ELSE e.source_id END,
+                s.depth + 1
+              FROM seeds s
+              JOIN ${schema}.edges e
+                ON e.source_id = s.node_id OR e.target_id = s.node_id
+              WHERE s.depth < ?
+            )
+          SELECT DISTINCT
+            e.source_id,
+            e.target_id,
+            e.relation_type,
+            COALESCE(e.is_external, 0) AS is_external,
+            MIN(s.depth) + 1 AS hop
+          FROM seeds s
+          JOIN ${schema}.edges e
+            ON e.source_id = s.node_id OR e.target_id = s.node_id
+          WHERE s.depth < ?
+          GROUP BY e.source_id, e.target_id, e.relation_type, e.is_external
+          LIMIT 50
+        `)
+        .all(...schemaSeedIds, cappedDepth, cappedDepth) as any[];
+
+      const touchedNodeIds = new Set<string>();
+      for (const e of edgeRows) {
+        const edgeKey = `${schema}:${e.source_id}->${e.target_id}:${e.relation_type}`;
+        if (!edgeMap.has(edgeKey)) {
+          edgeMap.set(edgeKey, {
+            source_id: e.source_id,
+            target_id: e.target_id,
+            relation_type: e.relation_type,
+            is_external: e.is_external === 1,
+            hop: e.hop,
+            scope: schema === 'global' ? 'global' : 'local',
+          });
+        }
+        if (!seedIds.has(`${schema}:${e.source_id}`)) touchedNodeIds.add(e.source_id);
+        if (!seedIds.has(`${schema}:${e.target_id}`)) touchedNodeIds.add(e.target_id);
+      }
+
+      if (touchedNodeIds.size > 0) {
+        const nIds = [...touchedNodeIds];
+        const nPlaceholders = nIds.map(() => '?').join(',');
+        const neighborRows = db
+          .prepare(`
+            SELECT id, text, metadata, valid_until, superseded_by
+            FROM ${schema}.memory
+            WHERE id IN (${nPlaceholders})
+          `)
+          .all(...nIds) as any[];
+        for (const n of neighborRows) {
+          let isExt = false;
+          try {
+            const parsed = JSON.parse(n.metadata || '{}');
+            isExt = Boolean(parsed?.is_external);
+          } catch {}
+          neighborMap.set(`${schema}:${n.id}`, {
+            id: n.id,
+            text: n.text,
+            is_external: isExt,
+            valid_until: n.valid_until ?? null,
+            superseded_by: n.superseded_by ?? null,
+            scope: schema === 'global' ? 'global' : 'local',
+          });
+        }
+      }
+    }
+
+    graph = {
+      depth: cappedDepth,
+      edges: [...edgeMap.values()],
+      neighbors: [...neighborMap.values()],
+    };
   }
 
   return {
@@ -347,8 +494,12 @@ export async function executeMemorySearch(args: SearchArgs) {
         created_at: r.created_at,
         last_accessed_at: r.last_accessed_at,
         accessed_count: r.accessed_count,
+        valid_from: r.valid_from ?? null,
+        valid_until: r.valid_until ?? null,
+        superseded_by: r.superseded_by ?? null,
         scope: r.schema === 'global' ? 'global' : 'local',
       };
     }),
+    ...(graph ? { graph } : {}),
   };
 }

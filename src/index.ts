@@ -13,6 +13,7 @@ import { executeMemoryConsolidate } from './tools/consolidate.js';
 import { executeMemoryDelete } from './tools/delete.js';
 import { executeMemoryExport } from './tools/export.js';
 import { executeMemoryRelate } from './tools/graph.js';
+import { executeMemoryReindex } from './tools/reindex.js';
 import { executeMemorySearch } from './tools/search.js';
 import { executeMemoryStore } from './tools/store.js';
 import { executeMemorySync } from './tools/sync.js';
@@ -121,10 +122,45 @@ export function createMcpServer(): McpServer {
         .describe(
           'Retrieval mode: hybrid (FTS5 BM25 + optional dense RRF, default), bm25 (lexical only, zero Ollama), or vector (dense only)'
         ),
+      includeSuperseded: z
+        .boolean()
+        .optional()
+        .default(false)
+        .describe('Include temporally superseded historical memories (default: false)'),
+      includeGraph: z
+        .boolean()
+        .optional()
+        .default(false)
+        .describe('Include bounded 1-2 hop graph neighborhood and external grounded_in links'),
+      graphDepth: z
+        .union([z.literal(1), z.literal(2)])
+        .optional()
+        .default(1)
+        .describe('Graph traversal hop depth when includeGraph is true (1 or 2)'),
     },
-    async ({ query, limit, threshold, scope, profile, mode }) => {
+    async ({
+      query,
+      limit,
+      threshold,
+      scope,
+      profile,
+      mode,
+      includeSuperseded,
+      includeGraph,
+      graphDepth,
+    }) => {
       try {
-        const result = await executeMemorySearch({ query, limit, threshold, scope, profile, mode });
+        const result = await executeMemorySearch({
+          query,
+          limit,
+          threshold,
+          scope,
+          profile,
+          mode,
+          includeSuperseded,
+          includeGraph,
+          graphDepth,
+        });
         return {
           content: [{ type: 'text', text: JSON.stringify(result, null, 2) }],
         };
@@ -140,7 +176,7 @@ export function createMcpServer(): McpServer {
 
   server.tool(
     'memory_store',
-    'Vectorize and persist a semantic memory into a local or global SQLite database',
+    'Persist a memory into SQLite (FTS5 + optional vector) with deduplication, profile isolation, zero-copy refs, and temporal supersession',
     {
       text: z.string().describe('The core text content of the memory to store'),
       metadata: z
@@ -165,10 +201,23 @@ export function createMcpServer(): McpServer {
         .enum(['user', 'working', 'agent_core'])
         .optional()
         .describe('Memory profile isolation: user (default), working, or agent_core'),
+      supersedes: z
+        .string()
+        .optional()
+        .describe(
+          'Optional ID of an older memory that this new fact replaces (marks old record valid_until + superseded_by)'
+        ),
     },
-    async ({ text, metadata, importance, scope, profile }) => {
+    async ({ text, metadata, importance, scope, profile, supersedes }) => {
       try {
-        const result = await executeMemoryStore({ text, metadata, importance, scope, profile });
+        const result = await executeMemoryStore({
+          text,
+          metadata,
+          importance,
+          scope,
+          profile,
+          supersedes,
+        });
         return {
           content: [{ type: 'text', text: JSON.stringify(result, null, 2) }],
         };
@@ -267,8 +316,33 @@ export function createMcpServer(): McpServer {
   );
 
   server.tool(
+    'memory_reindex',
+    'Rebuild the local SQLite FTS5 and optional vector index from canonical Markdown files (zero-Ollama safe)',
+    {
+      vaultPath: z
+        .string()
+        .optional()
+        .describe('Path to the canonical Markdown/Obsidian vault directory'),
+    },
+    async ({ vaultPath }) => {
+      try {
+        const result = await executeMemoryReindex({ vaultPath });
+        return {
+          content: [{ type: 'text', text: JSON.stringify(result, null, 2) }],
+        };
+      } catch (error: any) {
+        console.error('[MCP Error] memory_reindex failed:', error);
+        return {
+          isError: true,
+          content: [{ type: 'text', text: error.message || String(error) }],
+        };
+      }
+    }
+  );
+
+  server.tool(
     'memory_consolidate',
-    'Perform time decay and semantic LLM merging/deduplication on active memories using Ollama',
+    'Perform time decay and near-duplicate consolidation (Auto Dream: zero-LLM fallback or optional Ollama LLM synthesis)',
     {},
     async () => {
       try {
@@ -470,6 +544,17 @@ if (process.argv[2] === 'init') {
     .then((m) => m.runSetup())
     .catch((err) => {
       console.error('Setup failed:', err);
+      process.exit(1);
+    });
+} else if (process.argv[2] === 'reindex') {
+  executeMemoryReindex({ vaultPath: process.argv[3] })
+    .then((res) => {
+      console.error(JSON.stringify(res, null, 2));
+      DatabaseManager.close();
+    })
+    .catch((err) => {
+      console.error('Reindex failed:', err);
+      DatabaseManager.close();
       process.exit(1);
     });
 } else if (
