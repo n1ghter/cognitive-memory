@@ -72,7 +72,7 @@ export function startWebServer(port: number = 3000) {
     const url = `http://localhost:${port}`;
     /* v8 ignore start */
     if (process.env.NODE_ENV !== 'test') {
-      console.log(`Web UI Dashboard is running at ${url}`);
+      console.error(`Web UI Dashboard is running at ${url}`);
 
       // Auto-open browser
       import('node:child_process')

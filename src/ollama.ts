@@ -1,13 +1,13 @@
 const OLLAMA_URL = process.env.OLLAMA_URL || 'http://127.0.0.1:11434';
 const EMBEDDING_MODEL = process.env.EMBEDDING_MODEL || 'qwen3-embedding:8b';
+const OLLAMA_TIMEOUT_MS = Number(process.env.OLLAMA_TIMEOUT_MS) || 10_000;
 
 /**
- * A client class for interacting with the Ollama API.
+ * A client class for interacting with the Ollama API with timeouts and resilience.
  */
 export class OllamaClient {
   /**
-   * Directly queries the Ollama /api/embed API using light native fetch.
-   * This completely bypasses heavy wrapper libraries to ensure optimal performance.
+   * Directly queries the Ollama /api/embed API using light native fetch with AbortSignal timeout.
    *
    * @param text The input text to be embedded
    * @returns A promise resolving with an array of embeddings as numbers
@@ -24,6 +24,7 @@ export class OllamaClient {
           model: EMBEDDING_MODEL,
           input: cleanText,
         }),
+        signal: AbortSignal.timeout(OLLAMA_TIMEOUT_MS),
       });
 
       if (!response.ok) {
@@ -42,14 +43,18 @@ export class OllamaClient {
 
       // /api/embed returns an array of embeddings (since it can take array input)
       return data.embeddings[0];
-    } catch (error) {
-      console.error('[Ollama] Failed to fetch embedding:', error);
+    } catch (error: any) {
+      if (error?.name === 'TimeoutError' || error?.name === 'AbortError') {
+        console.error(`[Ollama] Embedding request timed out after ${OLLAMA_TIMEOUT_MS}ms:`, url);
+      } else {
+        console.error('[Ollama] Failed to fetch embedding:', error);
+      }
       throw error;
     }
   }
 
   /**
-   * Directly queries the Ollama /api/generate API for local LLM inference.
+   * Directly queries the Ollama /api/generate API for local LLM inference with AbortSignal timeout.
    *
    * @param prompt The input text for generation
    * @param system Optional, specifies the system model to use
@@ -69,6 +74,7 @@ export class OllamaClient {
           system: system,
           stream: false,
         }),
+        signal: AbortSignal.timeout(OLLAMA_TIMEOUT_MS),
       });
 
       if (!response.ok) {
@@ -81,8 +87,12 @@ export class OllamaClient {
       };
 
       return data.response.trim();
-    } catch (error) {
-      console.error('[Ollama] Failed to generate text:', error);
+    } catch (error: any) {
+      if (error?.name === 'TimeoutError' || error?.name === 'AbortError') {
+        console.error(`[Ollama] Generation timed out after ${OLLAMA_TIMEOUT_MS}ms:`, url);
+      } else {
+        console.error('[Ollama] Failed to generate text:', error);
+      }
       throw error;
     }
   }

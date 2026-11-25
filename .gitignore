@@ -43,6 +43,7 @@ yarn-error.log*
 pnpm-debug.log*
 
 # Build info, scratch files and the npm lockfile (pnpm is the package manager)
+build/
 *.tsbuildinfo
 scratch/
 package-lock.json

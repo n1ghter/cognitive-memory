@@ -114,4 +114,57 @@ describe('Memory Store & Search (Integration)', () => {
 
     vi.restoreAllMocks();
   });
+
+  it('should deduplicate exact content and update existing record without mutating input metadata', async () => {
+    const inputMeta = { tag: 'initial' };
+    const res1 = await executeMemoryStore({
+      text: 'Identical memory content for deduplication',
+      importance: 0.4,
+      metadata: inputMeta,
+    });
+    expect(res1.success).toBe(true);
+    expect((inputMeta as any).profile).toBeUndefined();
+
+    const res2 = await executeMemoryStore({
+      text: 'Identical memory content for deduplication',
+      importance: 0.9,
+      metadata: { updated: true },
+    });
+    expect(res2.success).toBe(true);
+    expect(res2.message).toContain('idempotent match');
+    expect(res2.record.id).toBe(res1.record.id);
+    expect(res2.record.importance).toBe(0.9);
+    expect(res2.record.metadata.tag).toBe('initial');
+    expect(res2.record.metadata.updated).toBe(true);
+  });
+
+  it('should store and validate zero-copy pointer metadata', async () => {
+    const pointerRes = await executeMemoryStore({
+      text: 'Summary of strategic decision',
+      metadata: {
+        ref: {
+          vault_path: 'specs/zero-copy-linking/requirements.md',
+          wikilink: '[[requirements#REQ-01]]',
+          source_hash: 'a1b2c3d4e5f6',
+          section: 'REQ-01',
+        },
+        topic: 'strategy',
+      },
+    });
+
+    expect(pointerRes.success).toBe(true);
+    expect(pointerRes.record.metadata?.ref?.vault_path).toBe(
+      'specs/zero-copy-linking/requirements.md'
+    );
+    expect(pointerRes.record.metadata?.ref?.wikilink).toBe('[[requirements#REQ-01]]');
+  });
+
+  it('should reject invalid metadata schema for ref pointer', async () => {
+    await expect(
+      executeMemoryStore({
+        text: 'Bad ref pointer test',
+        metadata: { ref: 'not-an-object' as any },
+      })
+    ).rejects.toThrow('Invalid metadata schema');
+  });
 });
