@@ -6,6 +6,7 @@ All notable changes to this project will be documented in this file.
 
 ### Added
 
+- **Deterministic Eval Baseline Gate & Track D/E Harness (`evals/baseline.json`):** Committed canonical offline retrieval/dedup/temporal/round-trip floor metrics (`evals/baseline.json`), wired `tests/evals.test.ts` and `evals/run.ts --check-baseline` (`pnpm eval:check`) to fail deterministically on any regression, added **Track D (Round-Trip & Grounding Invariants)** verifying lossless Markdown ↔ SQLite `reindex` with zero-copy `ref` pointers and inactive external placeholders, and documented the **Track E (Dogfooding Regressions)** workflow in `evals/README.md`. (#140)
 - **Architecture Decision Records (`docs/adr/`):** Codified key architectural decisions (`0001`–`0005`), including **ADR 0002 (Deterministic-First Engineering)**, **ADR 0004 (Continuous Harness Engineering)**, and **ADR 0005 (Frozen 3D UI & Cross-Tool Focus)**.
 - **Open-Source Governance & Deterministic GitHub Automation:** Added structured YAML Issue Forms (`bug_report.yml`, `feature_request.yml`, `eval_regression.yml`, `config.yml`), Pull Request template, `CODEOWNERS`, `CODE_OF_CONDUCT.md`, declarative Labels-as-Code (`.github/labels.json` + `scripts/sync-labels.ts`), and deterministic path-based PR auto-labeling (`.github/labeler.yml` + `.github/workflows/labeler.yml`).
 

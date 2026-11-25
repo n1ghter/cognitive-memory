@@ -265,5 +265,70 @@
       "newText": "Session tokens switched from Redis Cluster to in-process LRU memory.",
       "query": "Where are session tokens cached?"
     }
-  ]
+  ],
+  "roundTrip": {
+    "groundedMemories": [
+      {
+        "key": "rt-arch-v2",
+        "text": "Canonical knowledge lives in Markdown notes while SQLite FTS5 acts as a rebuildable derived index.",
+        "profile": "agent_core",
+        "importance": 0.9,
+        "metadata": {
+          "type": "semantic",
+          "category": "architecture",
+          "tags": ["markdown-first", "sqlite-fts5"],
+          "ref": {
+            "vault_path": "docs/ARCHITECTURE_V2.md",
+            "wikilink": "[[ARCHITECTURE_V2]]",
+            "source_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "section": "Pillar 1: Inverted Storage Pyramid"
+          }
+        },
+        "externalLinks": [
+          {
+            "uri": "obsidian://vault/docs/ARCHITECTURE_V2.md",
+            "relationType": "grounded_in"
+          }
+        ],
+        "query": "Canonical knowledge Markdown notes SQLite FTS5 rebuildable index"
+      },
+      {
+        "key": "rt-wal-mode",
+        "text": "SQLite WAL concurrency allows parallel multi-IDE readers alongside MCP server writes.",
+        "profile": "working",
+        "importance": 0.8,
+        "metadata": {
+          "type": "semantic",
+          "category": "storage",
+          "tags": ["sqlite", "wal"],
+          "ref": {
+            "vault_path": "docs/adr/0001-markdown-first-zero-ollama-hybrid-retrieval.md",
+            "wikilink": "[[0001-markdown-first-zero-ollama-hybrid-retrieval]]",
+            "source_hash": "9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08",
+            "section": "Decision"
+          }
+        },
+        "externalLinks": [
+          {
+            "uri": "vault://docs/adr/0001-markdown-first-zero-ollama-hybrid-retrieval.md",
+            "relationType": "references"
+          }
+        ],
+        "query": "SQLite WAL concurrency multi-IDE readers MCP server writes"
+      }
+    ],
+    "internalRelations": [
+      {
+        "sourceKey": "rt-wal-mode",
+        "targetKey": "rt-arch-v2",
+        "relationType": "depends_on"
+      }
+    ],
+    "supersession": {
+      "oldText": "Legacy telemetry indexing depended on an always-on SurrealDB daemon.",
+      "newText": "Modern telemetry indexing uses embedded SQLite FTS5 with zero background daemons.",
+      "profile": "agent_core",
+      "query": "telemetry indexing embedded SQLite FTS5"
+    }
+  }
 }

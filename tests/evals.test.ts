@@ -2,8 +2,10 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { afterEach, describe, expect, it } from 'vitest';
 import {
+  checkReportAgainstBaseline,
   formatComparisonTable,
   formatScorecard,
+  loadBaseline,
   runEvals,
   useHashEmbedder,
   useOfflineEmbedder,
@@ -14,30 +16,27 @@ import { DatabaseManager } from '../src/db.js';
 const dataset = JSON.parse(
   fs.readFileSync(path.join(import.meta.dirname, '../evals/dataset.json'), 'utf8')
 );
+const baseline = loadBaseline(path.join(import.meta.dirname, '../evals/baseline.json'));
 
-// Regression gates for deterministic offline eval runs.
-// Raise floors whenever retrieval improves; never lower them silently.
-describe('Memory evals (BM25 zero-Ollama, Vector baseline, Hybrid RRF, Noise stress)', () => {
+// Regression gates for deterministic offline eval runs backed by evals/baseline.json.
+// Raise baseline floors whenever retrieval improves; never lower them silently (ADR 0004).
+describe('Memory evals (Baseline Gate, Tracks A-D)', () => {
   afterEach(() => {
     DatabaseManager.close();
     EmbeddingCache.clear();
   });
 
-  it('works cleanly with zero Ollama (pure FTS5 BM25 fallback) and preserves negative abstention', async () => {
+  it('meets offline-bm25 baseline floors with zero Ollama and passes Track D round-trip invariants', async () => {
     useOfflineEmbedder();
     const report = await runEvals(dataset, { embedder: 'offline', k: 5, mode: 'hybrid' });
     console.log(formatScorecard(report));
 
-    expect(report.ranking.byCategory.lexical.recallAtK).toBeGreaterThanOrEqual(0.95);
-    expect(report.ranking.byCategory.lexical.hitAt1).toBe(1);
-    expect(report.thresholded.recallAtK).toBeGreaterThanOrEqual(0.5);
-    expect(report.thresholded.negativeAbstention).toBe(1);
-    expect(report.lexicalDedup.accuracy).toBeGreaterThanOrEqual(0.875);
-    expect(report.contradictions.resolvedRate).toBe(1);
-    expect(report.contradictions.staleLeakRate).toBe(0);
+    expect(report.roundTrip.errors).toEqual([]);
+    expect(report.roundTrip.passRate).toBe(1);
+    expect(checkReportAgainstBaseline(report, baseline, 'offline-bm25')).toEqual([]);
   });
 
-  it('keeps Hybrid RRF >= pure vector baseline and fixes the default-threshold recall cliff', async () => {
+  it('meets hash-vector and hash-hybrid baseline floors and keeps Hybrid RRF >= pure vector', async () => {
     useHashEmbedder();
     const vecReport = await runEvals(dataset, { embedder: 'hash', k: 5, mode: 'vector' });
 
@@ -47,21 +46,15 @@ describe('Memory evals (BM25 zero-Ollama, Vector baseline, Hybrid RRF, Noise str
     const hybridReport = await runEvals(dataset, { embedder: 'hash', k: 5, mode: 'hybrid' });
     console.log(formatComparisonTable([vecReport, hybridReport]));
 
-    // Pure vector baseline floors (preserved)
-    expect(vecReport.ranking.overall.recallAtK).toBeGreaterThanOrEqual(0.81);
-    expect(vecReport.ranking.overall.mrr).toBeGreaterThanOrEqual(0.74);
-
-    // Hybrid RRF floors (strictly stronger overall & default-threshold recall!)
+    expect(checkReportAgainstBaseline(vecReport, baseline, 'hash-vector')).toEqual([]);
+    expect(checkReportAgainstBaseline(hybridReport, baseline, 'hash-hybrid')).toEqual([]);
     expect(hybridReport.ranking.overall.recallAtK).toBeGreaterThanOrEqual(
       vecReport.ranking.overall.recallAtK
     );
-    expect(hybridReport.ranking.byCategory.lexical.recallAtK).toBeGreaterThanOrEqual(0.95);
-    expect(hybridReport.ranking.byCategory.lexical.hitAt1).toBe(1);
-    expect(hybridReport.thresholded.recallAtK).toBeGreaterThanOrEqual(0.5);
-    expect(hybridReport.thresholded.negativeAbstention).toBe(1);
+    expect(hybridReport.roundTrip.passRate).toBe(1);
   });
 
-  it('stays resilient under 60 unrelated distractor memories (arXiv:2605.15184 noise test)', async () => {
+  it('meets hash-hybrid-noise60 baseline floors under 60 unrelated distractor memories', async () => {
     useHashEmbedder();
     const noisyReport = await runEvals(dataset, {
       embedder: 'hash',
@@ -71,8 +64,27 @@ describe('Memory evals (BM25 zero-Ollama, Vector baseline, Hybrid RRF, Noise str
     });
     console.log(formatScorecard(noisyReport));
 
-    expect(noisyReport.ranking.overall.recallAtK).toBeGreaterThanOrEqual(0.8);
-    expect(noisyReport.ranking.byCategory.lexical.hitAt1).toBe(1);
-    expect(noisyReport.thresholded.negativeAbstention).toBe(1);
+    expect(checkReportAgainstBaseline(noisyReport, baseline, 'hash-hybrid-noise60')).toEqual([]);
+    expect(noisyReport.roundTrip.passRate).toBe(1);
+  });
+
+  it('detects metric regressions deterministically via checkReportAgainstBaseline', async () => {
+    useOfflineEmbedder();
+    const report = await runEvals(dataset, {
+      embedder: 'offline',
+      k: 5,
+      mode: 'hybrid',
+      includeRoundTrip: false,
+    });
+    const degraded = {
+      ...report,
+      thresholded: { ...report.thresholded, negativeAbstention: 0.75 },
+      contradictions: { ...report.contradictions, staleLeakRate: 0.25 },
+    };
+
+    const violations = checkReportAgainstBaseline(degraded, baseline, 'offline-bm25');
+    expect(violations.map((v) => v.metric)).toEqual(
+      expect.arrayContaining(['negativeAbstention', 'contradictionsMaxStaleLeakRate'])
+    );
   });
 });

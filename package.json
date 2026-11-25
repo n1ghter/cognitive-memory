@@ -37,6 +37,7 @@
     "seed": "npx tsx scripts/seed-test-data.ts",
     "eval": "npx tsx evals/run.ts",
     "eval:ci": "npx tsx evals/run.ts --embedder hash",
+    "eval:check": "npx tsx evals/run.ts --embedder hash --mode compare --check-baseline",
     "verify": "pnpm exec biome ci . && pnpm exec tsc -b && pnpm build && pnpm test && pnpm --dir ui build && pnpm --dir ui test",
     "test": "vitest run",
     "test:coverage": "vitest run --coverage",
