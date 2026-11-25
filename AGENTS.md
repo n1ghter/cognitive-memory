@@ -1,98 +1,32 @@
-<!-- gitnexus:start -->
-# GitNexus — Code Intelligence
+# Repository Agent Instructions
 
-This project is indexed by GitNexus as **cognitive-memory** (311 symbols, 458 relationships, 14 execution flows). Use the GitNexus MCP tools to understand code, assess impact, and navigate safely.
+This repository is operated **AI-first**: autonomous agents act as principal engineers — making technical decisions, red-teaming their own assumptions, verifying empirically, and continuously improving both the codebase and its verification harness. Escalate to the maintainer only for genuinely irreversible external/product decisions.
 
-> If any GitNexus tool warns the index is stale, run `npx gitnexus analyze` in terminal first.
+## Required Verification Harness
 
-## Always Do
+Run before opening or merging any PR:
+```bash
+pnpm verify
+```
+`pnpm verify` executes Biome lint/format, root TypeScript (`tsc -b`), build, all Vitest suites (including the offline `evals` regression gate in `tests/evals.test.ts`), and UI build + tests.
 
-- **MUST run impact analysis before editing any symbol.** Before modifying a function, class, or method, run `gitnexus_impact({target: "symbolName", direction: "upstream"})` and report the blast radius (direct callers, affected processes, risk level) to the user.
-- **MUST run `gitnexus_detect_changes()` before committing** to verify your changes only affect expected symbols and execution flows.
-- **MUST warn the user** if impact analysis returns HIGH or CRITICAL risk before proceeding with edits.
-- When exploring unfamiliar code, use `gitnexus_query({query: "concept"})` to find execution flows instead of grepping. It returns process-grouped results ranked by relevance.
-- When you need full context on a specific symbol — callers, callees, which execution flows it participates in — use `gitnexus_context({name: "symbolName"})`.
+To inspect retrieval metrics directly:
+```bash
+pnpm eval:ci          # deterministic offline run (no Ollama required)
+pnpm eval             # live run against local Ollama
+```
 
-## Never Do
+## Non-Negotiable Engineering Invariants
 
-- NEVER edit a function, class, or method without first running `gitnexus_impact` on it.
-- NEVER ignore HIGH or CRITICAL risk warnings from impact analysis.
-- NEVER rename symbols with find-and-replace — use `gitnexus_rename` which understands the call graph.
-- NEVER commit changes without running `gitnexus_detect_changes()` to check affected scope.
+1. **Test isolation:** Never write to `~/.cognitive-memory/global-memory.sqlite` or the workspace `memory.sqlite` during tests (`tests/setup.ts` isolates both to `:memory:`).
+2. **Stdio purity:** Never use `console.log` in `src/` — stdout is reserved exclusively for MCP JSON-RPC frames; log to `console.error`.
+3. **Security by default:** HTTP/SSE transports must bind to `127.0.0.1` by default, restrict CORS to loopback origins, and require `MCP_AUTH_TOKEN` for any non-loopback host.
+4. **Regression-driven evals:** Every retrieval, deduplication, or contradiction bug fix must add a regression case to `evals/dataset.json` or `tests/`. Never lower eval baseline floors silently.
+5. **Public repository hygiene:** Keep all code, comments, commit messages, and test fixtures in English with no personal machine paths, hardware inventories, or credentials.
+6. **Changelog & commits:** Use Conventional Commits (`feat`, `fix`, `docs`, `perf`, `refactor`, `test`, `chore`, `ci`) and record notable user-facing changes under `## [Unreleased]` in `CHANGELOG.md`.
 
-## Resources
+## Key Architecture Docs
 
-| Resource | Use for |
-|----------|---------|
-| `gitnexus://repo/cognitive-memory/context` | Codebase overview, check index freshness |
-| `gitnexus://repo/cognitive-memory/clusters` | All functional areas |
-| `gitnexus://repo/cognitive-memory/processes` | All execution flows |
-| `gitnexus://repo/cognitive-memory/process/{name}` | Step-by-step execution trace |
-
-## CLI
-
-| Task | Read this skill file |
-|------|---------------------|
-| Understand architecture / "How does X work?" | `.claude/skills/gitnexus/gitnexus-exploring/SKILL.md` |
-| Blast radius / "What breaks if I change X?" | `.claude/skills/gitnexus/gitnexus-impact-analysis/SKILL.md` |
-| Trace bugs / "Why is X failing?" | `.claude/skills/gitnexus/gitnexus-debugging/SKILL.md` |
-| Rename / extract / split / refactor | `.claude/skills/gitnexus/gitnexus-refactoring/SKILL.md` |
-| Tools, resources, schema reference | `.claude/skills/gitnexus/gitnexus-guide/SKILL.md` |
-| Index, status, clean, wiki CLI commands | `.claude/skills/gitnexus/gitnexus-cli/SKILL.md` |
-
-<!-- gitnexus:end -->
-
-## Changelog Automation
-
-Every time an AI Agent completes a significant task, feature implementation, bug fix, or refactoring session in this repository, it MUST automatically update the `CHANGELOG.md` file as part of its final execution steps.
-1. **Format:** Adhere strictly to the "Keep a Changelog" format (https://keepachangelog.com/).
-2. **Location:** Always append new entries under the `## [Unreleased]` section header. If the header doesn't exist, create it above the latest version.
-3. **Categories:** Group changes under appropriate sub-headers: `### Added`, `### Changed`, `### Deprecated`, `### Removed`, `### Fixed`, or `### Security`.
-4. **Proactivity:** Do NOT ask the user for permission to update the changelog. Just update it automatically before concluding the conversation.
-
-## Semantic Versioning Automation
-
-Whenever an AI Agent completes a task that warrants a changelog update, it MUST also proactively bump the project's version.
-- Use `npm version patch` for bug fixes or minor refactoring.
-- Use `npm version minor` for new features or significant changes that are backward-compatible.
-- Use `npm version major` for breaking changes or major architectural overhauls.
-- Execute this command directly in the terminal before the final response. Do NOT ask for permission to bump the version if significant changes were already approved by the user.
-
-## AI Memory & Annotation Standards
-
-**Rule:** When you significantly modify a core file, you are responsible for updating its semantic annotation.
-- **Trigger:** Pre-commit hooks may prompt you to do this automatically.
-- **Tooling:** Use the `generate_file_annotation` skill to read the file and store its summary.
-- **Format:** 
-  - Always use Markdown.
-  - Focus purely on the "Why" (Business Logic, Architectural Purpose).
-  - Do not summarize standard language syntax.
-  - Keep it under 5-7 sentences if possible.
-- **Project Specifics:** When annotating files in this repository, explicitly list exposed MCP Tools and SQLite Database Tables. Do NOT duplicate technical inputs/outputs; put those in JSDoc inline.
-
-## Architectural & Engineering Principles
-
-- **DRY (Don't Repeat Yourself):** Eliminate redundancy in both code and configuration. Standardize shared logic, patterns, and assets.
-- **KISS (Keep It Simple, Stupid):** Strive for maximum simplicity. A clear, readable, and straightforward implementation is always superior to a clever, complex one.
-- **YAGNI (You Aren't Gonna Need It):** Implement only the features and code required for the current task. Do not write speculative code for hypothetical future requirements.
-- **Anti-BDUF (Avoid Big Design Up Front):** Favor evolutionary architecture and iterative refinement. Do not try to design the entire universe before writing code.
-- **SOLID Principles:** Strictly adhere to SOLID in object-oriented and modular systems.
-- **Avoid Premature Optimization:** Focus first on correctness and clean architecture. Do not optimize prematurely. Only optimize when there is an empirically measured bottleneck or when it makes direct, practical sense.
-- **Occam's Razor:** Prefer the simplest design that completely satisfies the requirements. Do not introduce unnecessary abstractions, layers, or wrappers without direct architectural necessity.
-
-## Git Commit Standards
-
-- **Format:** `<type>(<scope>): <description>` (e.g., `fix(tests): resolve login timeout`).
-- **Allowed Types:** `feat`, `fix`, `docs`, `perf`, `refactor`, `style`, `test`, `chore`, `ci`.
-
-
-## Autonomous Memory Checklist
-**CRITICAL FORCING FUNCTION**: As an autonomous agent operating in this repository, you are strictly required to manage long-term memory via the `cognitive-memory` MCP tools. 
-
-Before providing your final response or concluding any major task (e.g. bug fix, feature implementation, refactor), you **MUST** execute the `memory-auto-capture` skill and output the following completed checklist in your response:
-
-- [ ] Task completed and verified.
-- [ ] Episodic Memory recorded via `memory_store` (summarizing what was done and why).
-- [ ] Semantic Annotations updated for any modified core files.
-
-**DO NOT** conclude a conversation without completing this checklist.
+- [docs/RESEARCH_2026.md](docs/RESEARCH_2026.md) — Empirical research driving v2.0.
+- [docs/ARCHITECTURE_V2.md](docs/ARCHITECTURE_V2.md) — Target Markdown-first, zero-Ollama hybrid architecture.
+- [ROADMAP.md](ROADMAP.md) — Active milestones (`v1.6.0` → `v2.0.0` → `v2.1.0`).
