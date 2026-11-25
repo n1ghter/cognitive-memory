@@ -32,6 +32,9 @@ describe('Memory evals (BM25 zero-Ollama, Vector baseline, Hybrid RRF, Noise str
     expect(report.ranking.byCategory.lexical.hitAt1).toBe(1);
     expect(report.thresholded.recallAtK).toBeGreaterThanOrEqual(0.5);
     expect(report.thresholded.negativeAbstention).toBe(1);
+    expect(report.lexicalDedup.accuracy).toBeGreaterThanOrEqual(0.875);
+    expect(report.contradictions.resolvedRate).toBe(1);
+    expect(report.contradictions.staleLeakRate).toBe(0);
   });
 
   it('keeps Hybrid RRF >= pure vector baseline and fixes the default-threshold recall cliff', async () => {

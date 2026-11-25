@@ -151,7 +151,10 @@ export class DatabaseManager {
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
         updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
         last_accessed_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-        accessed_count INTEGER DEFAULT 0
+        accessed_count INTEGER DEFAULT 0,
+        valid_from DATETIME DEFAULT CURRENT_TIMESTAMP,
+        valid_until DATETIME,
+        superseded_by TEXT
       );
 
       CREATE TABLE IF NOT EXISTS ${schemaName}.edges (
@@ -219,16 +222,18 @@ export class DatabaseManager {
     }
 
     // Migration for existing databases
-    try {
-      db.exec(`ALTER TABLE ${schemaName}.memory ADD COLUMN updated_at DATETIME`);
-    } catch (_e) {
-      // Column already exists or table doesn't exist yet
-    }
-
-    try {
-      db.exec(`ALTER TABLE ${schemaName}.edges ADD COLUMN is_external INTEGER DEFAULT 0`);
-    } catch (_e) {
-      // Column already exists or table doesn't exist yet
+    for (const ddl of [
+      `ALTER TABLE ${schemaName}.memory ADD COLUMN updated_at DATETIME`,
+      `ALTER TABLE ${schemaName}.memory ADD COLUMN valid_from DATETIME`,
+      `ALTER TABLE ${schemaName}.memory ADD COLUMN valid_until DATETIME`,
+      `ALTER TABLE ${schemaName}.memory ADD COLUMN superseded_by TEXT`,
+      `ALTER TABLE ${schemaName}.edges ADD COLUMN is_external INTEGER DEFAULT 0`,
+    ]) {
+      try {
+        db.exec(ddl);
+      } catch (_e) {
+        // Column already exists or table doesn't exist yet
+      }
     }
   }
 
