@@ -148,6 +148,7 @@ export async function executeMemoryStore(args: StoreArgs) {
       }
 
       const updatedImportance = Math.max(existing.importance, importance);
+      const mergedMetadataJson = JSON.stringify(mergedMetadata);
       db.prepare(`
         UPDATE ${schema}.memory
         SET last_accessed_at = CURRENT_TIMESTAMP,
@@ -156,7 +157,8 @@ export async function executeMemoryStore(args: StoreArgs) {
             importance = ?,
             metadata = ?
         WHERE rowid = ?
-      `).run(updatedImportance, JSON.stringify(mergedMetadata), existing.rowid);
+      `).run(updatedImportance, mergedMetadataJson, existing.rowid);
+      DatabaseManager.syncFtsRow(schema, existing.rowid, cleanText, mergedMetadata, db);
 
       return {
         success: true,
@@ -206,6 +208,7 @@ export async function executeMemoryStore(args: StoreArgs) {
       VALUES (?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 0, CURRENT_TIMESTAMP)
     `);
     const info = stmt.run(id, cleanText, JSON.stringify(normalizedMetadata), importance, 1);
+    DatabaseManager.syncFtsRow(schema, info.lastInsertRowid, cleanText, normalizedMetadata, db);
 
     if (embedding) {
       // lastInsertRowid is often a BigInt in better-sqlite3. Pass it as BigInt

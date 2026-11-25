@@ -125,6 +125,27 @@ describe('Temporal Supersession, Bounded CTE Subgraph, Auto-Dream & Markdown Rei
         'The project uses the Apache 2.0 license.'
       )
     ).toBe(true);
+    expect(
+      areLexicallyDuplicate(
+        'Replies to the owner must be in Russian.',
+        'Always reply to the owner in Russian.'
+      )
+    ).toBe(true);
+    expect(
+      areLexicallyDuplicate(
+        'The staging API listens on port 8080.',
+        'The staging API listens on port 8443.'
+      )
+    ).toBe(false);
+    expect(
+      areLexicallyDuplicate(
+        'Backups are written to vault://archive/daily.md.',
+        'Backups are written to vault://archive/weekly.md.'
+      )
+    ).toBe(false);
+    expect(
+      areLexicallyDuplicate('The dashboard uses dark theme.', 'The dashboard uses light theme.')
+    ).toBe(false);
 
     const llmSpy = vi.spyOn(OllamaClient, 'generateText');
     await executeMemoryStore({
