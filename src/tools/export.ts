@@ -116,6 +116,14 @@ export async function executeMemoryExport(args: ExportArgs = {}): Promise<{
       mem.valid_from ? `valid_from: ${mem.valid_from}` : null,
       mem.valid_until ? `valid_until: ${mem.valid_until}` : null,
       mem.superseded_by ? `superseded_by: ${mem.superseded_by}` : null,
+      meta?.ref?.vault_path
+        ? `ref_vault_path: "${String(meta.ref.vault_path).replace(/"/g, '\\"')}"`
+        : null,
+      meta?.ref?.wikilink
+        ? `ref_wikilink: "${String(meta.ref.wikilink).replace(/"/g, '\\"')}"`
+        : null,
+      meta?.ref?.section ? `ref_section: "${String(meta.ref.section).replace(/"/g, '\\"')}"` : null,
+      meta?.ref?.source_hash ? `ref_source_hash: ${meta.ref.source_hash}` : null,
     ]
       .filter(Boolean)
       .join('\n');

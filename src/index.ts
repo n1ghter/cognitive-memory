@@ -13,6 +13,7 @@ import { executeMemoryConsolidate } from './tools/consolidate.js';
 import { executeMemoryDelete } from './tools/delete.js';
 import { executeMemoryExport } from './tools/export.js';
 import { executeMemoryRelate } from './tools/graph.js';
+import { executeCheckRefDrift } from './tools/obsidian_bridge.js';
 import { executeMemoryReindex } from './tools/reindex.js';
 import { executeMemorySearch } from './tools/search.js';
 import { executeMemoryStore } from './tools/store.js';
@@ -273,15 +274,63 @@ export function createMcpServer(): McpServer {
         .string()
         .optional()
         .describe('Optional custom path to the Obsidian vault directory'),
+      checkRefs: z
+        .boolean()
+        .optional()
+        .default(false)
+        .describe(
+          'When true, also runs deterministic SHA-256 drift detection on zero-copy ref pointers'
+        ),
+      vaultRoot: z
+        .string()
+        .optional()
+        .describe('Optional vault root directory used when resolving zero-copy ref pointers'),
     },
-    async ({ vaultPath }) => {
+    async ({ vaultPath, checkRefs, vaultRoot }) => {
       try {
-        const result = await executeMemorySync({ vaultPath });
+        const result = await executeMemorySync({ vaultPath, checkRefs, vaultRoot });
         return {
           content: [{ type: 'text', text: JSON.stringify(result, null, 2) }],
         };
       } catch (error: any) {
         console.error('[MCP Error] memory_sync failed:', error);
+        return {
+          isError: true,
+          content: [{ type: 'text', text: error.message || String(error) }],
+        };
+      }
+    }
+  );
+
+  server.tool(
+    'memory_check_refs',
+    'Deterministically detect SHA-256 source_hash drift on zero-copy metadata.ref pointers against Markdown/Obsidian files',
+    {
+      vaultRoot: z
+        .string()
+        .optional()
+        .describe('Root directory for resolving relative vault_path and wikilink pointers'),
+      scope: z
+        .enum(['local', 'global', 'all'])
+        .optional()
+        .default('local')
+        .describe('Memory scope to scan: local (default), global, or all'),
+      updateHashes: z
+        .boolean()
+        .optional()
+        .default(false)
+        .describe(
+          'When true, refreshes stored source_hash for stale or unhashed pointers whose files exist'
+        ),
+    },
+    async ({ vaultRoot, scope, updateHashes }) => {
+      try {
+        const result = executeCheckRefDrift({ vaultRoot, scope, updateHashes });
+        return {
+          content: [{ type: 'text', text: JSON.stringify(result, null, 2) }],
+        };
+      } catch (error: any) {
+        console.error('[MCP Error] memory_check_refs failed:', error);
         return {
           isError: true,
           content: [{ type: 'text', text: error.message || String(error) }],
@@ -554,11 +603,41 @@ if (process.argv[2] === 'init') {
     });
 } else if (process.argv[2] === 'setup') {
   import('./cli/setup.js')
-    .then((m) => m.runSetup())
+    .then((m) => m.runSetup(m.parseSetupCliArgs(process.argv.slice(3))))
     .catch((err) => {
       console.error('Setup failed:', err);
       process.exit(1);
     });
+} else if (process.argv[2] === 'import-tool') {
+  import('./cli/import_tool.js')
+    .then(async (m) => {
+      const opts = m.parseImportToolArgs(process.argv.slice(3));
+      const res = await m.runImportTool(opts);
+      console.error(JSON.stringify(res, null, 2));
+      DatabaseManager.close();
+    })
+    .catch((err) => {
+      console.error('Import tool failed:', err);
+      DatabaseManager.close();
+      process.exit(1);
+    });
+} else if (process.argv[2] === 'check-refs') {
+  const args = process.argv.slice(3);
+  const vaultIdx = args.indexOf('--vault');
+  const vaultRoot = vaultIdx >= 0 ? args[vaultIdx + 1] : undefined;
+  const scopeIdx = args.indexOf('--scope');
+  const rawScope = scopeIdx >= 0 ? args[scopeIdx + 1] : 'local';
+  const scope = rawScope === 'global' || rawScope === 'all' ? rawScope : 'local';
+  const updateHashes = args.includes('--update-hashes');
+  try {
+    const res = executeCheckRefDrift({ vaultRoot, scope, updateHashes });
+    console.error(JSON.stringify(res, null, 2));
+    DatabaseManager.close();
+  } catch (err) {
+    console.error('Check refs failed:', err);
+    DatabaseManager.close();
+    process.exit(1);
+  }
 } else if (process.argv[2] === 'reindex') {
   executeMemoryReindex({ vaultPath: process.argv[3] })
     .then((res) => {

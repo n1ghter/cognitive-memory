@@ -13,7 +13,7 @@ import {
   SKILL_TEMPLATE,
   upsertAgentsManagedBlock,
 } from '../src/cli/init.js';
-import { runSetup } from '../src/cli/setup.js';
+import { parseSetupCliArgs, runSetup } from '../src/cli/setup.js';
 import { normalizeLifecycleEvent, runLifecycleHook } from '../src/hooks/lifecycle.js';
 
 describe('CLI Scripts', () => {
@@ -157,29 +157,76 @@ describe('CLI Scripts', () => {
     });
   });
 
-  describe('setup.ts', () => {
-    it('injects MCP configuration cleanly into JSON and TOML configs in isolated temp home', async () => {
+  describe('setup.ts (multi-IDE atomic patching including Codex & Cline #134)', () => {
+    it('injects MCP configuration atomically into Claude, Codex, and Cline configs in isolated temp home', async () => {
       const fakeHome = path.join(tmpDir, 'home');
+      const fakeAppData = path.join(fakeHome, 'AppData', 'Roaming');
       const claudePath = path.join(fakeHome, '.claude.json');
       const codexPath = path.join(fakeHome, '.codex', 'config.toml');
+      const clinePath = path.join(
+        fakeAppData,
+        'Code',
+        'User',
+        'globalStorage',
+        'saoudrizwan.claude-dev',
+        'settings',
+        'cline_mcp_settings.json'
+      );
+
       fs.mkdirSync(path.dirname(codexPath), { recursive: true });
+      fs.mkdirSync(path.dirname(clinePath), { recursive: true });
       fs.writeFileSync(claudePath, JSON.stringify({ mcpServers: {} }), 'utf-8');
-      fs.writeFileSync(codexPath, 'model = "gpt-5"\n', 'utf-8');
+      fs.writeFileSync(codexPath, '# Codex config\nmodel = "gpt-5"\n', 'utf-8');
+      fs.writeFileSync(
+        clinePath,
+        JSON.stringify({ mcpServers: { existing: { command: 'node' } } }),
+        'utf-8'
+      );
 
-      vi.spyOn(os, 'homedir').mockReturnValue(fakeHome);
+      // Dry-run reports targets without modifying files on disk
+      expect(parseSetupCliArgs(['--dry-run'])).toEqual({ dryRun: true });
+      const dryRes = await runSetup({
+        homedir: fakeHome,
+        platform: 'win32',
+        appData: fakeAppData,
+        dryRun: true,
+      });
+      expect(dryRes.configured).toEqual(expect.arrayContaining(['Claude Code', 'Codex', 'Cline']));
+      expect(
+        JSON.parse(fs.readFileSync(clinePath, 'utf-8')).mcpServers['cognitive-memory']
+      ).toBeUndefined();
 
-      await runSetup();
+      // Live run patches all three atomically and preserves existing entries/comments
+      const res = await runSetup({
+        homedir: fakeHome,
+        platform: 'win32',
+        appData: fakeAppData,
+      });
+      expect(res.configured).toEqual(expect.arrayContaining(['Claude Code', 'Codex', 'Cline']));
+      expect(res.errors).toEqual([]);
 
       const updatedClaude = JSON.parse(fs.readFileSync(claudePath, 'utf-8'));
       expect(updatedClaude.mcpServers['cognitive-memory']).toBeDefined();
 
+      const updatedCline = JSON.parse(fs.readFileSync(clinePath, 'utf-8'));
+      expect(updatedCline.mcpServers.existing).toEqual({ command: 'node' });
+      expect(updatedCline.mcpServers['cognitive-memory']).toBeDefined();
+
       const updatedCodex = fs.readFileSync(codexPath, 'utf-8');
+      expect(updatedCodex).toContain('# Codex config');
       expect(updatedCodex).toContain('[mcp_servers.cognitive-memory]');
 
-      // Second run is idempotent (no duplicate TOML section)
-      await runSetup();
-      const codexAfterSecond = fs.readFileSync(codexPath, 'utf-8');
-      expect(codexAfterSecond).toBe(updatedCodex);
+      // Second run is strictly idempotent (zero rewrites, zero duplicates)
+      const secondRes = await runSetup({
+        homedir: fakeHome,
+        platform: 'win32',
+        appData: fakeAppData,
+      });
+      expect(secondRes.configured).toEqual([]);
+      expect(secondRes.alreadyConfigured).toEqual(
+        expect.arrayContaining(['Claude Code', 'Codex', 'Cline'])
+      );
+      expect(fs.readFileSync(codexPath, 'utf-8')).toBe(updatedCodex);
     });
 
     it('handles invalid JSON config gracefully without crashing', async () => {
@@ -187,9 +234,8 @@ describe('CLI Scripts', () => {
       fs.mkdirSync(fakeHome, { recursive: true });
       fs.writeFileSync(path.join(fakeHome, '.claude.json'), 'not valid json', 'utf-8');
 
-      vi.spyOn(os, 'homedir').mockReturnValue(fakeHome);
-
-      await runSetup();
+      const res = await runSetup({ homedir: fakeHome, platform: 'linux' });
+      expect(res.errors.length).toBeGreaterThan(0);
       expect(console.error).toHaveBeenCalled();
     });
   });

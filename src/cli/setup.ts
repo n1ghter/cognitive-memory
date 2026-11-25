@@ -15,23 +15,49 @@ interface ConfigTarget {
   rootKey?: string;
 }
 
-export async function runSetup() {
-  console.log('Scanning for installed AI agents and IDEs...');
+export interface SetupOptions {
+  homedir?: string;
+  platform?: NodeJS.Platform;
+  appData?: string;
+  dryRun?: boolean;
+}
 
-  const homedir = os.homedir();
-  const platform = os.platform();
-  const appData = process.env.APPDATA || path.join(homedir, 'AppData', 'Roaming');
-  const macAppSupport = path.join(homedir, 'Library', 'Application Support');
+export interface SetupResult {
+  configured: string[];
+  alreadyConfigured: string[];
+  skipped: string[];
+  errors: string[];
+  dryRun: boolean;
+}
 
-  /* v8 ignore start */
-  const targets: ConfigTarget[] = [
+/**
+ * Writes a file atomically (temp file in same directory + rename) so IDE config files
+ * can never be truncated or corrupted on crash.
+ */
+function writeFileAtomic(filePath: string, content: string): void {
+  const tmpPath = `${filePath}.tmp.${process.pid}.${Date.now()}`;
+  fs.writeFileSync(tmpPath, content, 'utf-8');
+  fs.renameSync(tmpPath, filePath);
+}
+
+/**
+ * Builds the deterministic list of supported IDE / AI coding agent MCP configuration targets.
+ */
+export function getSetupTargets(options: SetupOptions = {}): ConfigTarget[] {
+  const homedir = options.homedir ?? os.homedir();
+  const platform = options.platform ?? os.platform();
+  const appData =
+    options.appData ??
+    (platform === 'win32'
+      ? process.env.APPDATA || path.join(homedir, 'AppData', 'Roaming')
+      : platform === 'darwin'
+        ? path.join(homedir, 'Library', 'Application Support')
+        : path.join(homedir, '.config'));
+
+  return [
     {
       name: 'Claude Desktop',
-      paths: [
-        platform === 'win32'
-          ? path.join(appData, 'Claude', 'claude_desktop_config.json')
-          : path.join(macAppSupport, 'Claude', 'claude_desktop_config.json'),
-      ],
+      paths: [path.join(appData, 'Claude', 'claude_desktop_config.json')],
     },
     {
       name: 'Claude Code',
@@ -45,9 +71,7 @@ export async function runSetup() {
       name: 'Cursor',
       paths: [
         path.join(homedir, '.cursor', 'mcp.json'),
-        platform === 'win32'
-          ? path.join(appData, 'Cursor', 'User', 'globalStorage', 'cursor.mcp', 'mcp.json')
-          : path.join(macAppSupport, 'Cursor', 'User', 'globalStorage', 'cursor.mcp', 'mcp.json'),
+        path.join(appData, 'Cursor', 'User', 'globalStorage', 'cursor.mcp', 'mcp.json'),
       ],
     },
     {
@@ -68,10 +92,46 @@ export async function runSetup() {
       paths: [path.join(homedir, '.codex', 'config.toml')],
       format: 'toml',
     },
+    {
+      name: 'Cline',
+      paths: [
+        path.join(
+          appData,
+          'Code',
+          'User',
+          'globalStorage',
+          'saoudrizwan.claude-dev',
+          'settings',
+          'cline_mcp_settings.json'
+        ),
+        path.join(homedir, '.cline', 'mcp_settings.json'),
+      ],
+    },
   ];
-  /* v8 ignore stop */
+}
 
-  let configuredCount = 0;
+export function parseSetupCliArgs(argv: string[]): SetupOptions {
+  return {
+    dryRun: argv.includes('--dry-run'),
+  };
+}
+
+/**
+ * Deterministically scans for installed AI agents/IDEs and injects `cognitive-memory`
+ * using atomic file replacement without disturbing user comments or unrelated servers.
+ */
+export async function runSetup(options: SetupOptions = {}): Promise<SetupResult> {
+  const dryRun = Boolean(options.dryRun);
+  const targets = getSetupTargets(options);
+  const result: SetupResult = {
+    configured: [],
+    alreadyConfigured: [],
+    skipped: [],
+    errors: [],
+    dryRun,
+  };
+
+  console.error('Scanning for installed AI agents and IDEs...');
 
   for (const target of targets) {
     let found = false;
@@ -79,63 +139,70 @@ export async function runSetup() {
     const rootKey = target.rootKey || 'mcpServers';
 
     for (const configPath of target.paths) {
-      if (fs.existsSync(configPath)) {
-        found = true;
-        try {
-          const content = fs.readFileSync(configPath, 'utf-8');
+      if (!fs.existsSync(configPath)) continue;
+      found = true;
 
-          if (format === 'json') {
-            const json = JSON.parse(content || '{}');
-            if (!json[rootKey]) json[rootKey] = {};
+      try {
+        const content = fs.readFileSync(configPath, 'utf-8');
 
-            if (json[rootKey][MCP_SERVER_NAME]) {
-              console.log(
-                `ℹ️ [${target.name}] cognitive-memory is already configured at ${configPath}`
-              );
-            } else {
-              json[rootKey][MCP_SERVER_NAME] = MCP_SERVER_CONFIG;
-              fs.writeFileSync(configPath, JSON.stringify(json, null, 2), 'utf-8');
-              console.log(
-                `✅ [${target.name}] Successfully injected cognitive-memory into ${configPath}`
-              );
-              configuredCount++;
-            }
-          } else if (format === 'toml') {
-            /* v8 ignore start */
-            const tomlBlock = `\n[mcp_servers.${MCP_SERVER_NAME}]\ncommand = "npx"\nargs = ["-y", "@cemised/cognitive-memory"]\n`;
-            if (content.includes(`[mcp_servers.${MCP_SERVER_NAME}]`)) {
-              console.log(
-                `ℹ️ [${target.name}] cognitive-memory is already configured at ${configPath}`
-              );
-            } else {
-              fs.appendFileSync(configPath, tomlBlock, 'utf-8');
-              console.log(
-                `✅ [${target.name}] Successfully appended cognitive-memory to ${configPath}`
-              );
-              configuredCount++;
-            }
+        if (format === 'json') {
+          const json = JSON.parse(content || '{}');
+          if (!json[rootKey] || typeof json[rootKey] !== 'object') {
+            json[rootKey] = {};
           }
-          /* v8 ignore stop */
-        } catch (err: any) {
-          console.error(
-            `❌ [${target.name}] Failed to parse or write to ${configPath}: ${err.message}`
-          );
+
+          if (json[rootKey][MCP_SERVER_NAME]) {
+            console.error(
+              `[${target.name}] cognitive-memory is already configured at ${configPath}`
+            );
+            result.alreadyConfigured.push(target.name);
+          } else {
+            json[rootKey][MCP_SERVER_NAME] = MCP_SERVER_CONFIG;
+            if (!dryRun) {
+              writeFileAtomic(configPath, `${JSON.stringify(json, null, 2)}\n`);
+            }
+            console.error(
+              `[${target.name}] ${dryRun ? 'Would inject' : 'Injected'} cognitive-memory into ${configPath}`
+            );
+            result.configured.push(target.name);
+          }
+        } else if (format === 'toml') {
+          const hasSection =
+            content.includes(`[mcp_servers.${MCP_SERVER_NAME}]`) ||
+            content.includes(`[mcp_servers."${MCP_SERVER_NAME}"]`);
+
+          if (hasSection) {
+            console.error(
+              `[${target.name}] cognitive-memory is already configured at ${configPath}`
+            );
+            result.alreadyConfigured.push(target.name);
+          } else {
+            const prefix = content.length > 0 && !content.endsWith('\n') ? '\n' : '';
+            const tomlBlock = `${prefix}\n[mcp_servers.${MCP_SERVER_NAME}]\ncommand = "npx"\nargs = ["-y", "@cemised/cognitive-memory"]\n`;
+            if (!dryRun) {
+              writeFileAtomic(configPath, `${content}${tomlBlock}`);
+            }
+            console.error(
+              `[${target.name}] ${dryRun ? 'Would append' : 'Appended'} cognitive-memory to ${configPath}`
+            );
+            result.configured.push(target.name);
+          }
         }
-        break; // Stop checking alternative paths for this target if we found one
+      } catch (err: any) {
+        const msg = `[${target.name}] Failed to parse or write ${configPath}: ${err.message}`;
+        console.error(msg);
+        result.errors.push(msg);
       }
+      break;
     }
 
     if (!found) {
-      console.log(`⏭️ [${target.name}] Config file not found, skipping.`);
+      result.skipped.push(target.name);
     }
   }
 
-  console.log('\n🚀 Global MCP Setup Complete!');
-  if (configuredCount > 0) {
-    console.log(
-      `Successfully configured ${configuredCount} editor(s). Please restart them to apply the changes.`
-    );
-  } else {
-    console.log('No new configurations were applied.');
-  }
+  console.error(
+    `Global MCP Setup complete: ${result.configured.length} configured, ${result.alreadyConfigured.length} already configured, ${result.skipped.length} not found.`
+  );
+  return result;
 }
