@@ -1,5 +1,4 @@
 ---
-
 name: generate_file_annotation
 description: Generates a concise semantic summary (annotation) for a given file and saves it to the local project's knowledge base or memory store.
 ---

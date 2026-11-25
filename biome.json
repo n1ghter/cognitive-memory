@@ -6,7 +6,7 @@
     "useIgnoreFile": true
   },
   "files": {
-    "includes": ["**", "!!**/dist", "!!knowledge", "!!coverage", "!!.playwright-cli"]
+    "includes": ["**", "!!**/dist", "!!knowledge", "!!coverage", "!!.playwright-cli", "!!**/*.md"]
   },
   "formatter": {
     "enabled": true,
