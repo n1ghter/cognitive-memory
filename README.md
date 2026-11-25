@@ -20,15 +20,15 @@ Native auto-memory in Claude Code, Cursor, Antigravity, and Windsurf locks your 
 
 ---
 
-## ✨ Key Capabilities
+## ✨ Key Capabilities (v2.0)
 
+- **Zero-Ollama by Default (SQLite FTS5 BM25 + Optional Hybrid RRF):** Works out of the box with zero external services (`EMBEDDING_PROVIDER=none` or automatic offline fallback). When local Ollama is running, seamlessly upgrades to **Hybrid Reciprocal Rank Fusion (BM25 + `sqlite-vec` cosine)** — beating both pure lexical and pure vector baselines.
+- **Markdown-First Canonical Truth (`memory_reindex` / `cognitive-memory reindex`):** Bidirectional Obsidian/Markdown sync with YAML frontmatter (`profile`, `status`, `valid_from`, `valid_until`, `superseded_by`) and lossless zero-Ollama index reconstruction from Markdown notes.
+- **Temporal Supersession & Bounded 1–2 Hop Graph:** Pass `supersedes` on `memory_store` so updated facts cleanly replace outdated ones (`100%` contradiction resolution, `0%` stale leaks) while preserving history (`includeSuperseded: true`). Enable `includeGraph: true` (`graphDepth: 1 | 2`) to fetch directly linked context and external `grounded_in` pointers in a single call.
 - **Cross-Tool Portability:** One memory store usable simultaneously from Antigravity, Claude Code, Claude Desktop, Cursor, Windsurf, Copilot, and OpenCode (`npx -y @cemised/cognitive-memory setup`).
-- **Federated Scopes (`local` | `global` | `all`):** Isolate project-specific context in `./memory.sqlite` while sharing user-wide preferences and patterns via `~/.cognitive-memory/global-memory.sqlite`.
-- **3-Tier Memory Profiles (`user` | `working` | `agent_core`):** Keep stable preferences, active debugging context, and invariant architectural facts cleanly separated.
-- **Zero-Copy External Grounding:** Attach validated `ref` pointers (`vault_path`, `wikilink`, `source_hash`, `section`) and external `grounded_in` / `references` graph edges (`obsidian://`, `vault://`) back to canonical Markdown files.
-- **Human-Agent Symmetry (Obsidian Sync):** Bidirectional Markdown export/import with YAML frontmatter so you can read, edit, diff, and version-control what your agents remember.
-- **Resilient Engine & Hardened Transports:** Stdio transport by default plus loopback-first SSE mode (with localhost CORS and timing-safe Bearer auth for remote/Docker deployments), Ollama timeouts, O(1) bounded LRU cache, single-pass CTE vector search, and exact content deduplication.
-- **Eval-Driven Development:** Built-in `evals/` benchmark suite measuring `Recall@K`, `Hit@1`, `MRR`, `nDCG@K`, negative abstention, and deduplication accuracy in CI.
+- **Federated Scopes (`local` | `global` | `all`) & 3-Tier Profiles (`user` | `working` | `agent_core`):** Isolate project context while sharing user-wide conventions globally.
+- **Zero-LLM "Auto Dream" Consolidation:** Time-decay pruning and conflict-guarded lexical deduplication that run with zero LLM required (optionally upgrading to Ollama synthesis when online).
+- **Hardened Transports & Continuous Eval Harness:** Stdio default + loopback-first SSE mode (localhost CORS, timing-safe Bearer auth required for remote bind), plus `pnpm verify` and `evals/` benchmarking BM25 vs. Vector vs. Hybrid RRF, distractor noise, and temporal contradictions.
 
 ---
 
@@ -37,12 +37,11 @@ Native auto-memory in Claude Code, Cursor, Antigravity, and Windsurf locks your 
 ### Prerequisites
 - Node.js **v24+**
 - `pnpm` **v9+** (for building from source)
-- [Ollama](https://ollama.com/) running locally on port `11434` *(required for dense vector embeddings in v1.x; optional hybrid layer in upcoming v2.0)*:
+- **Optional** [Ollama](https://ollama.com/) on port `11434` to enable dense hybrid embeddings & LLM consolidation synthesis (completely optional — set `EMBEDDING_PROVIDER=none` for explicit lexical-only mode, or leave default `auto` for automatic fallback):
   ```bash
   ollama pull qwen3-embedding:8b
   ollama pull llama3.2
   ```
-  Set `EMBEDDING_MODEL` to use any Ollama embedding model — vector tables are dynamically sized to your model's dimension.
 
 ### 1. Connect Your AI Editors (Once Per Machine)
 Auto-detects installed editors (Antigravity, Cursor, Claude Desktop, Claude Code, Copilot, Windsurf, OpenCode) and adds the MCP server config:
@@ -80,12 +79,13 @@ By default `--sse` binds strictly to `127.0.0.1:3000`. Binding to a non-loopback
 
 | Tool | Purpose |
 |---|---|
-| `memory_search` | Semantic search with optional `scope` (`local` \| `global` \| `all`), `profile` (`user` \| `working` \| `agent_core` \| `all`), `limit`, and `threshold`. |
-| `memory_store` | Store a memory with exact deduplication, optional `scope` (`local` \| `global`), `profile`, `importance`, and zero-copy `metadata.ref` pointers. |
+| `memory_search` | Hybrid FTS5 BM25 + optional dense RRF search (`mode: hybrid \| bm25 \| vector`), `scope` (`local` \| `global` \| `all`), `profile`, `includeSuperseded`, and bounded 1–2 hop `includeGraph` (`graphDepth: 1 \| 2`). |
+| `memory_store` | Store a memory (zero-Ollama safe) with exact deduplication, `scope`, `profile`, `importance`, zero-copy `metadata.ref` pointers, and `supersedes` temporal versioning. |
 | `memory_relate` | Create a typed graph edge between two memory nodes or link a memory to an external `obsidian://` / `vault://` URI (`grounded_in`, `references`). |
 | `memory_sync` | Bidirectional sync between local Markdown/Obsidian notes and SQLite. |
-| `memory_export` | Export active memories and graph relations to Markdown files. |
-| `memory_consolidate` | Time-decay importance scoring and near-duplicate merging. |
+| `memory_export` | Export memories (active or `includeSuperseded: true`) and graph relations to Markdown files. |
+| `memory_reindex` | Wipe and rebuild the local SQLite FTS5 + optional vector index losslessly from canonical Markdown files (`cognitive-memory reindex`). |
+| `memory_consolidate` | "Auto Dream" time-decay pruning and near-duplicate merging (zero-LLM fallback or optional Ollama synthesis). |
 | `memory_delete` | Soft-delete (default) or hard-purge a specific memory record. |
 | `memory_clear_all` | Wipe all local memories, vectors, and edges (`confirm: true` required). |
 
@@ -98,15 +98,24 @@ Every change is verified through a single local & CI harness command:
 ```bash
 pnpm install
 pnpm rebuild better-sqlite3 sqlite-vec
-pnpm verify          # Biome + tsc + build + unit tests + offline eval gate + UI build & tests
+pnpm verify          # Biome + tsc + build + 116 root tests & eval gates + UI build & 23 UI tests
 ```
 
 Run retrieval scorecards directly:
 ```bash
-pnpm eval                      # real embeddings via local Ollama
-pnpm eval:ci                   # deterministic offline hash baseline (no Ollama required)
-pnpm eval -- --k 3 --json report.json
+pnpm eval                                          # live Hybrid RRF via local Ollama
+pnpm eval:ci                                       # deterministic offline hash baseline
+npx tsx evals/run.ts --embedder none --mode bm25   # pure zero-Ollama SQLite FTS5 BM25
+npx tsx evals/run.ts --embedder hash --mode compare --noise 60
 ```
+
+**Deterministic Offline Benchmark (`k=5`, 26 memories, 28 queries, 4 temporal contradictions, 8 dedup pairs):**
+
+| Mode | Recall@5 | Hit@1 | MRR | nDCG@5 | Default-Threshold Recall | Neg Abstention | Contradictions@1 |
+|---|---:|---:|---:|---:|---:|---:|---:|
+| `bm25` (zero-Ollama) | 81.3% | 66.7% | 71.9% | 73.1% | 60.4% | 100.0% | 100.0% (0% leak) |
+| `vector` (hash baseline) | 81.3% | 70.8% | 74.8% | 75.3% | 14.6% | 100.0% | 100.0% (0% leak) |
+| **`hybrid` (BM25 + RRF)** | **85.4%** | **70.8%** | **76.2%** | **77.3%** | **60.4%** | **100.0%** | **100.0% (0% leak)** |
 
 Optional read-only 3D Graph Explorer:
 ```bash

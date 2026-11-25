@@ -15,19 +15,19 @@ Our focus is building a **vendor-neutral, cross-tool, Markdown-first, zero-Ollam
 
 ---
 
-## 🚧 v2.0.0 — Zero-Ollama Hybrid Engine & Markdown-First Storage
+## ✅ v2.0.0 — Zero-Ollama Hybrid Engine & Markdown-First Storage
 
 ### Milestone 2.0a: Zero-Dependency Hybrid Retrieval (`FTS5` + Optional Dense RRF)
-- [ ] **SQLite FTS5 (BM25) Index:** Always-on lexical search across `main` and `global` schemas with zero external dependencies.
-- [ ] **Graceful Zero-Ollama Mode:** `memory_store` and `memory_search` work reliably even when Ollama is offline or `EMBEDDING_PROVIDER=none`.
-- [ ] **Hybrid RRF Fusion:** Reciprocal Rank Fusion combining BM25 + optional dense embeddings (`sqlite-vec`), verified to beat both pure BM25 and pure vector baselines in `evals/`.
-- [ ] **Expanded Eval Harness:** Benchmark `bm25` vs. `dense` vs. `hybrid-rrf`, distractor noise stress tests, and automated CI regression floors.
+- [x] **SQLite FTS5 (BM25) Index:** Always-on lexical search across `main` and `global` schemas with zero external dependencies (`#129`, `#137`).
+- [x] **Graceful Zero-Ollama Mode:** `memory_store` and `memory_search` work reliably even when Ollama is offline or `EMBEDDING_PROVIDER=none` (`#129`, `#137`).
+- [x] **Hybrid RRF Fusion:** Reciprocal Rank Fusion combining BM25 + optional dense embeddings (`sqlite-vec`), verified to beat both pure BM25 and pure vector baselines in `evals/` (`#130`, `#137`).
+- [x] **Expanded Eval Harness:** Benchmark `bm25` vs. `dense` vs. `hybrid-rrf`, distractor noise stress tests, and automated CI regression floors (`#130`, `#137`).
 
 ### Milestone 2.0b: Markdown-First Truth, Temporal Graph & Auto-Dream
-- [ ] **Markdown-First Canonical Store & `reindex` CLI:** Treat Markdown/Obsidian notes (+ Git) as canonical truth; make SQLite completely rebuildable via `cognitive-memory reindex`.
-- [ ] **Temporal Supersession:** Add `valid_from`, `valid_until`, and `superseded_by` columns + `supersedes` relation so updated facts cleanly replace stale ones without losing history.
-- [ ] **Zero-LLM Consolidation ("Auto Dream"):** Decay, lexical/content deduplication, and stale-record pruning that work without requiring a local LLM (with optional LLM synthesis when available).
-- [ ] **Bounded 1–2 Hop CTE Subgraph Retrieval:** Optional `includeGraph` in `memory_search` to return directly linked context and `grounded_in` raw-source pointers in one tool call.
+- [x] **Markdown-First Canonical Store & `reindex` CLI:** Treat Markdown/Obsidian notes (+ Git) as canonical truth; SQLite is completely rebuildable via `cognitive-memory reindex` / `memory_reindex` (`#131`, `#138`).
+- [x] **Temporal Supersession:** `valid_from`, `valid_until`, and `superseded_by` columns + `supersedes` relation so updated facts cleanly replace stale ones (`100% resolved@1`, `0% stale leak`) (`#132`, `#138`).
+- [x] **Zero-LLM Consolidation ("Auto Dream"):** Conflict-guarded lexical deduplication + decay pruning working without Ollama, with optional LLM synthesis when online (`#136`, `#138`).
+- [x] **Bounded 1–2 Hop CTE Subgraph Retrieval:** Optional `includeGraph` (`graphDepth: 1 | 2`) in `memory_search` returning connected memories and `grounded_in` external pointers in one tool call (`#136`, `#138`).
 
 ---
 

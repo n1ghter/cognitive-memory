@@ -4,26 +4,31 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [2.0.0] - 2026-11-25
+
 ### Added
-- **Federated Memory**: `memory_search` accepts a `scope` of `local` (default), `global`, or `all`, merging local and global results by similarity; `memory_store` accepts `scope` `local` (default) or `global`. Each result and stored record reports its `scope`. (#99)
-- **Configuration**: `MEMORY_GLOBAL_DB_PATH` overrides the global DB location (tests use it to keep the real `~/.cognitive-memory` DB untouched). (#99)
-- **Any Embedding Model**: The vector table is now sized from the configured `EMBEDDING_MODEL`'s output instead of being hardcoded to 4096 dimensions, so smaller models such as `nomic-embed-text` (768) work. (#101)
-- **Evals**: Added a retrieval eval suite (`evals/`) with a golden dataset of memories, graded queries (lexical, paraphrase, cross-lingual, negative) and near-duplicate pairs. `pnpm eval` prints a scorecard with Recall@k, Hit@1, MRR, nDCG@k, threshold precision, negative-query abstention and consolidation dedup precision/recall, using local Ollama or a deterministic `--embedder hash` mode. (#103)
-- **CI**: `tests/evals.test.ts` runs the deterministic eval in `pnpm test` and fails if scores drop below the recorded baseline. (#103)
+- **Zero-Ollama SQLite FTS5 (BM25) & Hybrid RRF Retrieval**: Always-on `fts_memory` (`unicode61`) tables + sync triggers across `main` and `global` schemas with automatic backfill for existing DBs. `memory_store` and `memory_search` now work seamlessly offline (`EMBEDDING_PROVIDER=none` or automatic fallback when Ollama is unreachable) and fuse BM25 + optional dense vectors via Reciprocal Rank Fusion (`mode: hybrid | bm25 | vector`). (#129, #130, #137)
+- **Markdown-First Canonical Storage & `reindex`**: Added `memory_reindex` MCP tool and `cognitive-memory reindex [vaultPath]` CLI to wipe and rebuild the SQLite FTS5 + optional vector index losslessly from Markdown notes (works completely offline). (#131, #138)
+- **Temporal Supersession**: Added `valid_from`, `valid_until`, and `superseded_by` columns, `supersedes` parameter on `memory_store` (creating a `supersedes` edge), and `includeSuperseded` flag on `memory_search` / `memory_export`. Resolves 100% of temporal contradiction evals with 0% stale leak. (#132, #138)
+- **Bounded 1–2 Hop CTE Subgraph Retrieval**: Added optional `includeGraph` and `graphDepth` (`1 | 2`) to `memory_search` to return directly connected memories and external `grounded_in` pointers in a single call. (#136, #138)
+- **Zero-LLM "Auto Dream" Consolidation**: `memory_consolidate` now works without Ollama using conflict-guarded lexical deduplication (version numbers, opposing polarity, and entity guards) + deterministic merge fallback, while optionally upgrading synthesis via Ollama LLM when online. (#136, #138)
+- **Engine Hardening, Profiles & Zero-Copy Grounding**: Added Ollama `AbortSignal` timeouts, O(1) bounded LRU L1 cache (`MAX_CACHE_SIZE = 1000`), single-pass CTE cosine search, schema+profile-scoped exact deduplication, 3-tier memory profiles (`user`, `working`, `agent_core`), Zod-validated zero-copy `ref` pointers, external URI relations (`obsidian://`, `vault://`), Node 24 Dockerfile, and hardened loopback-default SSE transport with timing-safe Bearer auth for remote bind. (#120, #121, co-authored with `@include9it`)
+- **Federated Memory**: `memory_search` accepts a `scope` of `local` (default), `global`, or `all`, merging local and global results; `memory_store` accepts `scope` `local` (default) or `global`. Each result and stored record reports its `scope`. (#99, #119)
+- **Configuration**: `MEMORY_GLOBAL_DB_PATH` overrides the global DB location (tests isolate both local and global DBs to `:memory:`). (#99, #119)
+- **Any Embedding Model**: The vector table is dynamically sized from the configured `EMBEDDING_MODEL`'s output instead of being hardcoded to 4096 dimensions. (#101, #119)
+- **Continuous Harness Engineering & Evals**: Added unified `pnpm verify` command and expanded `evals/` with `--mode compare`, `--noise` distractor stress tests, temporal contradiction evals, and zero-LLM Auto-Dream dedup evals. (#103, #122, #137, #138)
+- **2026 Research & Architecture Docs**: Published `docs/RESEARCH_2026.md`, `docs/ARCHITECTURE_V2.md`, rewritten `ROADMAP.md` & `README.md`, lean AI-first `AGENTS.md`, and GitHub Wiki. (#128)
 
 ### Changed
-- **CI Pipeline**: Added Biome lint and build steps to the CI workflow. (#100)
-- **Dimension Safety**: Existing databases keep their vector size; using a model with a different size now fails with a clear error explaining how to re-embed (`memory_export` → `memory_clear_all` → `memory_sync`). `memory_clear_all` drops the vector table so it is recreated at the current model's size, and also empties the in-memory embedding cache. (#101)
-- **Global Vectors**: The global database's vector table is created at the embedding model's dimension on the first global store, the same way as the local one, and is kept across restarts. Only an empty fixed-size table left by older versions is dropped at startup. Every `vec_memory` query names its schema, so local queries can never read the global table. (#99 on top of #101)
-- **Repository Hygiene**: `pnpm-lock.yaml` is the only lockfile (CI and releases use pnpm; the stale `package-lock.json` caused conflicts in every PR); `*.tsbuildinfo` and `scratch/` are ignored and `tsconfig.tsbuildinfo` is no longer tracked.
+- **CI/CD & Security Hygiene**: Overhauled `ci.yml` (pnpm cache, `--frozen-lockfile`, Biome, root `tsc`, coverage, eval gate, UI build + tests) and `release.yml` (tag/version parity check + full verification before publish), hardened `auto-create-pr.yml` to draft-only without blind auto-merge, replaced third-party `auto-update-pr.yml` with first-party `actions/github-script`, removed redundant `delete-merged-branch.yml`, removed unused `gitnexus` devDependency, and upgraded `ui/` dependencies (Vitest 5.1.1), reducing Dependabot alerts from 47 to 1 moderate. (#122)
+- **Dimension Safety**: Existing databases keep their vector size; using a model with a different size fails with a clear error explaining how to re-embed. (#101, #119)
+- **Global Vectors**: Global vector tables are sized dynamically on first global store and preserved across restarts. (#119)
+- **Repository Hygiene**: Enforced LF line endings via `.gitattributes`, migrated `biome.json` to 2.5.14, updated `.husky/pre-commit` for Husky v10 compatibility, and kept `pnpm-lock.yaml` as the single lockfile. (#122)
 
 ### Fixed
-- **MCP Server**: `serverInfo.version` now reports the version from `package.json` instead of a hardcoded `1.0.0`. (#100)
-- **MCP Tools**: `memory_store` no longer claims to encrypt or hash memories, which it never did. (#100)
-- **Build**: `pnpm build` now emits `dist/`; `tsconfig.build.json` inherited `noEmit: true`, so builds silently produced nothing. (#100)
-- **Lint**: Resolved the 3 Biome errors in UI files (SVG titles, CSS formatting). (#100)
-- **Tests**: Fixed a `tsc` error in `tests/import.test.ts` (`readFileSync` mock typing after the `@types/node` bump) that blocked the pre-commit hook. (#100, #103)
-- **UI Tests**: Load jest-dom matchers through `@testing-library/jest-dom/vitest` so `ui` typechecks under Vitest 5 (unblocks the Vitest 5 upgrade in #85). (#102)
+- **MCP Server**: `serverInfo.version` now reports the version from `package.json` instead of a hardcoded `1.0.0`, and stray `console.log` calls were routed to `console.error` for stdio purity. (#100, #121)
+- **MCP Tools**: `memory_store` no longer makes false encryption claims or mutates caller metadata objects; external URI placeholders are marked `is_active = 0` so active queries/exports remain unpolluted. (#100, #121)
+- **Build & UI Tests**: `pnpm build` emits `dist/` cleanly; UI tests load jest-dom matchers cleanly under Vitest 5. (#100, #102, #122)
 
 ## [1.5.6] - 2026-06-15
 
