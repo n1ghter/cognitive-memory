@@ -208,7 +208,17 @@
     { "query": "What is the capital of Australia?", "relevant": [], "category": "negative" },
     { "query": "Recipe for chocolate chip cookies", "relevant": [], "category": "negative" },
     { "query": "Kubernetes pod autoscaling configuration", "relevant": [], "category": "negative" },
-    { "query": "Who won the football world cup in 2010?", "relevant": [], "category": "negative" }
+    { "query": "Who won the football world cup in 2010?", "relevant": [], "category": "negative" },
+    {
+      "query": "Memory foam mattress warranty comparison",
+      "relevant": [],
+      "category": "negative"
+    },
+    {
+      "query": "Construction project concrete mixing ratio",
+      "relevant": [],
+      "category": "negative"
+    }
   ],
   "dedupPairs": [
     {
@@ -232,6 +242,21 @@
       "duplicate": true
     },
     {
+      "a": "Code is formatted by Biome with single quotes.",
+      "b": "Biome formats code using single quotes.",
+      "duplicate": true
+    },
+    {
+      "a": "Dependencies are installed with pnpm.",
+      "b": "Install project dependencies using pnpm.",
+      "duplicate": true
+    },
+    {
+      "a": "The maintainer publishes releases to npm.",
+      "b": "Releases are published to npm by the maintainer.",
+      "duplicate": true
+    },
+    {
       "a": "The database uses PostgreSQL 15.",
       "b": "The database uses PostgreSQL 16.",
       "duplicate": false
@@ -241,6 +266,31 @@
     {
       "a": "Embeddings come from Ollama.",
       "b": "Text generation uses llama3.2 in Ollama.",
+      "duplicate": false
+    },
+    {
+      "a": "The staging API listens on port 8080.",
+      "b": "The staging API listens on port 8443.",
+      "duplicate": false
+    },
+    {
+      "a": "Telemetry upload is enabled in production.",
+      "b": "Telemetry upload is disabled in production.",
+      "duplicate": false
+    },
+    {
+      "a": "The dashboard uses dark theme.",
+      "b": "The dashboard uses light theme.",
+      "duplicate": false
+    },
+    {
+      "a": "The frontend uses React for rendering.",
+      "b": "The frontend uses Vue for rendering.",
+      "duplicate": false
+    },
+    {
+      "a": "Backups are written to vault://archive/daily.md.",
+      "b": "Backups are written to vault://archive/weekly.md.",
       "duplicate": false
     }
   ],

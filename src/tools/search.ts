@@ -2,7 +2,10 @@ import { EmbeddingCache } from '../cache.js';
 import { DatabaseManager, type MemoryScope, scopeToSchemas, type VectorSchema } from '../db.js';
 import {
   buildFtsQuery,
-  computeTermCoverage,
+  computeIdfWeightedCoverage,
+  computePhraseProximityBoost,
+  extractMetadataSearchText,
+  formatFtsTermClause,
   fuseReciprocalRank,
   getEmbeddingProvider,
   isEmbeddingDimensionError,
@@ -72,6 +75,9 @@ interface CandidateRow {
   vecSimilarity?: number;
   bm25Score?: number;
   termCoverage?: number;
+  matchedTermCount?: number;
+  maxMatchedIdf?: number;
+  phraseBoost?: number;
   rrfScore?: number;
 }
 
@@ -145,11 +151,33 @@ export async function executeMemorySearch(args: SearchArgs) {
     }
   }
 
-  // 2. Run FTS5 BM25 lexical search across requested schemas
+  // 2. Run FTS5 BM25 lexical search across requested schemas with weighted columns & IDF-calibrated coverage
   const { ftsQuery, terms } = shouldRunBm25 ? buildFtsQuery(query) : { ftsQuery: '', terms: [] };
   const bm25Candidates: CandidateRow[] = [];
+  let totalActiveDocs = 0;
+  const termDocFreqs = new Map<string, number>();
 
   if (shouldRunBm25 && ftsQuery) {
+    // Compute exact corpus document count N and per-term document frequency df(t) via indexed FTS5 lookups
+    for (const schema of schemas) {
+      const countRow = db
+        .prepare(`SELECT COUNT(*) AS n FROM ${schema}.memory m WHERE ${activeCondition}`)
+        .get() as { n: number };
+      totalActiveDocs += countRow?.n ?? 0;
+
+      const dfStmt = db.prepare(`
+        SELECT COUNT(*) AS df
+        FROM ${schema}.fts_memory
+        JOIN ${schema}.memory m ON ${schema}.fts_memory.rowid = m.rowid
+        WHERE fts_memory MATCH ?
+          AND ${activeCondition}
+      `);
+      for (const term of terms) {
+        const dfRow = dfStmt.get(formatFtsTermClause(term)) as { df: number } | undefined;
+        termDocFreqs.set(term, (termDocFreqs.get(term) ?? 0) + (dfRow?.df ?? 0));
+      }
+    }
+
     for (const schema of schemas) {
       const stmt = db.prepare(`
         SELECT
@@ -164,7 +192,7 @@ export async function executeMemorySearch(args: SearchArgs) {
           m.valid_from,
           m.valid_until,
           m.superseded_by,
-          bm25(fts_memory) AS raw_bm25
+          bm25(fts_memory, 1.0, 0.8, 0.5) AS raw_bm25
         FROM ${schema}.fts_memory
         JOIN ${schema}.memory m ON ${schema}.fts_memory.rowid = m.rowid
         WHERE fts_memory MATCH ?
@@ -179,8 +207,19 @@ export async function executeMemorySearch(args: SearchArgs) {
       `);
       const rows = stmt.all(ftsQuery, profile, profile, profile, candidatePoolSize) as any[];
       for (const r of rows) {
-        const termCoverage = computeTermCoverage(terms, r.text);
-        const bm25Score = Math.max(normalizeBm25(r.raw_bm25), termCoverage * 0.5);
+        const metaSearchText = extractMetadataSearchText(r.metadata);
+        const idfCov = computeIdfWeightedCoverage(
+          terms,
+          r.text,
+          termDocFreqs,
+          Math.max(1, totalActiveDocs),
+          metaSearchText
+        );
+        const phraseBoost = computePhraseProximityBoost(terms, r.text, query);
+        const bm25Score = Math.min(
+          1.0,
+          Math.max(normalizeBm25(r.raw_bm25), idfCov.coverage * 0.5) + phraseBoost
+        );
         bm25Candidates.push({
           key: `${schema}:${r.id}`,
           schema,
@@ -196,7 +235,10 @@ export async function executeMemorySearch(args: SearchArgs) {
           valid_until: r.valid_until ?? null,
           superseded_by: r.superseded_by ?? null,
           bm25Score,
-          termCoverage,
+          termCoverage: idfCov.coverage,
+          matchedTermCount: idfCov.matchedCount,
+          maxMatchedIdf: idfCov.maxMatchedIdf,
+          phraseBoost,
         });
       }
     }
@@ -330,11 +372,17 @@ export async function executeMemorySearch(args: SearchArgs) {
         const vecPass = (row.vecSimilarity ?? -1) >= threshold;
         const bm25Pass =
           row.bm25Score !== undefined &&
-          isLexicalConfident(row.bm25Score, row.termCoverage ?? 0, terms.length, threshold);
+          isLexicalConfident(row.bm25Score, row.termCoverage ?? 0, terms.length, threshold, {
+            matchedCount: row.matchedTermCount,
+            maxMatchedIdf: row.maxMatchedIdf,
+            totalDocs: totalActiveDocs,
+          });
         return vecPass || bm25Pass;
       })
       .sort((a, b) => {
-        const diff = (b.rrfScore ?? 0) - (a.rrfScore ?? 0);
+        const scoreA = (a.rrfScore ?? 0) + (a.phraseBoost ?? 0) * 0.25;
+        const scoreB = (b.rrfScore ?? 0) + (b.phraseBoost ?? 0) * 0.25;
+        const diff = scoreB - scoreA;
         if (Math.abs(diff) > 1e-9) return diff;
         return (b.vecSimilarity ?? b.bm25Score ?? 0) - (a.vecSimilarity ?? a.bm25Score ?? 0);
       })
@@ -348,7 +396,11 @@ export async function executeMemorySearch(args: SearchArgs) {
       .filter(
         (row) =>
           threshold <= 0 ||
-          isLexicalConfident(row.bm25Score ?? 0, row.termCoverage ?? 0, terms.length, threshold)
+          isLexicalConfident(row.bm25Score ?? 0, row.termCoverage ?? 0, terms.length, threshold, {
+            matchedCount: row.matchedTermCount,
+            maxMatchedIdf: row.maxMatchedIdf,
+            totalDocs: totalActiveDocs,
+          })
       )
       .slice(0, limit);
   }

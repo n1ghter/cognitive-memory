@@ -4,6 +4,7 @@ import os from 'node:os';
 import path from 'node:path';
 import Database from 'better-sqlite3';
 import * as sqliteVec from 'sqlite-vec';
+import { extractCodeTokens, extractMetadataSearchText } from './retrieval.js';
 
 // In-process database file path
 const DB_PATH = process.env.MEMORY_DB_PATH || path.join(process.cwd(), 'memory.sqlite');
@@ -184,41 +185,53 @@ export class DatabaseManager {
       );
     `);
 
-    // Always-on SQLite FTS5 (BM25) lexical index synchronized with memory table
-    const hadFts = Boolean(
-      db.prepare(`SELECT 1 FROM ${schemaName}.sqlite_master WHERE name = 'fts_memory'`).get()
-    );
+    // Always-on SQLite FTS5 (BM25) lexical index with Porter stemming, code-aware tokens & weighted metadata
+    const ftsMaster = db
+      .prepare(`SELECT sql FROM ${schemaName}.sqlite_master WHERE name = 'fts_memory'`)
+      .get() as { sql: string } | undefined;
+
+    const ftsSql = ftsMaster?.sql ?? '';
+    const needsFtsUpgrade =
+      !ftsSql.includes('porter unicode61') ||
+      !ftsSql.includes('code_tokens') ||
+      !ftsSql.includes('metadata_text');
+
+    if (needsFtsUpgrade) {
+      db.exec(`
+        DROP TRIGGER IF EXISTS ${schemaName}.memory_fts_ai;
+        DROP TRIGGER IF EXISTS ${schemaName}.memory_fts_ad;
+        DROP TRIGGER IF EXISTS ${schemaName}.memory_fts_au;
+        DROP TABLE IF EXISTS ${schemaName}.fts_memory;
+      `);
+    }
 
     db.exec(`
       CREATE VIRTUAL TABLE IF NOT EXISTS ${schemaName}.fts_memory USING fts5(
         text,
-        content='memory',
-        content_rowid='rowid',
-        tokenize='unicode61 remove_diacritics 2'
+        code_tokens,
+        metadata_text,
+        tokenize='porter unicode61 remove_diacritics 2'
       );
 
       CREATE TRIGGER IF NOT EXISTS ${schemaName}.memory_fts_ai AFTER INSERT ON memory BEGIN
-        INSERT INTO fts_memory(rowid, text) VALUES (new.rowid, new.text);
+        INSERT INTO fts_memory(rowid, text, code_tokens, metadata_text)
+        VALUES (new.rowid, new.text, '', '');
       END;
 
       CREATE TRIGGER IF NOT EXISTS ${schemaName}.memory_fts_ad AFTER DELETE ON memory BEGIN
-        INSERT INTO fts_memory(fts_memory, rowid, text) VALUES('delete', old.rowid, old.text);
+        DELETE FROM fts_memory WHERE rowid = old.rowid;
       END;
 
-      CREATE TRIGGER IF NOT EXISTS ${schemaName}.memory_fts_au AFTER UPDATE OF text ON memory BEGIN
-        INSERT INTO fts_memory(fts_memory, rowid, text) VALUES('delete', old.rowid, old.text);
-        INSERT INTO fts_memory(rowid, text) VALUES (new.rowid, new.text);
+      CREATE TRIGGER IF NOT EXISTS ${schemaName}.memory_fts_au AFTER UPDATE OF text, metadata ON memory BEGIN
+        DELETE FROM fts_memory WHERE rowid = old.rowid;
+        INSERT INTO fts_memory(rowid, text, code_tokens, metadata_text)
+        VALUES (new.rowid, new.text, '', '');
       END;
     `);
 
-    // Backfill existing pre-FTS5 databases cleanly on first startup
-    if (!hadFts) {
-      const { n } = db.prepare(`SELECT COUNT(*) AS n FROM ${schemaName}.memory`).get() as {
-        n: number;
-      };
-      if (n > 0) {
-        db.exec(`INSERT INTO ${schemaName}.fts_memory(fts_memory) VALUES('rebuild');`);
-      }
+    // Backfill existing pre-FTS5 or pre-v2.1 databases cleanly on first startup without data loss
+    if (needsFtsUpgrade) {
+      DatabaseManager.populateFtsTable(db, schemaName);
     }
 
     // Migration for existing databases
@@ -238,14 +251,60 @@ export class DatabaseManager {
   }
 
   /**
+   * Synchronizes a single row in `fts_memory` with code-aware subtokens and extracted metadata text.
+   */
+  public static syncFtsRow(
+    schema: VectorSchema,
+    rowid: number | bigint,
+    text: string,
+    metadata: string | Record<string, unknown> | null | undefined,
+    dbInstance?: Database.Database
+  ): void {
+    const db = dbInstance ?? DatabaseManager.getInstance();
+    const codeTokens = extractCodeTokens(text);
+    const metadataText = extractMetadataSearchText(metadata);
+    db.prepare(`DELETE FROM ${schema}.fts_memory WHERE rowid = ?`).run(rowid);
+    db.prepare(
+      `INSERT INTO ${schema}.fts_memory(rowid, text, code_tokens, metadata_text) VALUES (?, ?, ?, ?)`
+    ).run(rowid, text, codeTokens, metadataText);
+  }
+
+  /**
+   * Populates all rows in `fts_memory` from `memory` for the given schema with code-aware and metadata tokens.
+   */
+  private static populateFtsTable(db: Database.Database, schemaName: string): void {
+    const rows = db.prepare(`SELECT rowid, text, metadata FROM ${schemaName}.memory`).all() as {
+      rowid: number | bigint;
+      text: string;
+      metadata: string | null;
+    }[];
+
+    const delAll = db.prepare(`DELETE FROM ${schemaName}.fts_memory`);
+    const ins = db.prepare(
+      `INSERT INTO ${schemaName}.fts_memory(rowid, text, code_tokens, metadata_text) VALUES (?, ?, ?, ?)`
+    );
+
+    const tx = db.transaction(() => {
+      delAll.run();
+      for (const row of rows) {
+        ins.run(
+          row.rowid,
+          row.text,
+          extractCodeTokens(row.text),
+          extractMetadataSearchText(row.metadata)
+        );
+      }
+    });
+    tx();
+  }
+
+  /**
    * Rebuilds the SQLite FTS5 lexical index from the memory table for the given schema.
    *
    * @param schema `main` for the project DB, `global` for the user-wide DB.
    */
   public static rebuildFts(schema: VectorSchema = 'main'): void {
-    DatabaseManager.getInstance().exec(
-      `INSERT INTO ${schema}.fts_memory(fts_memory) VALUES('rebuild');`
-    );
+    DatabaseManager.populateFtsTable(DatabaseManager.getInstance(), schema);
   }
 
   /**

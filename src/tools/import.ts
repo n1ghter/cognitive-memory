@@ -173,6 +173,12 @@ export async function executeMemoryImport(args: ImportArgs = {}): Promise<{
             parsed.superseded_by ?? null
           );
         }
+        const ftsRow = db.prepare('SELECT rowid FROM memory WHERE id = ?').get(fullId) as
+          | { rowid: number | bigint }
+          | undefined;
+        if (ftsRow) {
+          DatabaseManager.syncFtsRow('main', ftsRow.rowid, parsed.text, parsed.metadata, db);
+        }
       });
       importTx();
 
