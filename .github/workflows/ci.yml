@@ -6,34 +6,45 @@ on:
   pull_request:
     branches: [ main ]
 
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   test:
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v4
-    
-    - name: Use Node.js
-      uses: actions/setup-node@v4
-      with:
-        node-version: '24'
-        
-    - name: Install pnpm
-      uses: pnpm/action-setup@v4
-      with:
-        version: 9
-        
-    - name: Install dependencies
-      run: pnpm install
-      
-    - name: Rebuild native dependencies
-      run: pnpm rebuild
-      
-    - name: Lint
-      run: pnpm exec biome ci .
+      - uses: actions/checkout@v4
 
-    - name: Build
-      run: pnpm build && test -f dist/index.js
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9
 
-    - name: Run tests
-      run: pnpm test
+      - name: Use Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: 'pnpm'
+
+      - name: Install root dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Rebuild native dependencies
+        run: pnpm rebuild better-sqlite3 sqlite-vec
+
+      - name: Lint & format check (Biome)
+        run: pnpm exec biome ci .
+
+      - name: Typecheck & build root
+        run: pnpm exec tsc -b && pnpm build && test -f dist/index.js
+
+      - name: Run root tests, coverage & offline eval gate
+        run: pnpm test:coverage
+
+      - name: Install UI dependencies
+        run: pnpm --dir ui install --frozen-lockfile
+
+      - name: Typecheck, build & test UI
+        run: pnpm --dir ui build && pnpm --dir ui test

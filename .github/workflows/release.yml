@@ -19,24 +19,37 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '24'
+      - name: Verify tag matches package.json version
+        run: |
+          TAG_VERSION="${GITHUB_REF_NAME#v}"
+          PKG_VERSION="$(node -p "require('./package.json').version")"
+          if [ "$TAG_VERSION" != "$PKG_VERSION" ]; then
+            echo "Tag v$TAG_VERSION does not match package.json version $PKG_VERSION"
+            exit 1
+          fi
 
       - name: Install pnpm
         uses: pnpm/action-setup@v4
         with:
           version: 9
 
-      - name: Install Dependencies
-        run: pnpm install
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: 'pnpm'
 
-      - name: Run Tests
-        run: pnpm test
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
 
-      - name: Build
-        run: pnpm build
+      - name: Rebuild native dependencies
+        run: pnpm rebuild better-sqlite3 sqlite-vec
+
+      - name: Lint, typecheck, test & eval gate
+        run: pnpm exec biome ci . && pnpm exec tsc -b && pnpm test && pnpm build
+
+      - name: Verify UI build & tests
+        run: pnpm --dir ui install --frozen-lockfile && pnpm --dir ui build && pnpm --dir ui test
 
       - name: Publish to NPM
         run: npm publish --provenance --access public
