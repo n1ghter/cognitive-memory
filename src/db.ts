@@ -181,6 +181,43 @@ export class DatabaseManager {
       );
     `);
 
+    // Always-on SQLite FTS5 (BM25) lexical index synchronized with memory table
+    const hadFts = Boolean(
+      db.prepare(`SELECT 1 FROM ${schemaName}.sqlite_master WHERE name = 'fts_memory'`).get()
+    );
+
+    db.exec(`
+      CREATE VIRTUAL TABLE IF NOT EXISTS ${schemaName}.fts_memory USING fts5(
+        text,
+        content='memory',
+        content_rowid='rowid',
+        tokenize='unicode61 remove_diacritics 2'
+      );
+
+      CREATE TRIGGER IF NOT EXISTS ${schemaName}.memory_fts_ai AFTER INSERT ON memory BEGIN
+        INSERT INTO fts_memory(rowid, text) VALUES (new.rowid, new.text);
+      END;
+
+      CREATE TRIGGER IF NOT EXISTS ${schemaName}.memory_fts_ad AFTER DELETE ON memory BEGIN
+        INSERT INTO fts_memory(fts_memory, rowid, text) VALUES('delete', old.rowid, old.text);
+      END;
+
+      CREATE TRIGGER IF NOT EXISTS ${schemaName}.memory_fts_au AFTER UPDATE OF text ON memory BEGIN
+        INSERT INTO fts_memory(fts_memory, rowid, text) VALUES('delete', old.rowid, old.text);
+        INSERT INTO fts_memory(rowid, text) VALUES (new.rowid, new.text);
+      END;
+    `);
+
+    // Backfill existing pre-FTS5 databases cleanly on first startup
+    if (!hadFts) {
+      const { n } = db.prepare(`SELECT COUNT(*) AS n FROM ${schemaName}.memory`).get() as {
+        n: number;
+      };
+      if (n > 0) {
+        db.exec(`INSERT INTO ${schemaName}.fts_memory(fts_memory) VALUES('rebuild');`);
+      }
+    }
+
     // Migration for existing databases
     try {
       db.exec(`ALTER TABLE ${schemaName}.memory ADD COLUMN updated_at DATETIME`);
@@ -193,6 +230,17 @@ export class DatabaseManager {
     } catch (_e) {
       // Column already exists or table doesn't exist yet
     }
+  }
+
+  /**
+   * Rebuilds the SQLite FTS5 lexical index from the memory table for the given schema.
+   *
+   * @param schema `main` for the project DB, `global` for the user-wide DB.
+   */
+  public static rebuildFts(schema: VectorSchema = 'main'): void {
+    DatabaseManager.getInstance().exec(
+      `INSERT INTO ${schema}.fts_memory(fts_memory) VALUES('rebuild');`
+    );
   }
 
   /**

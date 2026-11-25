@@ -1,5 +1,6 @@
 import { EmbeddingCache } from '../src/cache.js';
 import { OllamaClient } from '../src/ollama.js';
+import type { SearchMode } from '../src/retrieval.js';
 import { executeMemorySearch } from '../src/tools/search.js';
 import { executeMemoryStore } from '../src/tools/store.js';
 
@@ -23,6 +24,8 @@ export interface RankingScores {
 
 export interface EvalReport {
   embedder: string;
+  mode: SearchMode;
+  noiseCount: number;
   k: number;
   ranking: { overall: RankingScores; byCategory: Record<string, RankingScores> };
   /** Behaviour of memory_search with its default similarity threshold, as agents see it. */
@@ -77,6 +80,42 @@ export function useHashEmbedder(): void {
   OllamaClient.getEmbedding = async (text: string) => hashEmbedding(text);
 }
 
+/** Simulates an offline Ollama server so zero-Ollama resilience can be benchmarked directly. */
+export function useOfflineEmbedder(): void {
+  OllamaClient.getEmbedding = async () => {
+    throw new Error('fetch failed');
+  };
+}
+
+const NOISE_TOPICS = [
+  'photosynthesis chlorophyll stomata sunlight glucose botany greenhouse',
+  'quasar pulsar redshift nebula astrophysics telescope parallax',
+  'baroque harpsichord counterpoint sonata orchestra timbre concerto',
+  'stratigraphy limestone basalt tectonic subduction volcano mineral',
+  'origami parchment calligraphy watercolor kiln stoneware glaze',
+  'archipelago fjord glacier permafrost tundra estuary peninsula',
+  'sourdough fermentation yeast kneading crust brioche pastry',
+  'beekeeping pollination nectar honeycomb apiary hive meadow',
+  'maritime sextant compass lighthouse keel rudder starboard',
+  'archaeology amphora fresco mosaic aqueduct forum papyrus',
+];
+
+/**
+ * Generates deterministic unrelated distractor notes to stress-test retrieval under realistic noise
+ * (modeled after Experiment 2 in arXiv:2605.15184).
+ */
+export function generateNoiseMemories(count: number): { key: string; text: string }[] {
+  const items: { key: string; text: string }[] = [];
+  for (let i = 0; i < count; i++) {
+    const topic = NOISE_TOPICS[i % NOISE_TOPICS.length];
+    items.push({
+      key: `noise-${i + 1}`,
+      text: `Background archive note #${i + 100}: field observation covering ${topic} batch-${i + 1}.`,
+    });
+  }
+  return items;
+}
+
 function cosine(a: number[], b: number[]): number {
   let dot = 0;
   let na = 0;
@@ -121,17 +160,20 @@ function scoreRanking(rows: { relevant: string[]; got: string[] }[], k: number):
 }
 
 /**
- * Stores the dataset into the current database (set MEMORY_DB_PATH to an empty one first),
- * runs every query through memory_search and grades the results.
+ * Stores the dataset (plus optional distractor noise) into the current database,
+ * runs every query through memory_search under the selected retrieval mode, and grades the results.
  */
 export async function runEvals(
   dataset: EvalDataset,
-  options: { embedder: string; k?: number }
+  options: { embedder: string; k?: number; mode?: SearchMode; noiseCount?: number }
 ): Promise<EvalReport> {
   const k = options.k ?? 5;
+  const mode: SearchMode = options.mode ?? 'hybrid';
+  const noiseCount = options.noiseCount ?? 0;
 
   const keyById = new Map<string, string>();
-  for (const memory of dataset.memories) {
+  const allMemories = [...dataset.memories, ...generateNoiseMemories(noiseCount)];
+  for (const memory of allMemories) {
     const { record } = await executeMemoryStore({ text: memory.text });
     keyById.set(record.id, memory.key);
   }
@@ -141,8 +183,8 @@ export async function runEvals(
   const thresholded = [];
   for (const q of dataset.queries) {
     // threshold -1 disables filtering, so this measures pure ranking quality.
-    const all = await executeMemorySearch({ query: q.query, limit: k, threshold: -1 });
-    const filtered = await executeMemorySearch({ query: q.query, limit: k });
+    const all = await executeMemorySearch({ query: q.query, limit: k, threshold: -1, mode });
+    const filtered = await executeMemorySearch({ query: q.query, limit: k, mode });
     ranked.push({ ...q, got: toKeys(all.results) });
     thresholded.push({ ...q, got: toKeys(filtered.results) });
   }
@@ -166,20 +208,24 @@ export async function runEvals(
   let fp = 0;
   let fn = 0;
   let correct = 0;
-  for (const pair of dataset.dedupPairs) {
-    const [a, b] = await Promise.all([
-      EmbeddingCache.getEmbedding(pair.a),
-      EmbeddingCache.getEmbedding(pair.b),
-    ]);
-    const merged = cosine(a, b) >= DEDUP_SIMILARITY;
-    if (merged && pair.duplicate) tp++;
-    if (merged && !pair.duplicate) fp++;
-    if (!merged && pair.duplicate) fn++;
-    if (merged === pair.duplicate) correct++;
+  if (options.embedder !== 'none' && options.embedder !== 'offline') {
+    for (const pair of dataset.dedupPairs) {
+      const [a, b] = await Promise.all([
+        EmbeddingCache.getEmbedding(pair.a),
+        EmbeddingCache.getEmbedding(pair.b),
+      ]);
+      const merged = cosine(a, b) >= DEDUP_SIMILARITY;
+      if (merged && pair.duplicate) tp++;
+      if (merged && !pair.duplicate) fp++;
+      if (!merged && pair.duplicate) fn++;
+      if (merged === pair.duplicate) correct++;
+    }
   }
 
   return {
     embedder: options.embedder,
+    mode,
+    noiseCount,
     k,
     ranking: { overall: scoreRanking(positives, k), byCategory },
     thresholded: {
@@ -191,7 +237,12 @@ export async function runEvals(
       threshold: DEDUP_SIMILARITY,
       precision: tp + fp ? tp / (tp + fp) : 0,
       recall: tp + fn ? tp / (tp + fn) : 0,
-      accuracy: dataset.dedupPairs.length ? correct / dataset.dedupPairs.length : 0,
+      accuracy:
+        options.embedder === 'none' || options.embedder === 'offline'
+          ? 0
+          : dataset.dedupPairs.length
+            ? correct / dataset.dedupPairs.length
+            : 0,
     },
     failures: positives
       .filter((q) => !q.got.slice(0, k).some((key) => q.relevant.includes(key)))
@@ -205,7 +256,7 @@ export function formatScorecard(report: EvalReport): string {
   const row = (name: string, s: RankingScores) =>
     `  ${name.padEnd(14)} ${String(s.queries).padStart(3)}  ${pct(s.recallAtK)} ${pct(s.hitAt1)} ${pct(s.mrr)} ${pct(s.ndcgAtK)}`;
   const lines = [
-    `Cognitive Memory evals · embedder=${report.embedder} · k=${report.k}`,
+    `Cognitive Memory evals · embedder=${report.embedder} · mode=${report.mode} · noise=${report.noiseCount} · k=${report.k}`,
     '',
     `Ranking (no threshold)    n  Recall@${report.k}   Hit@1     MRR  nDCG@${report.k}`,
     row('overall', report.ranking.overall),
@@ -225,6 +276,21 @@ export function formatScorecard(report: EvalReport): string {
         `      expected ${f.expected.join(', ')} · got ${f.got.join(', ') || '(none)'}`
       );
     }
+  }
+  return lines.join('\n');
+}
+
+/** Formats side-by-side comparison across multiple retrieval modes. */
+export function formatComparisonTable(reports: EvalReport[]): string {
+  const pct = (v: number) => `${(v * 100).toFixed(1)}%`.padStart(7);
+  const lines = [
+    'Mode comparison (same dataset & noise)',
+    '  Mode         Recall@K   Hit@1     MRR  nDCG@K  ThreshRec  ThreshPrec  NegAbst',
+  ];
+  for (const r of reports) {
+    lines.push(
+      `  ${r.mode.padEnd(11)} ${pct(r.ranking.overall.recallAtK)} ${pct(r.ranking.overall.hitAt1)} ${pct(r.ranking.overall.mrr)} ${pct(r.ranking.overall.ndcgAtK)}    ${pct(r.thresholded.recallAtK)}     ${pct(r.thresholded.precision)}  ${pct(r.thresholded.negativeAbstention)}`
+    );
   }
   return lines.join('\n');
 }

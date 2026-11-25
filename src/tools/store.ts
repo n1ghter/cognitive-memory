@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import { EmbeddingCache } from '../cache.js';
 import { DatabaseManager, generateId, type MemoryScope, scopeToSchemas } from '../db.js';
+import { getEmbeddingProvider, isEmbeddingDimensionError } from '../retrieval.js';
 
 /**
  * Memory profile isolation tier: user preferences/context (default), active working context, or core agent facts.
@@ -160,14 +161,29 @@ export async function executeMemoryStore(args: StoreArgs) {
     }
   }
 
-  // 1. Retrieve the vector embedding
-  const embedding = await EmbeddingCache.getEmbedding(cleanText);
-  DatabaseManager.ensureVectorTable(embedding.length, schema);
+  // 1. Attempt to retrieve the vector embedding (gracefully optional when Ollama is offline or EMBEDDING_PROVIDER=none)
+  const provider = getEmbeddingProvider();
+  let embedding: number[] | null = null;
+  if (provider !== 'none') {
+    try {
+      embedding = await EmbeddingCache.getEmbedding(cleanText);
+      DatabaseManager.ensureVectorTable(embedding.length, schema);
+    } catch (err) {
+      if (isEmbeddingDimensionError(err) || provider === 'ollama') {
+        throw err;
+      }
+      console.error(
+        '[Store] Embedding provider unavailable; storing in zero-Ollama lexical (FTS5) mode:',
+        err instanceof Error ? err.message : String(err)
+      );
+      embedding = null;
+    }
+  }
 
   // 2. Generate UUID for record
   const id = generateId();
 
-  // 3. Run transaction to ensure atomicity between metadata and vector tables
+  // 3. Run transaction to ensure atomicity between metadata, FTS5 trigger, and optional vector table
   const storeTx = db.transaction(() => {
     const stmt = db.prepare(`
       INSERT INTO ${schema}.memory (id, text, metadata, importance, is_active, created_at, updated_at, last_accessed_at, accessed_count)
@@ -175,18 +191,20 @@ export async function executeMemoryStore(args: StoreArgs) {
     `);
     const info = stmt.run(id, cleanText, JSON.stringify(normalizedMetadata), importance, 1);
 
-    // lastInsertRowid is often a BigInt in better-sqlite3. Pass it as BigInt
-    // for sqlite-vec compatibility to avoid "Only integers are allows for primary key values"
-    const rowid = BigInt(info.lastInsertRowid);
+    if (embedding) {
+      // lastInsertRowid is often a BigInt in better-sqlite3. Pass it as BigInt
+      // for sqlite-vec compatibility to avoid "Only integers are allows for primary key values"
+      const rowid = BigInt(info.lastInsertRowid);
 
-    const vecStmt = db.prepare(`
-      INSERT INTO ${schema}.vec_memory (rowid, embedding)
-      VALUES (?, ?)
-    `);
+      const vecStmt = db.prepare(`
+        INSERT INTO ${schema}.vec_memory (rowid, embedding)
+        VALUES (?, ?)
+      `);
 
-    // sqlite-vec requires Float32Array
-    const floatArray = new Float32Array(embedding);
-    vecStmt.run(rowid, floatArray);
+      // sqlite-vec requires Float32Array
+      const floatArray = new Float32Array(embedding);
+      vecStmt.run(rowid, floatArray);
+    }
 
     return id;
   });
@@ -195,7 +213,10 @@ export async function executeMemoryStore(args: StoreArgs) {
 
   return {
     success: true,
-    message: 'Memory stored successfully',
+    message: embedding
+      ? 'Memory stored successfully'
+      : 'Memory stored successfully (lexical FTS5 mode; embeddings offline)',
+    indexed_vectors: Boolean(embedding),
     record: {
       id: id,
       text: cleanText,
