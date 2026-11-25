@@ -35,27 +35,33 @@ Native auto-memory in Claude Code, Cursor, Antigravity, and Windsurf locks your 
 ## 🚀 Quick Start
 
 ### Prerequisites
+
 - Node.js **v24+**
 - `pnpm` **v9+** (for building from source)
 - **Optional** [Ollama](https://ollama.com/) on port `11434` to enable dense hybrid embeddings & LLM consolidation synthesis (completely optional — set `EMBEDDING_PROVIDER=none` for explicit lexical-only mode, or leave default `auto` for automatic fallback):
+
   ```bash
   ollama pull qwen3-embedding:8b
   ollama pull llama3.2
   ```
 
 ### 1. Connect Your AI Editors (Once Per Machine)
+
 Auto-detects installed editors (Antigravity, Cursor, Claude Desktop, Claude Code, Copilot, Windsurf, OpenCode) and adds the MCP server config:
+
 ```bash
 npx -y @cemised/cognitive-memory setup
 ```
 
 ### 2. Initialize a Project (Optional)
+
 ```bash
 cd my-project
 npx -y @cemised/cognitive-memory init
 ```
 
 ### Manual MCP Configuration
+
 ```json
 {
   "mcpServers": {
@@ -68,6 +74,7 @@ npx -y @cemised/cognitive-memory init
 ```
 
 ### Docker / Local HTTP SSE Mode
+
 ```bash
 MCP_AUTH_TOKEN="your-secret-token" docker compose up -d
 ```
@@ -77,17 +84,17 @@ By default `--sse` binds strictly to `127.0.0.1:3000`. Binding to a non-loopback
 
 ## 🛠️ Exposed MCP Tools
 
-| Tool | Purpose |
-|---|---|
-| `memory_search` | Hybrid FTS5 BM25 + optional dense RRF search (`mode: hybrid \| bm25 \| vector`), `scope` (`local` \| `global` \| `all`), `profile`, `includeSuperseded`, and bounded 1–2 hop `includeGraph` (`graphDepth: 1 \| 2`). |
-| `memory_store` | Store a memory (zero-Ollama safe) with exact deduplication, `scope`, `profile`, `importance`, zero-copy `metadata.ref` pointers, and `supersedes` temporal versioning. |
-| `memory_relate` | Create a typed graph edge between two memory nodes or link a memory to an external `obsidian://` / `vault://` URI (`grounded_in`, `references`). |
-| `memory_sync` | Bidirectional sync between local Markdown/Obsidian notes and SQLite. |
-| `memory_export` | Export memories (active or `includeSuperseded: true`) and graph relations to Markdown files. |
-| `memory_reindex` | Wipe and rebuild the local SQLite FTS5 + optional vector index losslessly from canonical Markdown files (`cognitive-memory reindex`). |
-| `memory_consolidate` | "Auto Dream" time-decay pruning and near-duplicate merging (zero-LLM fallback or optional Ollama synthesis). |
-| `memory_delete` | Soft-delete (default) or hard-purge a specific memory record. |
-| `memory_clear_all` | Wipe all local memories, vectors, and edges (`confirm: true` required). |
+| Tool                 | Purpose                                                                                                                                                                                                             |
+| -------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `memory_search`      | Hybrid FTS5 BM25 + optional dense RRF search (`mode: hybrid \| bm25 \| vector`), `scope` (`local` \| `global` \| `all`), `profile`, `includeSuperseded`, and bounded 1–2 hop `includeGraph` (`graphDepth: 1 \| 2`). |
+| `memory_store`       | Store a memory (zero-Ollama safe) with exact deduplication, `scope`, `profile`, `importance`, zero-copy `metadata.ref` pointers, and `supersedes` temporal versioning.                                              |
+| `memory_relate`      | Create a typed graph edge between two memory nodes or link a memory to an external `obsidian://` / `vault://` URI (`grounded_in`, `references`).                                                                    |
+| `memory_sync`        | Bidirectional sync between local Markdown/Obsidian notes and SQLite.                                                                                                                                                |
+| `memory_export`      | Export memories (active or `includeSuperseded: true`) and graph relations to Markdown files.                                                                                                                        |
+| `memory_reindex`     | Wipe and rebuild the local SQLite FTS5 + optional vector index losslessly from canonical Markdown files (`cognitive-memory reindex`).                                                                               |
+| `memory_consolidate` | "Auto Dream" time-decay pruning and near-duplicate merging (zero-LLM fallback or optional Ollama synthesis).                                                                                                        |
+| `memory_delete`      | Soft-delete (default) or hard-purge a specific memory record.                                                                                                                                                       |
+| `memory_clear_all`   | Wipe all local memories, vectors, and edges (`confirm: true` required).                                                                                                                                             |
 
 ---
 
@@ -102,6 +109,7 @@ pnpm verify          # Biome + tsc + build + 116 root tests & eval gates + UI bu
 ```
 
 Run retrieval scorecards directly:
+
 ```bash
 pnpm eval                                          # live Hybrid RRF via local Ollama
 pnpm eval:ci                                       # deterministic offline hash baseline
@@ -111,13 +119,14 @@ npx tsx evals/run.ts --embedder hash --mode compare --noise 60
 
 **Deterministic Offline Benchmark (`k=5`, 26 memories, 28 queries, 4 temporal contradictions, 8 dedup pairs):**
 
-| Mode | Recall@5 | Hit@1 | MRR | nDCG@5 | Default-Threshold Recall | Neg Abstention | Contradictions@1 |
-|---|---:|---:|---:|---:|---:|---:|---:|
-| `bm25` (zero-Ollama) | 81.3% | 66.7% | 71.9% | 73.1% | 60.4% | 100.0% | 100.0% (0% leak) |
-| `vector` (hash baseline) | 81.3% | 70.8% | 74.8% | 75.3% | 14.6% | 100.0% | 100.0% (0% leak) |
-| **`hybrid` (BM25 + RRF)** | **85.4%** | **70.8%** | **76.2%** | **77.3%** | **60.4%** | **100.0%** | **100.0% (0% leak)** |
+| Mode                      |  Recall@5 |     Hit@1 |       MRR |    nDCG@5 | Default-Threshold Recall | Neg Abstention |     Contradictions@1 |
+| ------------------------- | --------: | --------: | --------: | --------: | -----------------------: | -------------: | -------------------: |
+| `bm25` (zero-Ollama)      |     81.3% |     66.7% |     71.9% |     73.1% |                    60.4% |         100.0% |     100.0% (0% leak) |
+| `vector` (hash baseline)  |     81.3% |     70.8% |     74.8% |     75.3% |                    14.6% |         100.0% |     100.0% (0% leak) |
+| **`hybrid` (BM25 + RRF)** | **85.4%** | **70.8%** | **76.2%** | **77.3%** |                **60.4%** |     **100.0%** | **100.0% (0% leak)** |
 
 Optional read-only 3D Graph Explorer:
+
 ```bash
 pnpm dashboard                 # launches local Web UI at http://localhost:3000
 ```

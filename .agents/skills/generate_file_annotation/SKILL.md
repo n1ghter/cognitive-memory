@@ -1,4 +1,5 @@
 ---
+
 name: generate_file_annotation
 description: Generates a concise semantic summary (annotation) for a given file and saves it to the local project's knowledge base or memory store.
 ---
@@ -6,9 +7,11 @@ description: Generates a concise semantic summary (annotation) for a given file 
 # Generate File Annotation Skill
 
 ## Purpose
+
 Use this skill when you need to create or update an AI Annotation for a specific source code file. This annotation helps the semantic index understand the high-level business purpose of the file.
 
 ## Instructions
+
 When invoked to annotate a file, follow these exact steps:
 
 1. **Read the File:** Use the `view_file` tool to read the contents of the target file.
@@ -24,8 +27,10 @@ When invoked to annotate a file, follow these exact steps:
    - DO NOT use global MCP memory databases (like `memory_store`) for file annotations. Annotations must be version-controlled alongside the code in Git.
 
 ## Example Output Format
+
 ```markdown
 # Annotation: [Filename]
+
 **Purpose:** Handles user authentication and token refresh logic.
 **Key Dependencies:** Interacts with the `users` table in SQLite and sets JWT cookies.
 **Context:** This module is critical for the login flow and should not be modified without updating the frontend state management.
