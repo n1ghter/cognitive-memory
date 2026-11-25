@@ -1,10 +1,6 @@
 ---
-
 name: memory-auto-capture
-description: >
-Autonomous local-first memory management skill using cognitive-memory MCP
-(SQLite FTS5 BM25 + optional Hybrid RRF, temporal supersession, Markdown-first
-canonical storage). Works completely offline without Ollama.
+description: "Autonomous local-first memory management skill using cognitive-memory MCP (SQLite FTS5 BM25 + optional Hybrid RRF, temporal supersession, Markdown-first canonical storage). Works completely offline without Ollama."
 ---
 
 # Memory Auto-Capture Skill (`cognitive-memory` v2.0)

@@ -1,5 +1,4 @@
 ---
-
 type: agent_memory
 category: preference
 importance: 0.500
@@ -14,7 +13,6 @@ updated_at: 2026-06-09T14:21:52.449Z
 > User prefers dark mode for all their IDEs, specifically Dracula theme.
 
 ## Graph Relations
-
 - **influences_design** ➡️ [[Memory_8a497359-e1d7-434b-804a-fe4fbc3e9e50]]
 
 <details>

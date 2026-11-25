@@ -1,5 +1,4 @@
 ---
-
 type: agent_memory
 category: project
 importance: 0.500
@@ -14,7 +13,6 @@ updated_at: 2026-06-09T14:21:52.449Z
 > User is building an AI memory agent in TypeScript.
 
 ## Graph Relations
-
 - **has_requirement** ➡️ [[Memory_8a497359-e1d7-434b-804a-fe4fbc3e9e50]]
 
 <details>
