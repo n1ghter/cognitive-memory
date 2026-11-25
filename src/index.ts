@@ -1,13 +1,10 @@
 #!/usr/bin/env node
-import crypto from 'node:crypto';
 import { createRequire } from 'node:module';
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
-import { SSEServerTransport } from '@modelcontextprotocol/sdk/server/sse.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
-import cors from 'cors';
-import express from 'express';
 import { z } from 'zod';
 import { DatabaseManager } from './db.js';
+import { createHttpMcpApp, isLoopbackHost, resolveHttpBindConfig } from './server/http.js';
 import { executeMemoryClearAll } from './tools/clear.js';
 import { executeMemoryConsolidate } from './tools/consolidate.js';
 import { executeMemoryDelete } from './tools/delete.js';
@@ -29,52 +26,8 @@ const { version } = createRequire(import.meta.url)('../package.json') as { versi
 const _originalLog = console.log;
 console.log = console.error;
 
-const LOCALHOST_ORIGIN_RE = /^https?:\/\/(localhost|127\.0\.0\.1|\[::1\])(:\d+)?$/i;
-
-/**
- * Returns true if the given bind host is a loopback address.
- */
-export function isLoopbackHost(host: string): boolean {
-  const normalized = host.trim().toLowerCase();
-  return normalized === '127.0.0.1' || normalized === 'localhost' || normalized === '::1';
-}
-
-/**
- * Resolves and validates SSE network binding settings.
- * Refuses to bind non-loopback interfaces without MCP_AUTH_TOKEN unless explicitly opted in.
- */
-export function resolveSseBindConfig(env: NodeJS.ProcessEnv = process.env): {
-  host: string;
-  port: number;
-  authToken?: string;
-  corsOrigin?: string;
-} {
-  const host = env.MCP_HOST || '127.0.0.1';
-  const port = Number(env.PORT || env.SSE_PORT || 3000);
-  const authToken = env.MCP_AUTH_TOKEN?.trim() || undefined;
-  const corsOrigin = env.MCP_CORS_ORIGIN?.trim() || undefined;
-
-  if (!isLoopbackHost(host) && !authToken && env.MCP_ALLOW_INSECURE_REMOTE !== 'true') {
-    throw new Error(
-      `Refusing to bind unauthenticated MCP SSE server to non-loopback host "${host}". ` +
-        'Set MCP_AUTH_TOKEN for remote access, or bind to 127.0.0.1.'
-    );
-  }
-
-  return { host, port, authToken, corsOrigin };
-}
-
-function timingSafeBearerMatch(headerValue: string | undefined, expectedToken: string): boolean {
-  if (!headerValue?.startsWith('Bearer ')) {
-    return false;
-  }
-  const provided = Buffer.from(headerValue.slice('Bearer '.length));
-  const expected = Buffer.from(expectedToken);
-  if (provided.length !== expected.length) {
-    return false;
-  }
-  return crypto.timingSafeEqual(provided, expected);
-}
+export { isLoopbackHost, resolveHttpBindConfig };
+export const resolveSseBindConfig = resolveHttpBindConfig;
 
 /**
  * Factory function to create and configure a new McpServer instance.
@@ -466,72 +419,28 @@ export function createMcpServer(): McpServer {
 }
 
 /**
- * Builds the hardened Express app for SSE MCP transport.
- * Enforces localhost-only CORS by default, optional bearer auth, and relative message endpoint paths.
+ * Builds the hardened Express app supporting MCP Streamable HTTP (`/mcp`),
+ * legacy SSE (`/sse`, `/message`), and `/health`.
  */
 export function createSseApp(options: { authToken?: string; corsOrigin?: string } = {}) {
-  const { authToken, corsOrigin } = options;
-  const app = express();
+  return createHttpMcpApp({
+    ...options,
+    version,
+    createServer: createMcpServer,
+  }).app;
+}
 
-  app.use(
-    cors({
-      origin(origin, callback) {
-        if (!origin) return callback(null, true);
-        if (corsOrigin && origin === corsOrigin) return callback(null, true);
-        if (LOCALHOST_ORIGIN_RE.test(origin)) return callback(null, true);
-        return callback(new Error(`Origin not allowed by CORS: ${origin}`));
-      },
-    })
-  );
-
-  if (authToken) {
-    app.use((req, res, next) => {
-      if (!timingSafeBearerMatch(req.headers.authorization, authToken)) {
-        res.status(401).json({ error: 'Unauthorized: invalid or missing Bearer token' });
-        return;
-      }
-      next();
-    });
-  }
-
-  const activeTransports = new Map<string, SSEServerTransport>();
-
-  app.get('/sse', async (_req, res) => {
-    console.error('[SSE] Incoming SSE connection');
-    const transport = new SSEServerTransport('/message', res);
-    const sessionId = transport.sessionId;
-    const mcpServer = createMcpServer();
-    activeTransports.set(sessionId, transport);
-    transport.onclose = () => activeTransports.delete(sessionId);
-    transport.onerror = (err) => console.error(`[SSE] Transport error for ${sessionId}:`, err);
-
-    try {
-      await mcpServer.connect(transport);
-    } catch (error) {
-      console.error(`[SSE] Error connecting MCP server for ${sessionId}:`, error);
-      activeTransports.delete(sessionId);
-      if (!res.headersSent) {
-        res.status(500).send('Internal Server Error');
-      }
-    }
+/**
+ * Builds the full Streamable HTTP MCP handle (Express app + session tracking + graceful teardown).
+ */
+export function createStreamableHttpServer(
+  options: { authToken?: string; corsOrigin?: string } = {}
+) {
+  return createHttpMcpApp({
+    ...options,
+    version,
+    createServer: createMcpServer,
   });
-
-  app.post('/message', async (req, res) => {
-    const sessionId = req.query.sessionId as string;
-    if (!sessionId) {
-      res.status(400).send('Missing sessionId query parameter');
-      return;
-    }
-
-    const transport = activeTransports.get(sessionId);
-    if (!transport) {
-      res.status(404).send('Session not found');
-      return;
-    }
-    await transport.handlePostMessage(req, res);
-  });
-
-  return app;
 }
 
 /**
@@ -553,21 +462,36 @@ async function bootstrapStdio() {
 }
 
 /**
- * Alternative bootstrap function for HTTP SSE transport (containerized / local multi-IDE daemon setups).
+ * Shared local / containerized HTTP daemon serving modern MCP Streamable HTTP (`/mcp`),
+ * backwards-compatible legacy SSE (`/sse`, `/message`), and `/health` with graceful shutdown.
  */
-async function bootstrapSSE() {
+async function bootstrapHttp() {
   try {
-    const { host, port, authToken, corsOrigin } = resolveSseBindConfig(process.env);
-    console.error(`[MCP Server] Bootstrapping SSE transport on ${host}:${port}...`);
+    const { host, port, authToken, corsOrigin } = resolveHttpBindConfig(process.env);
+    console.error(`[MCP Server] Bootstrapping Streamable HTTP/SSE daemon on ${host}:${port}...`);
 
     await DatabaseManager.getInstance();
-    const app = createSseApp({ authToken, corsOrigin });
+    const handle = createStreamableHttpServer({ authToken, corsOrigin });
 
-    app.listen(port, host, () => {
-      console.error(`Cognitive Memory MCP Server (SSE) listening on http://${host}:${port}`);
+    const server = handle.app.listen(port, host, () => {
+      console.error(
+        `Cognitive Memory MCP Daemon listening on http://${host}:${port} (Streamable HTTP: /mcp, Legacy SSE: /sse, Health: /health)`
+      );
     });
+
+    const shutdown = async (signal: string) => {
+      console.error(`[MCP Server] Received ${signal}; closing active sessions and SQLite...`);
+      await handle.closeAllSessions();
+      server.close(() => {
+        DatabaseManager.close();
+        process.exit(0);
+      });
+    };
+
+    process.once('SIGINT', () => void shutdown('SIGINT'));
+    process.once('SIGTERM', () => void shutdown('SIGTERM'));
   } catch (error) {
-    console.error('[MCP Server] Critical SSE initialization failure:', error);
+    console.error('[MCP Server] Critical HTTP daemon initialization failure:', error);
     process.exit(1);
   }
 }
@@ -661,12 +585,16 @@ if (process.argv[2] === 'init') {
       process.exit(1);
     });
 } else if (
+  process.argv.includes('--http') ||
+  process.argv[2] === 'http' ||
   process.argv.includes('--sse') ||
   process.argv[2] === 'sse' ||
+  process.env.TRANSPORT === 'http' ||
+  process.env.MCP_TRANSPORT === 'http' ||
   process.env.TRANSPORT === 'sse' ||
   process.env.MCP_TRANSPORT === 'sse'
 ) {
-  bootstrapSSE();
+  bootstrapHttp();
 } else if (process.env.NODE_ENV !== 'test') {
   bootstrapStdio();
 }

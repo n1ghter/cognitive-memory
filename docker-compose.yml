@@ -10,11 +10,18 @@ services:
     environment:
       - PORT=3000
       - MCP_HOST=0.0.0.0
+      - TRANSPORT=http
       # Required whenever MCP_HOST is non-loopback; set in your shell or .env file
-      - MCP_AUTH_TOKEN=${MCP_AUTH_TOKEN:?Set MCP_AUTH_TOKEN before starting SSE container}
+      - MCP_AUTH_TOKEN=${MCP_AUTH_TOKEN:?Set MCP_AUTH_TOKEN before starting HTTP/SSE container}
+      - EMBEDDING_PROVIDER=${EMBEDDING_PROVIDER:-auto}
       - OLLAMA_URL=http://host.docker.internal:11434
       - MEMORY_DB_PATH=/app/data/memory.sqlite
       - MEMORY_GLOBAL_DB_PATH=/app/data/global-memory.sqlite
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://127.0.0.1:3000/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
     volumes:
       - cognitive_memory_data:/app/data
     extra_hosts:
