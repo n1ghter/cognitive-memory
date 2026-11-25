@@ -1,107 +1,196 @@
 import fs from 'node:fs';
+import os from 'node:os';
+import path from 'node:path';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { runInit } from '../src/cli/init.js';
+import {
+  AGENTS_MD_MANAGED_BLOCK,
+  CURSOR_RULE_TEMPLATE,
+  MANAGED_BLOCK_END,
+  MANAGED_BLOCK_START,
+  mergeClaudeSettingsHooks,
+  parseInitCliArgs,
+  runInit,
+  SKILL_TEMPLATE,
+  upsertAgentsManagedBlock,
+} from '../src/cli/init.js';
 import { runSetup } from '../src/cli/setup.js';
-
-vi.mock('node:fs');
+import { normalizeLifecycleEvent, runLifecycleHook } from '../src/hooks/lifecycle.js';
 
 describe('CLI Scripts', () => {
+  let tmpDir: string;
+
   beforeEach(() => {
-    vi.clearAllMocks();
+    tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'cm-cli-test-'));
     vi.spyOn(console, 'log').mockImplementation(() => {});
     vi.spyOn(console, 'error').mockImplementation(() => {});
-    vi.spyOn(process, 'cwd').mockReturnValue('/mock/cwd');
   });
 
   afterEach(() => {
     vi.restoreAllMocks();
+    fs.rmSync(tmpDir, { recursive: true, force: true });
   });
 
-  describe('init.ts', () => {
-    it('should create skill and AGENTS.md if they do not exist', async () => {
-      vi.mocked(fs.existsSync).mockReturnValue(false);
-      vi.mocked(fs.readFileSync).mockReturnValue('');
+  describe('init.ts (anti-smell templates, idempotency & lifecycle hooks #133)', () => {
+    it('creates concise anti-smell templates and deterministic lifecycle hook scaffolds', async () => {
+      const res = await runInit({ cwd: tmpDir });
 
-      await runInit();
+      expect(res.createdOrUpdated).toHaveLength(4);
+      expect(res.unchanged).toHaveLength(0);
 
-      expect(fs.mkdirSync).toHaveBeenCalled();
-      expect(fs.writeFileSync).toHaveBeenCalledTimes(2); // One for SKILL.md, one for AGENTS.md
+      const agentsMd = fs.readFileSync(path.join(tmpDir, 'AGENTS.md'), 'utf-8');
+      const skillMd = fs.readFileSync(
+        path.join(tmpDir, '.agents', 'skills', 'memory-auto-capture', 'SKILL.md'),
+        'utf-8'
+      );
+      const claudeSettings = JSON.parse(
+        fs.readFileSync(path.join(tmpDir, '.claude', 'settings.json'), 'utf-8')
+      );
+      const cursorRule = fs.readFileSync(
+        path.join(tmpDir, '.cursor', 'rules', 'cognitive-memory.mdc'),
+        'utf-8'
+      );
+
+      // Anti-smell verification: concise, zero verbose checkbox forcing-function bloat
+      expect(AGENTS_MD_MANAGED_BLOCK.length).toBeLessThan(500);
+      expect(agentsMd).toContain(MANAGED_BLOCK_START);
+      expect(agentsMd).toContain(MANAGED_BLOCK_END);
+      expect(agentsMd).not.toContain('- [ ]');
+      expect(agentsMd).not.toContain('DO NOT conclude');
+
+      // Valid single-line YAML frontmatter in SKILL.md and Cursor .mdc
+      expect(skillMd).toBe(SKILL_TEMPLATE);
+      expect(skillMd).toMatch(/^---\nname: memory-auto-capture\ndescription: "[^"\n]+"\n---/);
+      expect(cursorRule).toBe(CURSOR_RULE_TEMPLATE);
+      expect(cursorRule).toContain('alwaysApply: false');
+
+      // Claude Code deterministic lifecycle hooks (SessionStart, PreCompact, Stop)
+      expect(claudeSettings.hooks.SessionStart[0].hooks[0].command).toContain('hook SessionStart');
+      expect(claudeSettings.hooks.PreCompact[0].hooks[0].command).toContain('hook PreCompact');
+      expect(claudeSettings.hooks.Stop[0].hooks[0].command).toContain('hook Stop');
     });
 
-    it('should not overwrite if they already exist', async () => {
-      vi.mocked(fs.existsSync).mockReturnValue(true);
-      vi.mocked(fs.readFileSync).mockReturnValue('Autonomous Memory Checklist');
+    it('is 100% deterministic and idempotent (running twice produces byte-identical files)', async () => {
+      await runInit({ cwd: tmpDir });
 
-      await runInit();
+      const files = [
+        path.join(tmpDir, 'AGENTS.md'),
+        path.join(tmpDir, '.agents', 'skills', 'memory-auto-capture', 'SKILL.md'),
+        path.join(tmpDir, '.claude', 'settings.json'),
+        path.join(tmpDir, '.cursor', 'rules', 'cognitive-memory.mdc'),
+      ];
+      const firstSnapshots = files.map((f) => fs.readFileSync(f));
 
-      expect(fs.mkdirSync).not.toHaveBeenCalled();
-      expect(fs.writeFileSync).not.toHaveBeenCalled();
+      const secondRes = await runInit({ cwd: tmpDir });
+      expect(secondRes.createdOrUpdated).toEqual([]);
+      expect(secondRes.unchanged).toHaveLength(4);
+
+      const secondSnapshots = files.map((f) => fs.readFileSync(f));
+      for (let i = 0; i < files.length; i++) {
+        expect(secondSnapshots[i].equals(firstSnapshots[i])).toBe(true);
+      }
+    });
+
+    it('replaces legacy verbose AGENTS.md checklists and managed blocks while preserving user content', () => {
+      const legacyDoc = `# Project Guide\n\nKeep builds green.\n\n## Autonomous Memory Checklist\n**CRITICAL FORCING FUNCTION**: bla bla\n- [ ] Old bloat\n\n## Architecture\nCustom section.\n`;
+      const migrated = upsertAgentsManagedBlock(legacyDoc);
+      expect(migrated).toContain('# Project Guide');
+      expect(migrated).toContain('Keep builds green.');
+      expect(migrated).toContain('## Architecture\nCustom section.');
+      expect(migrated).not.toContain('Autonomous Memory Checklist');
+      expect(migrated).toContain(MANAGED_BLOCK_START);
+
+      // Re-running upsert on already-migrated content is strictly identical
+      expect(upsertAgentsManagedBlock(migrated)).toBe(migrated);
+    });
+
+    it('merges Claude Code lifecycle hooks non-destructively alongside existing user settings', () => {
+      const existing = JSON.stringify(
+        {
+          permissions: { allow: ['Read'] },
+          hooks: {
+            SessionStart: [{ hooks: [{ type: 'command', command: 'echo user-hook' }] }],
+          },
+        },
+        null,
+        2
+      );
+      const mergedOnce = mergeClaudeSettingsHooks(existing);
+      const parsed = JSON.parse(mergedOnce);
+      expect(parsed.permissions).toEqual({ allow: ['Read'] });
+      expect(parsed.hooks.SessionStart).toHaveLength(2);
+      expect(parsed.hooks.SessionStart[0].hooks[0].command).toBe('echo user-hook');
+      expect(parsed.hooks.SessionStart[1].hooks[0].command).toContain('hook SessionStart');
+
+      // Re-merging is byte-identical
+      expect(mergeClaudeSettingsHooks(mergedOnce)).toBe(mergedOnce);
+    });
+
+    it('parses CLI flags (--no-hooks, --agents) and respects selective init options', async () => {
+      const parsed = parseInitCliArgs(['--no-hooks', '--agents=antigravity']);
+      expect(parsed).toEqual({ includeHooks: false, agents: ['antigravity'] });
+
+      await runInit({ cwd: tmpDir, ...parsed });
+      expect(fs.existsSync(path.join(tmpDir, 'AGENTS.md'))).toBe(true);
+      expect(
+        fs.existsSync(path.join(tmpDir, '.agents', 'skills', 'memory-auto-capture', 'SKILL.md'))
+      ).toBe(true);
+      expect(fs.existsSync(path.join(tmpDir, '.claude', 'settings.json'))).toBe(false);
+      expect(fs.existsSync(path.join(tmpDir, '.cursor', 'rules', 'cognitive-memory.mdc'))).toBe(
+        false
+      );
+    });
+
+    it('executes deterministic offline lifecycle hooks (SessionStart, PreCompact, Stop, AutoDream)', async () => {
+      process.env.EMBEDDING_PROVIDER = 'none';
+      expect(normalizeLifecycleEvent('auto-dream')).toBe('AutoDream');
+      expect(normalizeLifecycleEvent('pre-compact')).toBe('PreCompact');
+      expect(normalizeLifecycleEvent('session-end')).toBe('Stop');
+      expect(normalizeLifecycleEvent(undefined)).toBe('SessionStart');
+
+      const vaultDir = path.join(tmpDir, 'vault');
+      const dreamRes = await runLifecycleHook('AutoDream', { vaultPath: vaultDir });
+      expect(dreamRes.event).toBe('AutoDream');
+      expect(dreamRes.consolidated).toBe(true);
+      expect(dreamRes.exported).toBe(true);
+      expect(dreamRes.errors).toEqual([]);
+      delete process.env.EMBEDDING_PROVIDER;
     });
   });
 
   describe('setup.ts', () => {
-    it('should inject MCP configuration if config exists and missing server', async () => {
-      vi.mocked(fs.existsSync).mockReturnValue(true);
-      vi.mocked(fs.readFileSync).mockReturnValue(JSON.stringify({ mcpServers: {} }));
+    it('injects MCP configuration cleanly into JSON and TOML configs in isolated temp home', async () => {
+      const fakeHome = path.join(tmpDir, 'home');
+      const claudePath = path.join(fakeHome, '.claude.json');
+      const codexPath = path.join(fakeHome, '.codex', 'config.toml');
+      fs.mkdirSync(path.dirname(codexPath), { recursive: true });
+      fs.writeFileSync(claudePath, JSON.stringify({ mcpServers: {} }), 'utf-8');
+      fs.writeFileSync(codexPath, 'model = "gpt-5"\n', 'utf-8');
+
+      vi.spyOn(os, 'homedir').mockReturnValue(fakeHome);
 
       await runSetup();
 
-      // For 4 different configs (claude, cursor, antigravity, windsurf),
-      // it should write out the config if it exists.
-      expect(fs.writeFileSync).toHaveBeenCalled();
+      const updatedClaude = JSON.parse(fs.readFileSync(claudePath, 'utf-8'));
+      expect(updatedClaude.mcpServers['cognitive-memory']).toBeDefined();
+
+      const updatedCodex = fs.readFileSync(codexPath, 'utf-8');
+      expect(updatedCodex).toContain('[mcp_servers.cognitive-memory]');
+
+      // Second run is idempotent (no duplicate TOML section)
+      await runSetup();
+      const codexAfterSecond = fs.readFileSync(codexPath, 'utf-8');
+      expect(codexAfterSecond).toBe(updatedCodex);
     });
 
-    it('should handle invalid JSON config gracefully', async () => {
-      vi.mocked(fs.existsSync).mockReturnValue(true);
-      vi.mocked(fs.readFileSync).mockReturnValue('invalid json');
+    it('handles invalid JSON config gracefully without crashing', async () => {
+      const fakeHome = path.join(tmpDir, 'home-bad');
+      fs.mkdirSync(fakeHome, { recursive: true });
+      fs.writeFileSync(path.join(fakeHome, '.claude.json'), 'not valid json', 'utf-8');
+
+      vi.spyOn(os, 'homedir').mockReturnValue(fakeHome);
 
       await runSetup();
-
       expect(console.error).toHaveBeenCalled();
-    });
-
-    it('should not inject if already exists', async () => {
-      vi.mocked(fs.existsSync).mockImplementation((path: any) => {
-        return path.includes('.claude.json'); // only return true for one specific target
-      });
-      vi.mocked(fs.readFileSync).mockReturnValue(
-        JSON.stringify({
-          mcpServers: {
-            'cognitive-memory': {},
-          },
-        })
-      );
-
-      await runSetup();
-
-      expect(fs.writeFileSync).not.toHaveBeenCalled();
-    });
-
-    it('should inject into TOML format', async () => {
-      vi.mocked(fs.existsSync).mockImplementation((path: any) => path.includes('config.toml'));
-      vi.mocked(fs.readFileSync).mockReturnValue('');
-
-      await runSetup();
-
-      expect(fs.appendFileSync).toHaveBeenCalled();
-    });
-
-    it('should not inject into TOML if already exists', async () => {
-      vi.mocked(fs.existsSync).mockImplementation((path: any) => path.includes('config.toml'));
-      vi.mocked(fs.readFileSync).mockReturnValue('[mcp_servers.cognitive-memory]\n');
-
-      await runSetup();
-
-      expect(fs.appendFileSync).not.toHaveBeenCalled();
-    });
-
-    it('should handle empty JSON file correctly', async () => {
-      vi.mocked(fs.existsSync).mockImplementation((path: any) => path.includes('.claude.json'));
-      vi.mocked(fs.readFileSync).mockReturnValue('');
-
-      await runSetup();
-
-      expect(fs.writeFileSync).toHaveBeenCalled();
     });
   });
 });

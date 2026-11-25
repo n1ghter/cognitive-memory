@@ -534,9 +534,22 @@ process.on('unhandledRejection', (reason: any, promise: any) => {
 
 if (process.argv[2] === 'init') {
   import('./cli/init.js')
-    .then((m) => m.runInit())
+    .then((m) => m.runInit(m.parseInitCliArgs(process.argv.slice(3))))
     .catch((err) => {
       console.error('Initialization failed:', err);
+      process.exit(1);
+    });
+} else if (process.argv[2] === 'hook') {
+  import('./hooks/lifecycle.js')
+    .then(async (m) => {
+      const res = await m.runLifecycleHook(process.argv[3] || 'SessionStart');
+      console.error(JSON.stringify(res, null, 2));
+      DatabaseManager.close();
+      if (res.errors.length > 0) process.exit(1);
+    })
+    .catch((err) => {
+      console.error('Hook execution failed:', err);
+      DatabaseManager.close();
       process.exit(1);
     });
 } else if (process.argv[2] === 'setup') {
