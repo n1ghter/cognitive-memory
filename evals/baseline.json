@@ -1,0 +1,71 @@
+{
+  "version": 1,
+  "updatedAt": "2026-11-25",
+  "tolerance": 0.0001,
+  "profiles": {
+    "offline-bm25": {
+      "overallRecallAtK": 0.8125,
+      "overallHitAt1": 0.6666,
+      "overallMrr": 0.7187,
+      "overallNdcgAtK": 0.7305,
+      "lexicalRecallAtK": 0.9583,
+      "lexicalHitAt1": 1.0,
+      "defaultThresholdRecall": 0.6041,
+      "negativeAbstention": 1.0,
+      "contradictionsResolvedRate": 1.0,
+      "contradictionsMaxStaleLeakRate": 0.0,
+      "lexicalDedupPrecision": 1.0,
+      "lexicalDedupRecall": 0.75,
+      "lexicalDedupAccuracy": 0.875,
+      "roundTripPassRate": 1.0
+    },
+    "hash-vector": {
+      "overallRecallAtK": 0.8125,
+      "overallHitAt1": 0.7083,
+      "overallMrr": 0.747,
+      "overallNdcgAtK": 0.752,
+      "lexicalRecallAtK": 0.9583,
+      "lexicalHitAt1": 1.0,
+      "defaultThresholdRecall": 0.1458,
+      "negativeAbstention": 1.0,
+      "contradictionsResolvedRate": 1.0,
+      "contradictionsMaxStaleLeakRate": 0.0,
+      "lexicalDedupPrecision": 1.0,
+      "lexicalDedupRecall": 0.75,
+      "lexicalDedupAccuracy": 0.875,
+      "roundTripPassRate": 1.0
+    },
+    "hash-hybrid": {
+      "overallRecallAtK": 0.8541,
+      "overallHitAt1": 0.7083,
+      "overallMrr": 0.7618,
+      "overallNdcgAtK": 0.7725,
+      "lexicalRecallAtK": 0.9583,
+      "lexicalHitAt1": 1.0,
+      "defaultThresholdRecall": 0.6041,
+      "negativeAbstention": 1.0,
+      "contradictionsResolvedRate": 1.0,
+      "contradictionsMaxStaleLeakRate": 0.0,
+      "lexicalDedupPrecision": 1.0,
+      "lexicalDedupRecall": 0.75,
+      "lexicalDedupAccuracy": 0.875,
+      "roundTripPassRate": 1.0
+    },
+    "hash-hybrid-noise60": {
+      "overallRecallAtK": 0.8541,
+      "overallHitAt1": 0.7083,
+      "overallMrr": 0.754,
+      "overallNdcgAtK": 0.767,
+      "lexicalRecallAtK": 0.9583,
+      "lexicalHitAt1": 1.0,
+      "defaultThresholdRecall": 0.6666,
+      "negativeAbstention": 1.0,
+      "contradictionsResolvedRate": 1.0,
+      "contradictionsMaxStaleLeakRate": 0.0,
+      "lexicalDedupPrecision": 1.0,
+      "lexicalDedupRecall": 0.75,
+      "lexicalDedupAccuracy": 0.875,
+      "roundTripPassRate": 1.0
+    }
+  }
+}

@@ -1,17 +1,51 @@
+import fs from 'node:fs';
+import os from 'node:os';
+import path from 'node:path';
 import { EmbeddingCache } from '../src/cache.js';
+import { DatabaseManager } from '../src/db.js';
 import { OllamaClient } from '../src/ollama.js';
 import { areLexicallyDuplicate, type SearchMode } from '../src/retrieval.js';
+import { executeMemoryExport } from '../src/tools/export.js';
+import { executeMemoryRelate } from '../src/tools/graph.js';
+import { executeMemoryReindex } from '../src/tools/reindex.js';
 import { executeMemorySearch } from '../src/tools/search.js';
-import { executeMemoryStore } from '../src/tools/store.js';
+import {
+  executeMemoryStore,
+  type MemoryProfile,
+  type PointerMetadata,
+} from '../src/tools/store.js';
+
+export interface RoundTripMemoryFixture {
+  key: string;
+  text: string;
+  profile: MemoryProfile;
+  importance: number;
+  metadata: PointerMetadata;
+  externalLinks?: { uri: string; relationType: 'grounded_in' | 'references' }[];
+  query: string;
+}
+
+export interface RoundTripDataset {
+  groundedMemories: RoundTripMemoryFixture[];
+  internalRelations: { sourceKey: string; targetKey: string; relationType: string }[];
+  supersession: {
+    oldText: string;
+    newText: string;
+    profile: MemoryProfile;
+    query: string;
+  };
+}
 
 /**
- * Golden dataset: memories to store, graded queries, dedup pairs, and temporal contradiction cases.
+ * Golden dataset: memories to store, graded queries, dedup pairs, temporal contradiction cases,
+ * and Track D Markdown <-> SQLite round-trip & grounding invariants.
  */
 export interface EvalDataset {
-  memories: { key: string; text: string }[];
+  memories: { key: string; text: string; metadata?: PointerMetadata }[];
   queries: { query: string; relevant: string[]; category: string }[];
   dedupPairs: { a: string; b: string; duplicate: boolean }[];
   contradictions?: { oldText: string; newText: string; query: string }[];
+  roundTrip?: RoundTripDataset;
 }
 
 /** Retrieval metrics averaged over a set of queries that have at least one relevant memory. */
@@ -21,6 +55,18 @@ export interface RankingScores {
   hitAt1: number;
   mrr: number;
   ndcgAtK: number;
+}
+
+/** Track D: lossless Markdown <-> SQLite reindex & zero-copy grounding invariants. */
+export interface RoundTripScores {
+  totalChecks: number;
+  memoriesPreservedRate: number;
+  refsPreservedRate: number;
+  edgesPreservedRate: number;
+  externalInactiveRate: number;
+  searchRecoveryRate: number;
+  passRate: number;
+  errors: string[];
 }
 
 export interface EvalReport {
@@ -34,7 +80,40 @@ export interface EvalReport {
   dedup: { threshold: number; precision: number; recall: number; accuracy: number };
   lexicalDedup: { precision: number; recall: number; accuracy: number };
   contradictions: { total: number; resolvedRate: number; staleLeakRate: number };
+  roundTrip: RoundTripScores;
   failures: { query: string; category: string; expected: string[]; got: string[] }[];
+}
+
+export interface BaselineProfileFloors {
+  overallRecallAtK: number;
+  overallHitAt1: number;
+  overallMrr: number;
+  overallNdcgAtK: number;
+  lexicalRecallAtK: number;
+  lexicalHitAt1: number;
+  defaultThresholdRecall: number;
+  negativeAbstention: number;
+  contradictionsResolvedRate: number;
+  contradictionsMaxStaleLeakRate: number;
+  lexicalDedupPrecision: number;
+  lexicalDedupRecall: number;
+  lexicalDedupAccuracy: number;
+  roundTripPassRate: number;
+}
+
+export interface EvalBaselineFile {
+  version: number;
+  updatedAt: string;
+  tolerance: number;
+  profiles: Record<string, BaselineProfileFloors>;
+}
+
+export interface BaselineViolation {
+  profile: string;
+  metric: keyof BaselineProfileFloors;
+  actual: number;
+  expected: number;
+  direction: 'min' | 'max';
 }
 
 // Mirrors the `vec_distance_cosine(...) <= 0.08` merge rule in src/tools/consolidate.ts.
@@ -163,21 +242,445 @@ function scoreRanking(rows: { relevant: string[]; got: string[] }[], k: number):
 }
 
 /**
+ * Track D: Evaluates lossless Markdown <-> SQLite reindex invariants and zero-copy ref grounding.
+ * Wipes the current throwaway main DB tables before seeding Track D fixtures so results are isolated.
+ */
+export async function runRoundTripEval(
+  roundTrip?: RoundTripDataset,
+  mode: SearchMode = 'hybrid'
+): Promise<RoundTripScores> {
+  if (!roundTrip || roundTrip.groundedMemories.length === 0) {
+    return {
+      totalChecks: 0,
+      memoriesPreservedRate: 1,
+      refsPreservedRate: 1,
+      edgesPreservedRate: 1,
+      externalInactiveRate: 1,
+      searchRecoveryRate: 1,
+      passRate: 1,
+      errors: [],
+    };
+  }
+
+  const db = DatabaseManager.getInstance();
+  db.transaction(() => {
+    db.prepare('DELETE FROM main.edges').run();
+    db.prepare('DELETE FROM main.memory').run();
+    db.prepare('DELETE FROM main.embedding_cache').run();
+  })();
+  DatabaseManager.dropVectorTable('main');
+  EmbeddingCache.clear();
+
+  const tmpVault = fs.mkdtempSync(path.join(os.tmpdir(), 'cognitive-memory-trackd-'));
+  const errors: string[] = [];
+
+  try {
+    const idByKey = new Map<string, string>();
+    const expectedExternalUris: string[] = [];
+
+    // 1. Seed grounded memories with zero-copy ref pointers + external links
+    for (const fixture of roundTrip.groundedMemories) {
+      const stored = await executeMemoryStore({
+        text: fixture.text,
+        profile: fixture.profile,
+        importance: fixture.importance,
+        metadata: fixture.metadata,
+      });
+      idByKey.set(fixture.key, stored.record.id);
+
+      for (const ext of fixture.externalLinks ?? []) {
+        await executeMemoryRelate({
+          sourceId: stored.record.id,
+          targetId: ext.uri,
+          relationType: ext.relationType,
+        });
+        expectedExternalUris.push(ext.uri);
+      }
+    }
+
+    // 2. Seed internal relations
+    for (const rel of roundTrip.internalRelations) {
+      const sourceId = idByKey.get(rel.sourceKey);
+      const targetId = idByKey.get(rel.targetKey);
+      if (sourceId && targetId) {
+        await executeMemoryRelate({
+          sourceId,
+          targetId,
+          relationType: rel.relationType,
+        });
+      }
+    }
+
+    // 3. Seed temporal supersession pair
+    const oldSup = await executeMemoryStore({
+      text: roundTrip.supersession.oldText,
+      profile: roundTrip.supersession.profile,
+      importance: 0.7,
+    });
+    await executeMemoryStore({
+      text: roundTrip.supersession.newText,
+      profile: roundTrip.supersession.profile,
+      importance: 0.9,
+      supersedes: oldSup.record.id,
+    });
+
+    // 4. Export to canonical Markdown (including superseded history) and reindex from scratch
+    await executeMemoryExport({ vaultPath: tmpVault, includeSuperseded: true });
+    const reindexRes = await executeMemoryReindex({ vaultPath: tmpVault });
+    if (reindexRes.errors.length > 0) {
+      errors.push(...reindexRes.errors);
+    }
+
+    const rows = db
+      .prepare(
+        'SELECT id, text, metadata, importance, is_active, valid_until, superseded_by FROM main.memory'
+      )
+      .all() as {
+      id: string;
+      text: string;
+      metadata: string;
+      importance: number;
+      is_active: number;
+      valid_until: string | null;
+      superseded_by: string | null;
+    }[];
+
+    const findByText = (text: string) => rows.find((r) => r.text === text);
+
+    // Check 1: Memory preservation (active grounded memories + active/superseded pair)
+    const memoryChecksTotal = roundTrip.groundedMemories.length + 2;
+    let memoryChecksPassed = 0;
+
+    for (const fixture of roundTrip.groundedMemories) {
+      const row = findByText(fixture.text);
+      const parsedMeta = row ? JSON.parse(row.metadata || '{}') : {};
+      if (
+        row &&
+        row.is_active === 1 &&
+        row.valid_until === null &&
+        parsedMeta.profile === fixture.profile
+      ) {
+        memoryChecksPassed++;
+      } else {
+        errors.push(`Track D memory missing or corrupted after reindex: ${fixture.key}`);
+      }
+    }
+
+    const restoredNew = findByText(roundTrip.supersession.newText);
+    const restoredOld = findByText(roundTrip.supersession.oldText);
+    if (restoredNew && restoredNew.is_active === 1 && restoredNew.valid_until === null) {
+      memoryChecksPassed++;
+    } else {
+      errors.push('Track D active superseding memory missing after reindex');
+    }
+    if (
+      restoredOld &&
+      restoredOld.is_active === 0 &&
+      restoredOld.valid_until &&
+      restoredOld.superseded_by
+    ) {
+      memoryChecksPassed++;
+    } else {
+      errors.push('Track D superseded historical memory state corrupted after reindex');
+    }
+
+    // Check 2: Zero-copy metadata.ref preservation
+    let refChecksTotal = 0;
+    let refChecksPassed = 0;
+    for (const fixture of roundTrip.groundedMemories) {
+      if (!fixture.metadata.ref) continue;
+      refChecksTotal++;
+      const row = findByText(fixture.text);
+      const parsedMeta = row ? JSON.parse(row.metadata || '{}') : {};
+      const ref = parsedMeta.ref;
+      const expectedRef = fixture.metadata.ref;
+      if (
+        ref &&
+        ref.vault_path === expectedRef.vault_path &&
+        ref.wikilink === expectedRef.wikilink &&
+        ref.source_hash === expectedRef.source_hash &&
+        ref.section === expectedRef.section
+      ) {
+        refChecksPassed++;
+      } else {
+        errors.push(`Track D metadata.ref lost or mutated for ${fixture.key}`);
+      }
+    }
+
+    // Check 3: Internal + external + supersedes edges preserved
+    const edges = db
+      .prepare(
+        'SELECT source_id, target_id, relation_type, COALESCE(is_external, 0) AS is_external FROM main.edges'
+      )
+      .all() as {
+      source_id: string;
+      target_id: string;
+      relation_type: string;
+      is_external: number;
+    }[];
+
+    const edgeChecksTotal = roundTrip.internalRelations.length + expectedExternalUris.length + 1;
+    let edgeChecksPassed = 0;
+
+    for (const rel of roundTrip.internalRelations) {
+      const srcFixture = roundTrip.groundedMemories.find((m) => m.key === rel.sourceKey);
+      const tgtFixture = roundTrip.groundedMemories.find((m) => m.key === rel.targetKey);
+      const srcRow = srcFixture ? findByText(srcFixture.text) : undefined;
+      const tgtRow = tgtFixture ? findByText(tgtFixture.text) : undefined;
+      if (
+        srcRow &&
+        tgtRow &&
+        edges.some(
+          (e) =>
+            e.source_id === srcRow.id &&
+            e.target_id === tgtRow.id &&
+            e.relation_type === rel.relationType &&
+            e.is_external === 0
+        )
+      ) {
+        edgeChecksPassed++;
+      } else {
+        errors.push(
+          `Track D internal edge missing after reindex: ${rel.sourceKey}->${rel.targetKey}`
+        );
+      }
+    }
+
+    for (const fixture of roundTrip.groundedMemories) {
+      const srcRow = findByText(fixture.text);
+      for (const ext of fixture.externalLinks ?? []) {
+        if (
+          srcRow &&
+          edges.some(
+            (e) =>
+              e.source_id === srcRow.id &&
+              e.target_id === ext.uri &&
+              e.relation_type === ext.relationType &&
+              e.is_external === 1
+          )
+        ) {
+          edgeChecksPassed++;
+        } else {
+          errors.push(`Track D external edge missing after reindex: ${ext.uri}`);
+        }
+      }
+    }
+
+    if (
+      restoredNew &&
+      restoredOld &&
+      edges.some(
+        (e) =>
+          e.source_id === restoredNew.id &&
+          e.target_id === restoredOld.id &&
+          e.relation_type === 'supersedes'
+      )
+    ) {
+      edgeChecksPassed++;
+    } else {
+      errors.push('Track D supersedes edge missing after reindex');
+    }
+
+    // Check 4: External URI placeholders stay strictly is_active = 0
+    const extChecksTotal = expectedExternalUris.length;
+    let extChecksPassed = 0;
+    for (const uri of expectedExternalUris) {
+      const placeholder = rows.find((r) => r.id === uri);
+      if (placeholder && placeholder.is_active === 0) {
+        extChecksPassed++;
+      } else {
+        errors.push(`Track D external placeholder is active or missing: ${uri}`);
+      }
+    }
+
+    // Check 5: Post-reindex search recovery & no stale/external leaks
+    const searchChecksTotal = roundTrip.groundedMemories.length + 1;
+    let searchChecksPassed = 0;
+    const effectiveSearchMode: SearchMode = mode === 'vector' ? 'hybrid' : mode;
+
+    for (const fixture of roundTrip.groundedMemories) {
+      const res = await executeMemorySearch({
+        query: fixture.query,
+        limit: 5,
+        threshold: -1,
+        mode: effectiveSearchMode,
+      });
+      const hitTop = res.results[0]?.text === fixture.text;
+      const leakedExternal = res.results.some((r) => expectedExternalUris.includes(r.id));
+      if (hitTop && !leakedExternal) {
+        searchChecksPassed++;
+      } else {
+        errors.push(`Track D search recovery failed after reindex for ${fixture.key}`);
+      }
+    }
+
+    const supSearch = await executeMemorySearch({
+      query: roundTrip.supersession.query,
+      limit: 5,
+      threshold: -1,
+      mode: effectiveSearchMode,
+    });
+    if (
+      supSearch.results[0]?.text === roundTrip.supersession.newText &&
+      !supSearch.results.some((r) => r.text === roundTrip.supersession.oldText)
+    ) {
+      searchChecksPassed++;
+    } else {
+      errors.push('Track D superseded fact leaked or active replacement missed after reindex');
+    }
+
+    const memoriesPreservedRate = memoryChecksTotal ? memoryChecksPassed / memoryChecksTotal : 1;
+    const refsPreservedRate = refChecksTotal ? refChecksPassed / refChecksTotal : 1;
+    const edgesPreservedRate = edgeChecksTotal ? edgeChecksPassed / edgeChecksTotal : 1;
+    const externalInactiveRate = extChecksTotal ? extChecksPassed / extChecksTotal : 1;
+    const searchRecoveryRate = searchChecksTotal ? searchChecksPassed / searchChecksTotal : 1;
+    const totalChecks =
+      memoryChecksTotal + refChecksTotal + edgeChecksTotal + extChecksTotal + searchChecksTotal;
+    const totalPassed =
+      memoryChecksPassed +
+      refChecksPassed +
+      edgeChecksPassed +
+      extChecksPassed +
+      searchChecksPassed;
+
+    return {
+      totalChecks,
+      memoriesPreservedRate,
+      refsPreservedRate,
+      edgesPreservedRate,
+      externalInactiveRate,
+      searchRecoveryRate,
+      passRate: totalChecks ? totalPassed / totalChecks : 1,
+      errors,
+    };
+  } finally {
+    fs.rmSync(tmpVault, { recursive: true, force: true });
+  }
+}
+
+/**
+ * Maps an eval run configuration to its canonical profile key in evals/baseline.json.
+ */
+export function resolveBaselineProfileKey(
+  embedder: string,
+  mode: SearchMode,
+  noiseCount: number
+): string | null {
+  if ((embedder === 'offline' || embedder === 'none') && noiseCount === 0) {
+    return 'offline-bm25';
+  }
+  if (embedder === 'hash' && noiseCount === 0) {
+    if (mode === 'bm25') return 'offline-bm25';
+    if (mode === 'vector') return 'hash-vector';
+    if (mode === 'hybrid') return 'hash-hybrid';
+  }
+  if (embedder === 'hash' && mode === 'hybrid' && noiseCount === 60) {
+    return 'hash-hybrid-noise60';
+  }
+  return null;
+}
+
+/** Loads a committed evals/baseline.json file from disk. */
+export function loadBaseline(
+  baselinePath: string = path.join(import.meta.dirname, 'baseline.json')
+): EvalBaselineFile {
+  return JSON.parse(fs.readFileSync(baselinePath, 'utf8')) as EvalBaselineFile;
+}
+
+/**
+ * Deterministically validates an EvalReport against committed floor thresholds in evals/baseline.json.
+ * Returns an empty array when all floors pass, or exact structured violations on regression.
+ */
+export function checkReportAgainstBaseline(
+  report: EvalReport,
+  baseline: EvalBaselineFile,
+  explicitProfileKey?: string
+): BaselineViolation[] {
+  const profileKey =
+    explicitProfileKey ??
+    resolveBaselineProfileKey(report.embedder, report.mode, report.noiseCount);
+  if (!profileKey) {
+    throw new Error(
+      `No baseline profile found for embedder=${report.embedder}, mode=${report.mode}, noise=${report.noiseCount}`
+    );
+  }
+  const floors = baseline.profiles[profileKey];
+  if (!floors) {
+    throw new Error(`Baseline profile "${profileKey}" does not exist in baseline.json`);
+  }
+
+  const tol = baseline.tolerance ?? 1e-9;
+  const violations: BaselineViolation[] = [];
+
+  const checkMin = (metric: keyof BaselineProfileFloors, actual: number, expected: number) => {
+    if (actual + tol < expected) {
+      violations.push({ profile: profileKey, metric, actual, expected, direction: 'min' });
+    }
+  };
+  const checkMax = (metric: keyof BaselineProfileFloors, actual: number, expected: number) => {
+    if (actual - tol > expected) {
+      violations.push({ profile: profileKey, metric, actual, expected, direction: 'max' });
+    }
+  };
+
+  checkMin('overallRecallAtK', report.ranking.overall.recallAtK, floors.overallRecallAtK);
+  checkMin('overallHitAt1', report.ranking.overall.hitAt1, floors.overallHitAt1);
+  checkMin('overallMrr', report.ranking.overall.mrr, floors.overallMrr);
+  checkMin('overallNdcgAtK', report.ranking.overall.ndcgAtK, floors.overallNdcgAtK);
+  checkMin(
+    'lexicalRecallAtK',
+    report.ranking.byCategory.lexical?.recallAtK ?? 0,
+    floors.lexicalRecallAtK
+  );
+  checkMin('lexicalHitAt1', report.ranking.byCategory.lexical?.hitAt1 ?? 0, floors.lexicalHitAt1);
+  checkMin('defaultThresholdRecall', report.thresholded.recallAtK, floors.defaultThresholdRecall);
+  checkMin('negativeAbstention', report.thresholded.negativeAbstention, floors.negativeAbstention);
+  checkMin(
+    'contradictionsResolvedRate',
+    report.contradictions.resolvedRate,
+    floors.contradictionsResolvedRate
+  );
+  checkMax(
+    'contradictionsMaxStaleLeakRate',
+    report.contradictions.staleLeakRate,
+    floors.contradictionsMaxStaleLeakRate
+  );
+  checkMin('lexicalDedupPrecision', report.lexicalDedup.precision, floors.lexicalDedupPrecision);
+  checkMin('lexicalDedupRecall', report.lexicalDedup.recall, floors.lexicalDedupRecall);
+  checkMin('lexicalDedupAccuracy', report.lexicalDedup.accuracy, floors.lexicalDedupAccuracy);
+  checkMin('roundTripPassRate', report.roundTrip.passRate, floors.roundTripPassRate);
+
+  return violations;
+}
+
+/**
  * Stores the dataset (plus optional distractor noise) into the current database,
  * runs every query through memory_search under the selected retrieval mode, and grades the results.
  */
 export async function runEvals(
   dataset: EvalDataset,
-  options: { embedder: string; k?: number; mode?: SearchMode; noiseCount?: number }
+  options: {
+    embedder: string;
+    k?: number;
+    mode?: SearchMode;
+    noiseCount?: number;
+    includeRoundTrip?: boolean;
+  }
 ): Promise<EvalReport> {
   const k = options.k ?? 5;
   const mode: SearchMode = options.mode ?? 'hybrid';
   const noiseCount = options.noiseCount ?? 0;
 
   const keyById = new Map<string, string>();
-  const allMemories = [...dataset.memories, ...generateNoiseMemories(noiseCount)];
+  const allMemories: { key: string; text: string; metadata?: PointerMetadata }[] = [
+    ...dataset.memories,
+    ...generateNoiseMemories(noiseCount),
+  ];
   for (const memory of allMemories) {
-    const { record } = await executeMemoryStore({ text: memory.text });
+    const { record } = await executeMemoryStore({
+      text: memory.text,
+      metadata: memory.metadata,
+    });
     keyById.set(record.id, memory.key);
   }
   const toKeys = (results: { id: string }[]) => results.map((r) => keyById.get(r.id) ?? r.id);
@@ -237,7 +740,7 @@ export async function runEvals(
     if (merged === pair.duplicate) lexCorrect++;
   }
 
-  // Evaluate temporal supersession / contradiction resolution
+  // Evaluate temporal supersession / contradiction resolution (Track B)
   const contradictionCases = dataset.contradictions ?? [];
   let contradictionResolved = 0;
   let staleLeaks = 0;
@@ -249,6 +752,21 @@ export async function runEvals(
     if (ids[0] === newRes.record.id) contradictionResolved++;
     if (ids.includes(oldRes.record.id)) staleLeaks++;
   }
+
+  // Evaluate Markdown <-> SQLite round-trip & grounding invariants (Track D)
+  const roundTrip =
+    options.includeRoundTrip === false
+      ? {
+          totalChecks: 0,
+          memoriesPreservedRate: 1,
+          refsPreservedRate: 1,
+          edgesPreservedRate: 1,
+          externalInactiveRate: 1,
+          searchRecoveryRate: 1,
+          passRate: 1,
+          errors: [],
+        }
+      : await runRoundTripEval(dataset.roundTrip, mode);
 
   return {
     embedder: options.embedder,
@@ -284,6 +802,7 @@ export async function runEvals(
         : 1,
       staleLeakRate: contradictionCases.length ? staleLeaks / contradictionCases.length : 0,
     },
+    roundTrip,
     failures: positives
       .filter((q) => !q.got.slice(0, k).some((key) => q.relevant.includes(key)))
       .map((q) => ({ query: q.query, category: q.category, expected: q.relevant, got: q.got })),
@@ -311,6 +830,8 @@ export function formatScorecard(report: EvalReport): string {
     `  precision ${pct(report.lexicalDedup.precision)}   recall ${pct(report.lexicalDedup.recall)}   accuracy ${pct(report.lexicalDedup.accuracy)}`,
     `Temporal contradictions (n=${report.contradictions.total})`,
     `  resolved@1 ${pct(report.contradictions.resolvedRate)}   stale leak ${pct(report.contradictions.staleLeakRate)}`,
+    `Track D Round-Trip & Grounding (checks=${report.roundTrip.totalChecks})`,
+    `  pass ${pct(report.roundTrip.passRate)}   refs ${pct(report.roundTrip.refsPreservedRate)}   edges ${pct(report.roundTrip.edgesPreservedRate)}   ext-inactive ${pct(report.roundTrip.externalInactiveRate)}`,
   ];
   if (report.failures.length) {
     lines.push('', `Misses (no relevant memory in top ${report.k}):`);
