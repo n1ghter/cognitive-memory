@@ -1,7 +1,7 @@
 {
   "name": "@cemised/cognitive-memory",
-  "version": "1.5.6",
-  "description": "An autonomous graph-vector memory engine powered by SQLite and Ollama.",
+  "version": "2.0.0",
+  "description": "Vendor-neutral, Markdown-first, zero-Ollama hybrid (SQLite FTS5 BM25 + optional sqlite-vec RRF) MCP memory engine.",
   "main": "dist/index.js",
   "bin": {
     "cognitive-memory": "./dist/index.js"
@@ -17,6 +17,9 @@
     "ai",
     "memory",
     "sqlite",
+    "fts5",
+    "bm25",
+    "hybrid-search",
     "obsidian",
     "agent",
     "rag"
