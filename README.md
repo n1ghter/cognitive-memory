@@ -12,167 +12,127 @@
   <img src="assets/hero.png" alt="Cognitive Memory Architecture" width="800">
 </p>
 
-**Building the cognitive nervous system for AI agents.**
+**A vendor-neutral, local-first MCP memory engine shared across all your AI coding tools.**
 
-A high-performance, local-first **Model Context Protocol (MCP)** server that provides AI agents with persistent, human-readable cognitive memory.
+Native auto-memory in Claude Code, Cursor, Antigravity, and Windsurf locks your project knowledge inside each tool's silo. **Cognitive Memory** provides one portable, inspectable, local memory layer across every MCP-compatible agent — combining fast SQLite storage, federated project + global scopes, zero-copy Obsidian/Markdown pointers, and an automated retrieval eval harness.
 
-> *Unlike cloud-based memory solutions (Letta, Graphiti), Cognitive Memory runs entirely on your local machine using SQLite and local LLM embeddings. This ensures **zero latency, zero API costs, and absolute data privacy**.*
-
-**TL;DR:** The **Web UI Dashboard** (coming soon) is a quick way to visually explore the memory graph. The **CLI + MCP Server** is how you make your AI agent reliable — it gives Antigravity, Cursor, and Claude a deep cognitive memory layer so they stop forgetting past context across sessions.
+> 📖 **Architecture & 2026 Research:** See [docs/RESEARCH_2026.md](docs/RESEARCH_2026.md), [docs/ARCHITECTURE_V2.md](docs/ARCHITECTURE_V2.md), [ROADMAP.md](ROADMAP.md), and the [Project Wiki](https://github.com/n1ghter/cognitive-memory/wiki).
 
 ---
 
-## Two Ways to Use Cognitive Memory
+## ✨ Key Capabilities
 
-|             | **CLI + MCP Server**                                                  | **Web UI Dashboard (WIP)**                                           |
-| ----------- | --------------------------------------------------------------------- | -------------------------------------------------------------------- |
-| **What**    | Connect AI agents to local SQLite vector memory via MCP               | Visual 3D graph explorer of the agent's brain                        |
-| **For**     | Daily development with Antigravity, Cursor, Claude Code               | Quick exploration, human-agent memory debugging                      |
-| **Scale**   | Unlimited local memory scaling via `better-sqlite3`                   | Visualizes clusters and memory relationships                         |
-| **Storage** | Native SQLite + `sqlite-vec` (fast, persistent)                       | Directly reads the local SQLite database                             |
-| **Privacy** | Everything local, no network (uses local Ollama)                      | Everything local, runs on `localhost`                                |
+- **Cross-Tool Portability:** One memory store usable simultaneously from Antigravity, Claude Code, Claude Desktop, Cursor, Windsurf, Copilot, and OpenCode (`npx -y @cemised/cognitive-memory setup`).
+- **Federated Scopes (`local` | `global` | `all`):** Isolate project-specific context in `./memory.sqlite` while sharing user-wide preferences and patterns via `~/.cognitive-memory/global-memory.sqlite`.
+- **3-Tier Memory Profiles (`user` | `working` | `agent_core`):** Keep stable preferences, active debugging context, and invariant architectural facts cleanly separated.
+- **Zero-Copy External Grounding:** Attach validated `ref` pointers (`vault_path`, `wikilink`, `source_hash`, `section`) and external `grounded_in` / `references` graph edges (`obsidian://`, `vault://`) back to canonical Markdown files.
+- **Human-Agent Symmetry (Obsidian Sync):** Bidirectional Markdown export/import with YAML frontmatter so you can read, edit, diff, and version-control what your agents remember.
+- **Resilient Engine & Hardened Transports:** Stdio transport by default plus loopback-first SSE mode (with localhost CORS and timing-safe Bearer auth for remote/Docker deployments), Ollama timeouts, O(1) bounded LRU cache, single-pass CTE vector search, and exact content deduplication.
+- **Eval-Driven Development:** Built-in `evals/` benchmark suite measuring `Recall@K`, `Hit@1`, `MRR`, `nDCG@K`, negative abstention, and deduplication accuracy in CI.
 
 ---
 
-## 🌟 Why We Are Unique: Human-Agent Cognitive Symmetry
-
-Most AI memory platforms (like Graphiti, Letta, Cognee) lock the AI's "brain" inside opaque databases (Neo4j, ChromaDB, Pickles). If the AI remembers something incorrectly, it becomes a "black box" that is difficult for a human to debug or edit.
-
-**Cognitive Memory** pioneers **Bi-directional Human-Agent Symmetry**:
-We bridge the gap between an AI's Long-Term Memory and a human's Second Brain.
-- **Obsidian Sync:** The AI's memory synchronizes natively with interconnected Markdown files in an Obsidian vault. 
-- **Read & Edit:** Open Obsidian (or the Web Dashboard) to visually read and edit what the agent is thinking.
-- **Write:** Write your own notes, and the agent natively understands them via Vector+Graph search.
-
-## ✨ Features
-
-- **Semantic LTM**: Stores and retrieves long-term declarative memories using Cosine Similarity vector search.
-- **Local Vectors & Embeddings**: Uses `sqlite-vec` and integrates directly with Ollama to generate embeddings locally without hitting external APIs. Defaults to `qwen3-embedding:8b`; set `EMBEDDING_MODEL` to use any Ollama embedding model, and the vector table is sized to whatever dimension it returns.
-- **Hybrid Graph Relations**: Connects memories together to form an explicit, interconnected knowledge graph.
-- **Code Intelligence**: Integrates **GitNexus** via a Git `post-commit` hook to asynchronously update the AST knowledge graph for deep codebase intelligence.
-
-## 🚀 Installation & Setup
-
-We recommend a simple 2-step process to get Cognitive Memory fully integrated into your workflow.
+## 🚀 Quick Start
 
 ### Prerequisites
-- Node.js (v24+ recommended)
-- `pnpm` (v9+)
-- [Ollama](https://ollama.com/) running locally on port `11434` with the following models pulled:
+- Node.js **v24+**
+- `pnpm` **v9+** (for building from source)
+- [Ollama](https://ollama.com/) running locally on port `11434` *(required for dense vector embeddings in v1.x; optional hybrid layer in upcoming v2.0)*:
   ```bash
   ollama pull qwen3-embedding:8b
   ollama pull llama3.2
   ```
-  A database keeps the embedding size of the model it was first used with. To switch to a model with a different size, run `memory_export`, then `memory_clear_all`, then `memory_sync` with the new `EMBEDDING_MODEL` to re-embed your memories.
+  Set `EMBEDDING_MODEL` to use any Ollama embedding model — vector tables are dynamically sized to your model's dimension.
 
-### Step 1: Global Editor Setup (The "Hands")
-To give your AI Assistant access to the database tools, run the global setup script. This auto-detects your installed AI Editors (Antigravity, Cursor, Claude Desktop, Claude Code, Copilot, Windsurf, OpenCode) and injects the MCP server directly into their global JSON/TOML configuration files:
-
+### 1. Connect Your AI Editors (Once Per Machine)
+Auto-detects installed editors (Antigravity, Cursor, Claude Desktop, Claude Code, Copilot, Windsurf, OpenCode) and adds the MCP server config:
 ```bash
 npx -y @cemised/cognitive-memory setup
 ```
 
-### Step 2: Local Project Initialization (The "Brain")
-Having the tools is not enough; the AI needs to know *when* and *how* to use them autonomously. Navigate to your project folder and run the initialization script to inject the `AGENTS.md` memory forcing-function checklist and the auto-capture `SKILL.md`:
-
+### 2. Initialize a Project (Optional)
 ```bash
 cd my-project
 npx -y @cemised/cognitive-memory init
 ```
 
-*Note: You only need to run Step 1 once per machine. You should run Step 2 for every new codebase you want your AI to memorize.*
-
-## 💻 Manual MCP Configuration (Optional)
-
-If you prefer not to use the `setup` script, you can manually add the following to your client's MCP configuration file (e.g. `mcp_config.json`):
-
+### Manual MCP Configuration
 ```json
 {
   "mcpServers": {
     "cognitive-memory": {
       "command": "npx",
-      "args": [
-        "-y",
-        "@cemised/cognitive-memory"
-      ]
+      "args": ["-y", "@cemised/cognitive-memory"]
     }
   }
 }
 ```
 
-### Build from Source (For Developers)
-If you want to modify the source code or if your environment requires compiling native C++ bindings for SQLite manually:
-
+### Docker / Local HTTP SSE Mode
 ```bash
-git clone <repository-url>
-cd cognitive-memory
-pnpm install
-pnpm rebuild  # Crucial for native SQLite C++ bindings
-pnpm run build
+MCP_AUTH_TOKEN="your-secret-token" docker compose up -d
 ```
-
-Then configure your MCP client to point to the local build instead:
-
-```json
-{
-  "mcpServers": {
-    "cognitive-memory": {
-      "command": "node",
-      "args": [
-        "/absolute/path/to/cognitive-memory/dist/index.js"
-      ]
-    }
-  }
-}
-```
-
-### Exposed AI Tools
-Once connected, the server exposes 8 powerful tools to your AI agent:
-- `memory_search`: Perform optimized vector similarity cosine searches on stored memories. Optional `scope`: `local` (default, project DB), `global` (user-wide DB in `~/.cognitive-memory`), or `all` (both, merged by similarity).
-- `memory_store`: Vectorize and persist a semantic memory into a local SQLite database. Optional `scope`: `local` (default) or `global`.
-- `memory_relate`: Establish a graph relationship between two memory nodes.
-- `memory_sync`: Perform a bidirectional synchronization between local Obsidian Markdown files and the SQLite database.
-- `memory_export`: Export active database memories into Markdown notes for Obsidian integration.
-- `memory_consolidate`: Perform time decay and semantic LLM merging/deduplication on active memories using Ollama.
-- `memory_delete`: Delete a specific semantic memory record by its identifier.
-- `memory_clear_all`: NUCLEAR OPTION: Completely wipe all memories, vectors, and graph edges from the database. Cannot be undone.
-
-### Evals
-Retrieval quality is measured with an eval suite in `evals/`: a golden dataset of memories, graded queries (lexical, paraphrase, cross-lingual, and negative queries that should return nothing) and near-duplicate pairs for consolidation. The runner stores the dataset into a throwaway database, runs every query through `memory_search` and prints a scorecard with Recall@k, Hit@1, MRR and nDCG@k per category, precision and negative-query abstention at the default threshold, and dedup precision/recall at the consolidation threshold.
-
-```bash
-pnpm eval                      # real embeddings from your local Ollama
-pnpm eval --embedder hash      # deterministic bag-of-words embedder, no model needed
-pnpm eval --k 3 --json report.json
-```
-
-The hash run also executes in `pnpm test` (`tests/evals.test.ts`) and fails CI if scores drop below the recorded baseline. To extend the suite, add memories and queries to `evals/dataset.json`; misses are listed under the scorecard.
-
-## 🏗️ Architecture
-
-The project adheres to a clean modular architecture:
-- `src/db.ts`: Manages the SQLite connection, schema, and vector extensions.
-- `src/ollama.ts`: Lightweight native fetch wrapper for the Ollama API.
-- `src/cache.ts`: Caches embeddings to avoid recalculating identical strings.
-- `src/tools/`: Contains the business logic for the MCP endpoints.
-
-## 🤝 Contributing & Community
-
-We welcome community contributions, from bug fixes to new features! 
-- Please read our [Contributing Guidelines](CONTRIBUTING.md) to get started.
-- Review our [Security Policy](SECURITY.md) for vulnerability reporting.
-
-## 📄 License
-
-This project is licensed under the [Apache 2.0 License](LICENSE). This provides strong patent protection and makes the project safe for enterprise adoption.
+By default `--sse` binds strictly to `127.0.0.1:3000`. Binding to a non-loopback host (`MCP_HOST=0.0.0.0`) requires `MCP_AUTH_TOKEN`.
 
 ---
 
-**Author / Creator:**  
-[Eduards Čemis](https://www.linkedin.com/in/cemised/)
+## 🛠️ Exposed MCP Tools
 
-## 💖 Support the Project
+| Tool | Purpose |
+|---|---|
+| `memory_search` | Semantic search with optional `scope` (`local` \| `global` \| `all`), `profile` (`user` \| `working` \| `agent_core` \| `all`), `limit`, and `threshold`. |
+| `memory_store` | Store a memory with exact deduplication, optional `scope` (`local` \| `global`), `profile`, `importance`, and zero-copy `metadata.ref` pointers. |
+| `memory_relate` | Create a typed graph edge between two memory nodes or link a memory to an external `obsidian://` / `vault://` URI (`grounded_in`, `references`). |
+| `memory_sync` | Bidirectional sync between local Markdown/Obsidian notes and SQLite. |
+| `memory_export` | Export active memories and graph relations to Markdown files. |
+| `memory_consolidate` | Time-decay importance scoring and near-duplicate merging. |
+| `memory_delete` | Soft-delete (default) or hard-purge a specific memory record. |
+| `memory_clear_all` | Wipe all local memories, vectors, and edges (`confirm: true` required). |
 
-If you find this project helpful and want to support its continued development, consider buying me a coffee! ☕
+---
+
+## 🧪 Verification Harness & Evals
+
+Every change is verified through a single local & CI harness command:
+
+```bash
+pnpm install
+pnpm rebuild better-sqlite3 sqlite-vec
+pnpm verify          # Biome + tsc + build + unit tests + offline eval gate + UI build & tests
+```
+
+Run retrieval scorecards directly:
+```bash
+pnpm eval                      # real embeddings via local Ollama
+pnpm eval:ci                   # deterministic offline hash baseline (no Ollama required)
+pnpm eval -- --k 3 --json report.json
+```
+
+Optional read-only 3D Graph Explorer:
+```bash
+pnpm dashboard                 # launches local Web UI at http://localhost:3000
+```
+
+---
+
+## 🏗️ Project Layout
+
+- `src/db.ts` — SQLite connection manager, federated `main` + `global` schemas, dynamic `sqlite-vec` tables.
+- `src/cache.ts` — O(1) bounded LRU L1 + SQLite L2 embedding cache.
+- `src/ollama.ts` — Timeout-hardened native `fetch` client for Ollama.
+- `src/tools/` — Core MCP tool implementations (`search`, `store`, `graph`, `sync`, `export`, `import`, `consolidate`, `delete`, `clear`).
+- `src/cli/` — `setup` (multi-editor config injection) and `init` (project templates).
+- `evals/` — Golden dataset and deterministic/live retrieval scorecard runner.
+- `docs/` — 2026 empirical research memo (`RESEARCH_2026.md`) and v2.0 architecture (`ARCHITECTURE_V2.md`).
+- `ui/` — Optional React + Three.js force-graph dashboard (maintenance-only).
+
+---
+
+## 🤝 Contributing & License
+
+- Read [CONTRIBUTING.md](CONTRIBUTING.md) and [SECURITY.md](SECURITY.md) before opening a PR.
+- Licensed under the [Apache 2.0 License](LICENSE).
+
+**Author:** [Eduards Čemis](https://www.linkedin.com/in/cemised/)
 
 [![ko-fi](https://ko-fi.com/img/githubbutton_sm.svg)](https://ko-fi.com/V5Z6212C4G)
