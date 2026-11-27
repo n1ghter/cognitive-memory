@@ -1,3 +1,4 @@
+import { spawnSync } from 'node:child_process';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
@@ -7,6 +8,7 @@ import {
   CURSOR_RULE_TEMPLATE,
   MANAGED_BLOCK_END,
   MANAGED_BLOCK_START,
+  mergeAntigravityHooksJson,
   mergeClaudeSettingsHooks,
   parseInitCliArgs,
   runInit,
@@ -14,7 +16,13 @@ import {
   upsertAgentsManagedBlock,
 } from '../src/cli/init.js';
 import { parseSetupCliArgs, runSetup } from '../src/cli/setup.js';
-import { normalizeLifecycleEvent, runLifecycleHook } from '../src/hooks/lifecycle.js';
+import {
+  formatAntigravityHookOutput,
+  normalizeLifecycleEvent,
+  parseHookCliArgs,
+  runLifecycleHook,
+  shouldSkipHookForInput,
+} from '../src/hooks/lifecycle.js';
 
 describe('CLI Scripts', () => {
   let tmpDir: string;
@@ -34,13 +42,16 @@ describe('CLI Scripts', () => {
     it('creates concise anti-smell templates and deterministic lifecycle hook scaffolds', async () => {
       const res = await runInit({ cwd: tmpDir });
 
-      expect(res.createdOrUpdated).toHaveLength(4);
+      expect(res.createdOrUpdated).toHaveLength(5);
       expect(res.unchanged).toHaveLength(0);
 
       const agentsMd = fs.readFileSync(path.join(tmpDir, 'AGENTS.md'), 'utf-8');
       const skillMd = fs.readFileSync(
         path.join(tmpDir, '.agents', 'skills', 'memory-auto-capture', 'SKILL.md'),
         'utf-8'
+      );
+      const agyHooks = JSON.parse(
+        fs.readFileSync(path.join(tmpDir, '.agents', 'hooks.json'), 'utf-8')
       );
       const claudeSettings = JSON.parse(
         fs.readFileSync(path.join(tmpDir, '.claude', 'settings.json'), 'utf-8')
@@ -63,6 +74,17 @@ describe('CLI Scripts', () => {
       expect(cursorRule).toBe(CURSOR_RULE_TEMPLATE);
       expect(cursorRule).toContain('alwaysApply: false');
 
+      // Antigravity 2.0 native .agents/hooks.json: flat SessionStart/Stop arrays, no PreCompact, no npx -y, safe opt-in default
+      expect(agyHooks['cognitive-memory'].enabled).toBe(false);
+      expect(agyHooks['cognitive-memory'].PreCompact).toBeUndefined();
+      expect(agyHooks['cognitive-memory'].SessionStart[0].command).toContain(
+        'hook SessionStart --client antigravity'
+      );
+      expect(agyHooks['cognitive-memory'].SessionStart[0].command).not.toContain('npx');
+      expect(agyHooks['cognitive-memory'].Stop[0].command).toContain(
+        'hook Stop --client antigravity'
+      );
+
       // Claude Code deterministic lifecycle hooks (SessionStart, PreCompact, Stop)
       expect(claudeSettings.hooks.SessionStart[0].hooks[0].command).toContain('hook SessionStart');
       expect(claudeSettings.hooks.PreCompact[0].hooks[0].command).toContain('hook PreCompact');
@@ -75,6 +97,7 @@ describe('CLI Scripts', () => {
       const files = [
         path.join(tmpDir, 'AGENTS.md'),
         path.join(tmpDir, '.agents', 'skills', 'memory-auto-capture', 'SKILL.md'),
+        path.join(tmpDir, '.agents', 'hooks.json'),
         path.join(tmpDir, '.claude', 'settings.json'),
         path.join(tmpDir, '.cursor', 'rules', 'cognitive-memory.mdc'),
       ];
@@ -82,12 +105,39 @@ describe('CLI Scripts', () => {
 
       const secondRes = await runInit({ cwd: tmpDir });
       expect(secondRes.createdOrUpdated).toEqual([]);
-      expect(secondRes.unchanged).toHaveLength(4);
+      expect(secondRes.unchanged).toHaveLength(5);
 
       const secondSnapshots = files.map((f) => fs.readFileSync(f));
       for (let i = 0; i < files.length; i++) {
         expect(secondSnapshots[i].equals(firstSnapshots[i])).toBe(true);
       }
+    });
+
+    it('merges Antigravity hooks.json non-destructively alongside existing user hooks', () => {
+      const existing = JSON.stringify(
+        {
+          'lint-checker': {
+            PostToolUse: [
+              { matcher: 'run_command', hooks: [{ type: 'command', command: './lint.sh' }] },
+            ],
+          },
+        },
+        null,
+        2
+      );
+      const merged = mergeAntigravityHooksJson(existing, {
+        commandPrefix: 'node /app/dist/index.js',
+        enabled: true,
+      });
+      const parsed = JSON.parse(merged);
+      expect(parsed['lint-checker']).toBeDefined();
+      expect(parsed['cognitive-memory'].enabled).toBe(true);
+      expect(parsed['cognitive-memory'].Stop[0].command).toBe(
+        'node /app/dist/index.js hook Stop --client antigravity'
+      );
+      expect(mergeAntigravityHooksJson(merged, { commandPrefix: 'node /app/dist/index.js' })).toBe(
+        merged
+      );
     });
 
     it('replaces legacy verbose AGENTS.md checklists and managed blocks while preserving user content', () => {
@@ -127,25 +177,49 @@ describe('CLI Scripts', () => {
 
     it('parses CLI flags (--no-hooks, --agents) and respects selective init options', async () => {
       const parsed = parseInitCliArgs(['--no-hooks', '--agents=antigravity']);
-      expect(parsed).toEqual({ includeHooks: false, agents: ['antigravity'] });
+      expect(parsed).toEqual({
+        includeHooks: false,
+        agents: ['antigravity'],
+        hookCommand: undefined,
+        enableAntigravityHooks: undefined,
+      });
 
       await runInit({ cwd: tmpDir, ...parsed });
       expect(fs.existsSync(path.join(tmpDir, 'AGENTS.md'))).toBe(true);
       expect(
         fs.existsSync(path.join(tmpDir, '.agents', 'skills', 'memory-auto-capture', 'SKILL.md'))
       ).toBe(true);
+      expect(fs.existsSync(path.join(tmpDir, '.agents', 'hooks.json'))).toBe(false);
       expect(fs.existsSync(path.join(tmpDir, '.claude', 'settings.json'))).toBe(false);
       expect(fs.existsSync(path.join(tmpDir, '.cursor', 'rules', 'cognitive-memory.mdc'))).toBe(
         false
       );
     });
 
-    it('executes deterministic offline lifecycle hooks (SessionStart, PreCompact, Stop, AutoDream)', async () => {
+    it('executes deterministic offline lifecycle hooks and honors Antigravity stdout JSON contract', async () => {
       process.env.EMBEDDING_PROVIDER = 'none';
       expect(normalizeLifecycleEvent('auto-dream')).toBe('AutoDream');
       expect(normalizeLifecycleEvent('pre-compact')).toBe('PreCompact');
       expect(normalizeLifecycleEvent('session-end')).toBe('Stop');
       expect(normalizeLifecycleEvent(undefined)).toBe('SessionStart');
+
+      expect(parseHookCliArgs(['Stop', '--client', 'antigravity'])).toEqual({
+        event: 'Stop',
+        client: 'antigravity',
+        stdoutJson: true,
+        vaultPath: undefined,
+      });
+      expect(formatAntigravityHookOutput('SessionStart')).toEqual({});
+      expect(formatAntigravityHookOutput('Stop')).toEqual({ decision: 'allow' });
+      expect(shouldSkipHookForInput('Stop', { terminationReason: 'USER_CANCELED' })).toBe(true);
+      expect(shouldSkipHookForInput('Stop', { terminationReason: 'NO_TOOL_CALL' })).toBe(false);
+
+      const skipped = await runLifecycleHook('Stop', {
+        client: 'antigravity',
+        stdinPayload: { terminationReason: 'USER_CANCELED' },
+      });
+      expect(skipped.skipped).toBe(true);
+      expect(skipped.consolidated).toBe(false);
 
       const vaultDir = path.join(tmpDir, 'vault');
       const dreamRes = await runLifecycleHook('AutoDream', { vaultPath: vaultDir });
@@ -153,6 +227,31 @@ describe('CLI Scripts', () => {
       expect(dreamRes.consolidated).toBe(true);
       expect(dreamRes.exported).toBe(true);
       expect(dreamRes.errors).toEqual([]);
+
+      // Verify compiled CLI honors strict Antigravity stdout JSON contract with zero stray stdout bytes
+      const distIndex = path.resolve(import.meta.dirname, '..', 'dist', 'index.js');
+      if (fs.existsSync(distIndex)) {
+        const proc = spawnSync(
+          process.execPath,
+          [distIndex, 'hook', 'Stop', '--client', 'antigravity', '--vault', vaultDir],
+          {
+            input: JSON.stringify({
+              hookEventName: 'Stop',
+              terminationReason: 'USER_CANCELED',
+            }),
+            encoding: 'utf-8',
+            env: {
+              ...process.env,
+              MEMORY_DB_PATH: ':memory:',
+              MEMORY_GLOBAL_DB_PATH: ':memory:',
+              EMBEDDING_PROVIDER: 'none',
+            },
+            timeout: 10000,
+          }
+        );
+        expect(proc.status).toBe(0);
+        expect(JSON.parse(proc.stdout.trim())).toEqual({ decision: 'allow' });
+      }
       delete process.env.EMBEDDING_PROVIDER;
     });
   });

@@ -1,9 +1,9 @@
 ---
 name: memory-auto-capture
-description: "Autonomous local-first memory management skill using cognitive-memory MCP (SQLite FTS5 BM25 + optional Hybrid RRF, temporal supersession, Markdown-first canonical storage). Works completely offline without Ollama."
+description: "Autonomous local-first memory management skill using cognitive-memory v2.1 MCP (SQLite FTS5 porter BM25 + optional Hybrid RRF, temporal supersession, zero-copy ref drift checks, Markdown-first canonical storage). Works completely offline without Ollama."
 ---
 
-# Memory Auto-Capture Skill (`cognitive-memory` v2.0)
+# Memory Auto-Capture Skill (`cognitive-memory` v2.1)
 
 Manage durable project and user knowledge via the `cognitive-memory` MCP server without bloating static instructions.
 
@@ -50,4 +50,5 @@ When a decision changes (e.g., migrating databases, changing ports or tooling), 
 ## 4. Maintenance
 
 - Run `memory_consolidate` periodically (works deterministically offline via zero-LLM Auto Dream).
+- Run `memory_check_refs` to audit SHA-256 drift on zero-copy `metadata.ref` pointers.
 - Run `memory_export` / `memory_sync` / `memory_reindex` to keep Markdown notes and SQLite in sync.

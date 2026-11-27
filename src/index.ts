@@ -515,10 +515,22 @@ if (process.argv[2] === 'init') {
 } else if (process.argv[2] === 'hook') {
   import('./hooks/lifecycle.js')
     .then(async (m) => {
-      const res = await m.runLifecycleHook(process.argv[3] || 'SessionStart');
-      console.error(JSON.stringify(res, null, 2));
+      const parsed = m.parseHookCliArgs(process.argv.slice(3));
+      const stdinPayload = parsed.client === 'antigravity' ? await m.readStdinJsonSafe() : null;
+      const res = await m.runLifecycleHook(parsed.event, {
+        client: parsed.client,
+        stdoutJson: parsed.stdoutJson,
+        vaultPath: parsed.vaultPath,
+        stdinPayload,
+      });
+      if (parsed.stdoutJson) {
+        const out = m.formatAntigravityHookOutput(parsed.event);
+        process.stdout.write(`${JSON.stringify(out)}\n`);
+      } else {
+        console.error(JSON.stringify(res, null, 2));
+      }
       DatabaseManager.close();
-      if (res.errors.length > 0) process.exit(1);
+      if (res.errors.length > 0 && !parsed.stdoutJson) process.exit(1);
     })
     .catch((err) => {
       console.error('Hook execution failed:', err);
